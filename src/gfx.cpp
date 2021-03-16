@@ -150,6 +150,15 @@ void Image::decodeFrame(uint32_t *buffer, uint32_t *palette,
 	unsigned x, y, i, skip, size, tmp, keycolor = _flags & FLAG_KEYCOLOR;
 	uint32_t *ptr = buffer;
 
+	if (_flags & FLAG_NOCOMPRESS) {
+		for (ptr = buffer, i = 0; i < _width * _height; ptr++, i++) {
+			tmp = stream.readUint8();
+			*ptr = tmp || !keycolor ? palette[tmp] : 0;
+		}
+
+		return;
+	}
+
 	size = stream.readUint16LE();
 	y = stream.readUint16LE();
 
