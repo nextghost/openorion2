@@ -108,6 +108,10 @@ Image::Image(SeekableReadStream &stream, const uint8_t *base_palette) :
 
 		stream.seek(offsets[i], SEEK_SET);
 
+		if (_flags & FLAG_FILLBG) {
+			memset(buffer, 0, _width * _height * sizeof(uint32_t));
+		}
+
 		try {
 			substream = stream.readStream(offsets[i+1]-offsets[i]);
 			decodeFrame(buffer, (uint32_t*)_palette, *substream);
