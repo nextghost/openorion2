@@ -122,6 +122,8 @@ class MOOImage:
         self.framelist = []
 
         for start, end in frameindex:
+            if self.flags & 0x400:
+                buf = self.width * self.height * [0]
             self.framelist.append(self.decode_frame(buf, data[start:end])[:])
 
     def decode_frame(self, buf, data):
