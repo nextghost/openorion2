@@ -116,7 +116,7 @@ class MOOImage:
             raise PaletteError('Image lacks palette, provide a default one')
 
         if self.flags & 0x800:
-            self.palette[3] = 0
+            self.palette = b'\0\0\0\0' + self.palette[4:]
 
         buf = self.width * self.height * [0]
         self.framelist = []
@@ -205,14 +205,16 @@ def dumplbx(filename, palette):
             assetname = basename % idx
             data = lbx.loadAsset(idx)
 
+            if len(data) < 4:
+                dump_data(assetname, data)
+                continue
+
             if data[:4] == b'RIFF':
-                print('WAV file')
                 dump_wav(assetname, data)
                 continue
 
             cnt, size = struct.unpack_from('<HH', data, 0)
             if cnt == 1 and size == len(data) - 4:
-                print('Text file')
                 dump_text(assetname, data)
                 continue
 
@@ -222,7 +224,6 @@ def dumplbx(filename, palette):
                 img = MOOImage(data, palette)
                 if palette is None:
                     palette = img.palette
-                print('Image file')
                 dump_image(assetname, img)
             except PaletteError as e:
                 print('Asset %d: %s' % (idx, e.args[0]))
