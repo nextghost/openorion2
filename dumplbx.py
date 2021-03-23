@@ -91,7 +91,7 @@ class MOOImage:
             start = end
             pos += 4
 
-        if len(data) != end:
+        if len(data) != start:
             raise RuntimeError('Asset is not an image: %d != %d' % (len(data), end))
 
         if basepal is not None:
