@@ -33,6 +33,15 @@ import traceback
 def cleanstr(charbuf):
     return charbuf.partition(b'\0')[0].decode('ASCII')
 
+def convert_palette(data):
+    ret = list(data)
+    for idx in range(len(data) // 4):
+        ret[4*idx] = data[4*idx+1] << 2
+        ret[4*idx+1] = data[4*idx+2] << 2
+        ret[4*idx+2] = data[4*idx+3] << 2
+        ret[4*idx+3] = 0xff
+    return bytes(ret)
+
 class LBXArchive:
     def __init__(self, fr):
         self._file = fr
@@ -105,12 +114,8 @@ class MOOImage:
             start, size = struct.unpack_from('<HH', data, pos)
             pos += 4
             palette = list(self.palette)
-            palette[4*start:4*(start+size)] = list(data[pos:pos+4*size])
-            for idx in range(start, start+size):
-                palette[4*idx] = palette[4*idx+1] << 2
-                palette[4*idx+1] = palette[4*idx+2] << 2
-                palette[4*idx+2] = palette[4*idx+3] << 2
-                palette[4*idx+3] = 0xff
+            newpal = list(convert_palette(data[pos:pos+4*size]))
+            palette[4*start:4*(start+size)] = newpal
             self.palette = bytes(palette)
         elif basepal is None:
             raise PaletteError('Image lacks palette, provide a default one')
@@ -156,6 +161,13 @@ class MOOImage:
                 ptr += size
                 pos += size + size % 2
         return bytes(buf)
+
+class MOOCursor(MOOImage):
+    def __init__(self, data):
+        self.width, self.height = (24, 480)
+        self.framecount, self.frametime, self.flags = (1, 0, 0x1100)
+        self.palette = convert_palette(data[:1024])
+        self.framelist = [data[1024:12544]]
 
 def dump_data(filename, data):
     with open(filename + '.dat', 'wb') as fw:
@@ -221,6 +233,12 @@ def dumplbx(filename, palette):
                 continue
 
             dump_data(assetname, data)
+
+            if len(data) == 12544 and data[:1024:4] == 256*b'\x01':
+                print('Cursor pack')
+                img = MOOCursor(data)
+                dump_image(assetname, img)
+                continue
 
             try:
                 img = MOOImage(data, palette)
