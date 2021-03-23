@@ -22,6 +22,8 @@
 
 #include "stream.h"
 
+#define PALSIZE 1024
+
 class Image {
 private:
 	unsigned _width, _height, _frames, _frametime, _flags;

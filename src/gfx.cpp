@@ -69,12 +69,12 @@ Image::Image(SeekableReadStream &stream, const uint8_t *base_palette) :
 		throw std::runtime_error("Image data size mismatch");
 	}
 
-	_palette = new uint8_t[1024];
+	_palette = new uint8_t[PALSIZE];
 
 	if (base_palette) {
-		memcpy(_palette, base_palette, 1024);
+		memcpy(_palette, base_palette, PALSIZE);
 	} else {
-		memset(_palette, 0, 1024);
+		memset(_palette, 0, PALSIZE);
 	}
 
 	if (_flags & FLAG_PALETTE) {
