@@ -31,7 +31,7 @@ void initScreen(void) {
 
 	SDL_Init(SDL_INIT_VIDEO);
 	window = SDL_CreateWindow("OpenOrion2", SDL_WINDOWPOS_CENTERED,
-		SDL_WINDOWPOS_CENTERED, 640, 480, 0);
+		SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
 
 	if (!window) {
 		throw std::runtime_error("Cannot create game window");
@@ -128,7 +128,7 @@ void freeTexture(unsigned id) {
 
 // FIXME: replace with real rendering engine
 void render(unsigned id) {
-	SDL_Rect rect = {0, 0, 640, 480};
+	SDL_Rect rect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
 
 	SDL_FillRect(wsurface, &rect, SDL_MapRGB(wsurface->format, 0, 0, 0));
 

@@ -20,6 +20,10 @@
 #ifndef SDL_SCREEN_H_
 #define SDL_SCREEN_H_
 
+// Logical screen size
+#define SCREEN_WIDTH 640
+#define SCREEN_HEIGHT 480
+
 void initScreen(void);
 void updateScreen(void);
 void shutdownScreen(void);
