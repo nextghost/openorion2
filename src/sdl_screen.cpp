@@ -251,6 +251,34 @@ void freeTexture(unsigned id) {
 	}
 }
 
+void drawTexture(unsigned id, int x, int y) {
+	SDL_Rect dst = {x, y, 0, 0};
+
+	if (id >= texture_count || !textures[id].drawsurf) {
+		throw std::out_of_range("Invalid texture ID");
+	}
+
+	SDL_BlitSurface(textures[id].drawsurf, NULL, wsurface, &dst);
+}
+
+void drawTextureTile(unsigned id, int x, int y, int offsx, int offsy,
+	unsigned width, unsigned height) {
+	SDL_Rect src = {offsx, offsy, (int)width, (int)height};
+	SDL_Rect dst = {x, y, SCREEN_WIDTH, SCREEN_HEIGHT};
+
+	if (id >= texture_count || !textures[id].drawsurf) {
+		throw std::out_of_range("Invalid texture ID");
+	}
+
+	SDL_BlitSurface(textures[id].drawsurf, &src, wsurface, &dst);
+}
+
+void clearScreen(uint8_t r, uint8_t g, uint8_t b) {
+	SDL_Rect rect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+
+	SDL_FillRect(wsurface, &rect, SDL_MapRGB(wsurface->format, r, g, b));
+}
+
 // FIXME: replace with real rendering engine
 void render(unsigned id) {
 	SDL_Rect rect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
