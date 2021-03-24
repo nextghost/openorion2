@@ -232,3 +232,257 @@ unsigned Image::textureID(unsigned frame) const {
 const uint8_t *Image::palette(void) const {
 	return _palette;
 }
+
+Font::Font(unsigned height) : _height(height), _glyphCount(0), _textureID(0),
+	_glyphs(NULL) {
+
+}
+
+Font::~Font(void) {
+	if (_glyphs) {
+		freeTexture(_textureID);
+		delete[] _glyphs;
+	}
+}
+
+unsigned Font::height(void) const {
+	return _height;
+}
+
+unsigned Font::charWidth(char ch) const {
+	unsigned idx = (unsigned char)ch;
+
+	if (idx >= _glyphCount) {
+		return 0;
+	}
+
+	return _glyphs[idx].width;
+}
+
+unsigned Font::textWidth(const char *str) const {
+	unsigned idx, ret = 0;
+
+	while ((idx = (unsigned char)*str++)) {
+		if (idx >= _glyphCount) {
+			continue;
+		}
+
+		ret += _glyphs[idx].width + 1;
+	}
+
+	return ret ? ret - 1 : 0;
+}
+
+void Font::setPalette(const uint8_t *palette, unsigned colors) {
+	setTexturePalette(_textureID, palette, 0, colors);
+}
+
+int Font::renderChar(int x, int y, char ch) {
+	unsigned idx = (unsigned char)ch;
+
+	if (idx >= _glyphCount) {
+		return x;
+	}
+
+	drawTextureTile(_textureID, x, y, _glyphs[idx].offset, 0,
+		_glyphs[idx].width, _height);
+	return x + _glyphs[idx].width + 1;
+}
+
+int Font::renderText(int x, int y, const char *str) {
+	unsigned idx;
+
+	for (; *str; str++) {
+		x = renderChar(x, y, *str);
+	}
+
+	return x;
+}
+
+FontManager::FontManager(void) : _fonts(NULL), _fontCount(0), _size(0) {
+
+}
+
+FontManager::~FontManager(void) {
+	clear();
+}
+
+void FontManager::decodeGlyph(uint8_t *buf, unsigned width, unsigned pitch,
+	unsigned height, ReadStream &stream) {
+
+	unsigned x, y;
+	uint8_t tmp, *ptr;
+
+	for (y = 0; y < height; y++) {
+		x = 0;
+		ptr = buf + y * pitch;
+
+		while ((tmp = stream.readUint8()) != 0x80) {
+			if (stream.eos()) {
+				throw std::runtime_error("Premature end of font data");
+			}
+
+			if (tmp & 0x80) {
+				ptr += tmp & 0x7f;
+				x += tmp & 0x7f;
+				continue;
+			}
+
+			if (x >= width) {
+				throw std::runtime_error("Glyph line overflow");
+			}
+
+			*ptr++ = tmp;
+			x++;
+		}
+	}
+}
+
+void FontManager::loadFonts(SeekableReadStream &stream) {
+	unsigned i, j, x, size, glyphCount, fontCount = 6;
+	unsigned offsets[256], magic[4] = {25, 50, 10, 0x404032};
+	Font *ptr = NULL;
+	Font::Glyph *glyphs = NULL, *gptr = NULL;
+	uint8_t *bitmap = NULL;
+	uint8_t palette[PALSIZE] = {0};
+
+	memset(palette + 4, 0xff, PALSIZE - 4);
+	stream.seek(0, SEEK_SET);
+
+	for (i = 0; i < 4; i++) {
+		if (stream.readUint32LE() != magic[i]) {
+			throw std::runtime_error("Invalid font header");
+		}
+	}
+
+	// Create space for new fonts if needed
+	if (_size < _fontCount + fontCount) {
+		Font **tmp;
+
+		size = _size + (_size > fontCount ? _size : fontCount);
+		tmp = new Font*[size];
+
+		if (_fonts) {
+			memcpy(tmp, _fonts, _fontCount * sizeof(Font*));
+			delete[] _fonts;
+		}
+
+		_fonts = tmp;
+		_size = size;
+	}
+
+	// Load font sizes
+	stream.seek(0x56c, SEEK_SET);
+
+	for (i = 0; i < fontCount; i++) {
+		size = stream.readUint16LE();
+
+		if (stream.eos()) {
+			throw std::runtime_error("Premature end of font data");
+		}
+
+		if (!size) {
+			fontCount = i;
+			break;
+		}
+
+		_fonts[_fontCount + i] = new Font(size);
+	}
+
+	// Load font data
+	try {
+		for (i = 0; i < fontCount; i++, _fontCount++) {
+			glyphs = NULL;
+			bitmap = NULL;
+			ptr = _fonts[_fontCount];
+			stream.seek(0xb9c + 1024 * i, SEEK_SET);
+			offsets[0] = stream.readUint32LE();
+
+			// Load glyph offsets
+			for (j = 1; j < 256; j++) {
+				offsets[j] = stream.readUint32LE();
+
+				if (offsets[j] == offsets[j-1]) {
+					break;
+				} else if (offsets[j] < offsets[j-1]) {
+					throw std::runtime_error("Invalid glyph offset");
+				}
+			}
+
+			if (stream.eos()) {
+				throw std::runtime_error("Premature end of font data");
+			}
+
+			// Load glyph metrics
+			glyphCount = j - 1;
+			glyphs = new Font::Glyph[glyphCount];
+			stream.seek(0x59c + 256 * i, SEEK_SET);
+			gptr = glyphs;
+
+			for (x = 0, j = 0; j < glyphCount; j++, gptr++) {
+				gptr->offset = x;
+				gptr->width = stream.readUint8();
+				x += gptr->width;
+			}
+
+			if (stream.eos()) {
+				throw std::runtime_error("Premature end of font data");
+			}
+
+			// Create glyph bitmap
+			// TODO: implement drawing glyphs with outline
+			size = x;
+			bitmap = new uint8_t[size * ptr->height()];
+			memset(bitmap, 0, size * ptr->height());
+			gptr = glyphs;
+
+			for (j = 0; j < glyphCount; j++, gptr++) {
+				stream.seek(0x239c + offsets[j], SEEK_SET);
+				decodeGlyph(bitmap + gptr->offset,
+					gptr->width, size, ptr->height(),
+					stream);
+			}
+
+			ptr->_textureID = registerTexture(size, ptr->height(),
+				bitmap, palette, 0, 256);
+			ptr->_glyphs = glyphs;
+			ptr->_glyphCount = glyphCount;
+			delete[] bitmap;
+		}
+	} catch (...) {
+		fontCount -= i;
+
+		for (i = 0; i < fontCount; i++) {
+			delete _fonts[_fontCount + i];
+		}
+
+		delete[] glyphs;
+		delete[] bitmap;
+		throw;
+	}
+}
+
+void FontManager::clear(void) {
+	size_t i;
+
+	for (i = 0; i < _fontCount; i++) {
+		delete _fonts[i];
+	}
+
+	delete[] _fonts;
+	_fonts = NULL;
+	_fontCount = 0;
+	_size = 0;
+}
+
+Font *FontManager::getFont(unsigned id) {
+	if (id >= _fontCount) {
+		throw std::out_of_range("Invalid font ID");
+	}
+
+	return _fonts[id];
+}
+
+unsigned FontManager::fontCount(void) const {
+	return _fontCount;
+}

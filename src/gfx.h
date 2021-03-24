@@ -52,4 +52,59 @@ public:
 	const uint8_t *palette(void) const;
 };
 
+class FontManager;
+
+class Font {
+private:
+	// Do NOT implement
+	Font(const Font &other);
+	const Font &operator=(const Font &other);
+
+protected:
+	struct Glyph {
+		unsigned offset, width;
+	};
+
+	unsigned _height, _glyphCount, _textureID;
+	Glyph *_glyphs;
+
+	explicit Font(unsigned height);
+
+public:
+	~Font(void);
+
+	unsigned height(void) const;
+	unsigned charWidth(char ch) const;
+	unsigned textWidth(const char *str) const;
+
+	void setPalette(const uint8_t *palette, unsigned colors);
+
+	// Draw single character or entire string. X,Y are coordinates of
+	// upper left corner of the text. Both functions return X coordinate
+	// for drawing more text.
+	int renderChar(int x, int y, char ch);
+	int renderText(int x, int y, const char *str);
+
+	friend class FontManager;
+};
+
+class FontManager {
+private:
+	Font **_fonts;
+	unsigned _fontCount, _size;
+
+protected:
+	void decodeGlyph(uint8_t *buf, unsigned width, unsigned pitch,
+		unsigned height, ReadStream &stream);
+
+public:
+	FontManager(void);
+	~FontManager(void);
+
+	void loadFonts(SeekableReadStream &stream);
+	void clear(void);
+	Font *getFont(unsigned id);
+	unsigned fontCount(void) const;
+};
+
 #endif
