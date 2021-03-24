@@ -21,10 +21,27 @@
 #include <stdexcept>
 #include "screen.h"
 
+struct Texture {
+	SDL_Surface *palsurf, *drawsurf;
+};
+
 SDL_Window *window = NULL;
-SDL_Surface *wsurface = NULL, **textures = NULL;
+SDL_Surface *wsurface = NULL;
+Texture *textures = NULL;
 size_t texture_count = 0, texture_max = 0;
 uint32_t amask = 0, rmask = 0, gmask = 0, bmask = 0;
+
+static void resizeTextureRegistry(void) {
+	Texture *tmp;
+	size_t size = texture_max * 2;
+
+	tmp = new Texture[size];
+	memcpy(tmp, textures, texture_count * sizeof(Texture));
+	memset(tmp + texture_count, 0, (size-texture_count) * sizeof(Texture));
+	delete[] textures;
+	textures = tmp;
+	texture_max = size;
+}
 
 void initScreen(void) {
 	uint8_t *ptr;
@@ -45,7 +62,8 @@ void initScreen(void) {
 	}
 
 	texture_max = 256;
-	textures = new SDL_Surface*[texture_max];
+	textures = new Texture[texture_max];
+	memset(textures, 0, texture_max * sizeof(Texture));
 
 	ptr = (uint8_t*)&amask;
 	ptr[0] = 0xff;
@@ -61,8 +79,12 @@ void shutdownScreen(void) {
 	size_t i;
 
 	for (i = 0; i < texture_count; i++) {
-		if (textures[i]) {
-			SDL_FreeSurface(textures[i]);
+		if (textures[i].drawsurf) {
+			SDL_FreeSurface(textures[i].drawsurf);
+		}
+
+		if (textures[i].palsurf) {
+			SDL_FreeSurface(textures[i].palsurf);
 		}
 	}
 
@@ -80,15 +102,7 @@ unsigned registerTexture(unsigned width, unsigned height, const uint32_t *data) 
 	unsigned i;
 
 	if (texture_count >= texture_max) {
-		SDL_Surface **sptr;
-
-		texture_max *= 2;
-		sptr = new SDL_Surface*[texture_max];
-
-		memcpy(sptr, textures, texture_count * sizeof(SDL_Surface*));
-
-		delete[] textures;
-		textures = sptr;
+		resizeTextureRegistry();
 	}
 
 	surf = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask,
@@ -108,22 +122,133 @@ unsigned registerTexture(unsigned width, unsigned height, const uint32_t *data) 
 	for (i = 0; i < height; i++, pixptr += surf->pitch, data += width) {
 		memcpy(pixptr, data, width * sizeof(uint32_t));
 	}
-	
+
 	SDL_UnlockSurface(surf);
 
-	textures[texture_count] = surf;
+	textures[texture_count].palsurf = NULL;
+	textures[texture_count].drawsurf = surf;
 	return texture_count++;
 }
 
+unsigned registerTexture(unsigned width, unsigned height, const uint8_t *data,
+	uint8_t *palette, unsigned firstcolor, unsigned colors) {
+
+	SDL_Surface *surf;
+	uint8_t *pixptr;
+	unsigned i, texid;
+
+	if (texture_count >= texture_max) {
+		resizeTextureRegistry();
+	}
+
+	surf = SDL_CreateRGBSurface(0, width, height, 8, 0, 0, 0, 0);
+
+	if (!surf) {
+		throw std::runtime_error("Cannot allocate new SDL surface");
+	}
+
+	if (SDL_LockSurface(surf)) {
+		SDL_FreeSurface(surf);
+		throw std::runtime_error("Cannot lock texture surface");
+	}
+
+	pixptr = (uint8_t*)surf->pixels;
+
+	for (i = 0; i < height; i++, pixptr += surf->pitch, data += width) {
+		memcpy(pixptr, data, width);
+	}
+
+	SDL_UnlockSurface(surf);
+	textures[texture_count].palsurf = surf;
+	textures[texture_count].drawsurf = NULL;
+	texid = texture_count++;
+
+	try {
+		setTexturePalette(texid, palette, firstcolor, colors);
+	} catch (...) {
+		SDL_FreeSurface(surf);
+		textures[texid].palsurf = NULL;
+		texture_count--;
+		throw;
+	}
+
+	return texid;
+}
+
+void setTexturePalette(unsigned id, const uint8_t *palette,
+	unsigned firstcolor, unsigned colors) {
+
+	unsigned i;
+	SDL_Surface *surf;
+	SDL_Color conv[256];
+
+	if (id >= texture_count) {
+		throw std::out_of_range("Invalid texture ID");
+	}
+
+	if (firstcolor + colors > 256) {
+		throw std::out_of_range("Palette segment out of range");
+	}
+
+	if (!textures[id].palsurf || !textures[id].palsurf->format->palette) {
+		throw std::invalid_argument("Texture does not have a palette");
+	}
+
+	surf = textures[id].palsurf;
+
+	for (i = 0; i < colors; i++) {
+		conv[i].a = palette[4 * i];
+		conv[i].r = palette[4 * i + 1];
+		conv[i].g = palette[4 * i + 2];
+		conv[i].b = palette[4 * i + 3];
+	}
+
+	if (SDL_SetPaletteColors(surf->format->palette, conv, firstcolor,
+		colors)) {
+		throw std::runtime_error("Failed to modify texture palette");
+	}
+
+	surf = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0);
+
+	if (!surf) {
+		throw std::runtime_error("Failed to convert pixel format");
+	}
+
+	SDL_SetSurfaceBlendMode(surf, SDL_BLENDMODE_BLEND);
+
+	if (textures[id].drawsurf) {
+		SDL_FreeSurface(textures[id].drawsurf);
+	}
+
+	textures[id].drawsurf = surf;
+}
+
 void freeTexture(unsigned id) {
-	if (!textures[id]) {
+	Texture *tex;
+
+	if (id >= texture_count) {
 		return;
 	}
 
-	SDL_FreeSurface(textures[id]);
-	textures[id] = NULL;
+	if (textures[id].drawsurf) {
+		SDL_FreeSurface(textures[id].drawsurf);
+		textures[id].drawsurf = NULL;
+	}
 
-	for (; texture_count > 0 && !textures[texture_count]; texture_count--);
+	if (textures[id].palsurf) {
+		SDL_FreeSurface(textures[id].palsurf);
+		textures[id].palsurf = NULL;
+	}
+
+	tex = textures + texture_count;
+
+	for (; texture_count > 0; texture_count--) {
+		tex--;
+
+		if (tex->palsurf || tex->drawsurf) {
+			break;
+		}
+	}
 }
 
 // FIXME: replace with real rendering engine
@@ -132,8 +257,8 @@ void render(unsigned id) {
 
 	SDL_FillRect(wsurface, &rect, SDL_MapRGB(wsurface->format, 0, 0, 0));
 
-	if (textures[id]) {
-		SDL_BlitSurface(textures[id], NULL, wsurface, &rect);
+	if (textures[id].drawsurf) {
+		SDL_BlitSurface(textures[id].drawsurf, NULL, wsurface, &rect);
 	}
 
 	SDL_UpdateWindowSurface(window);

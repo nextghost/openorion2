@@ -28,6 +28,10 @@ void initScreen(void);
 void updateScreen(void);
 void shutdownScreen(void);
 unsigned registerTexture(unsigned width, unsigned height, const uint32_t *data);
+unsigned registerTexture(unsigned width, unsigned height, const uint8_t *data,
+	uint8_t *palette, unsigned firstcolor, unsigned colors);
+void setTexturePalette(unsigned id, const uint8_t *palette,
+	unsigned firstcolor, unsigned colors);
 void freeTexture(unsigned id);
 
 // FIXME: replace with real rendering engine
