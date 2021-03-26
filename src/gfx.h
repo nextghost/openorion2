@@ -93,6 +93,10 @@ private:
 	Font **_fonts;
 	unsigned _fontCount, _size;
 
+	// Do NOT implement
+	FontManager(const Font &other);
+	const FontManager &operator=(const FontManager &other);
+
 protected:
 	void decodeGlyph(uint8_t *buf, unsigned width, unsigned pitch,
 		unsigned height, ReadStream &stream);
