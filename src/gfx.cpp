@@ -42,8 +42,6 @@ Image::Image(SeekableReadStream &stream, const uint8_t *base_palette) :
 	_frames = stream.readUint16LE();
 	_frametime = stream.readUint16LE();
 	_flags = stream.readUint16LE();
-	printf("Image: %ux%u, flags: %x\n", _width, _height, _flags);
-	printf("%u frames @%d fps\n", _frames, _frametime ? 1000/_frametime:0);
 
 	if (!_width || !_height || !_frames) {
 		throw std::runtime_error("Invalid image header");
@@ -87,8 +85,6 @@ Image::Image(SeekableReadStream &stream, const uint8_t *base_palette) :
 			throw std::runtime_error("Palette buffer overflow");
 		}
 
-		printf("Palette: %u colors starting at %d\n", palsize,
-			palstart);
 		stream.read(_palette + 4 * palstart, palsize * 4);
 
 		for (i = palstart; i < palstart + palsize; i++) {
