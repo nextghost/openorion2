@@ -50,6 +50,8 @@ public:
 	unsigned frameTime(void) const;
 	unsigned textureID(unsigned frame) const;
 	const uint8_t *palette(void) const;
+
+	void draw(int x, int y, unsigned frame = 0) const;
 };
 
 class FontManager;

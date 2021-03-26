@@ -233,6 +233,10 @@ const uint8_t *Image::palette(void) const {
 	return _palette;
 }
 
+void Image::draw(int x, int y, unsigned frame) const {
+	drawTexture(textureID(frame), x, y);
+}
+
 Font::Font(unsigned height) : _height(height), _glyphCount(0), _textureID(0),
 	_glyphs(NULL) {
 
