@@ -18,50 +18,80 @@
  */
 
 #include <cstdio>
-#include <cstdlib>
 #include <stdexcept>
 #include <SDL2/SDL.h>
 #include "screen.h"
-#include "gfx.h"
-#include "lbx.h"
+#include "mainmenu.h"
 
-void main_loop(const char *filename, unsigned asset) {
+unsigned buttonState(unsigned sdlButtons) {
+	unsigned ret = 0;
+
+	if (sdlButtons & SDL_BUTTON_LMASK) {
+		ret |= 1 << MBUTTON_LEFT;
+	}
+
+	if (sdlButtons & SDL_BUTTON_RMASK) {
+		ret |= 1 << MBUTTON_RIGHT;
+	}
+
+	if (sdlButtons & ~(SDL_BUTTON_LMASK | SDL_BUTTON_RMASK)) {
+		ret |= 1 << MBUTTON_OTHER;
+	}
+
+	return ret;
+}
+
+unsigned convertButton(unsigned sdlButton) {
+	switch (sdlButton) {
+	case SDL_BUTTON_LEFT:
+		return MBUTTON_LEFT;
+
+	case SDL_BUTTON_RIGHT:
+		return MBUTTON_RIGHT;
+
+	default:
+		return MBUTTON_OTHER;
+	}
+}
+
+void main_loop(void) {
 	SDL_Event ev;
-	LBXArchive lbx(filename);
-	MemoryReadStream *stream; 
-	unsigned frame = 0, frametime, start;
-
-	stream = lbx.loadAsset(asset);
-	Image img(*stream);
-	delete stream;
-
-	start = SDL_GetTicks();
-	frametime = img.frameTime();
-	frametime = frametime > 10 ? frametime : 200;
+	MainMenuView view;
 
 	while (1) {
 		while (SDL_PollEvent(&ev)) {
 			switch (ev.type) {
 			case SDL_QUIT:
+				view.close();
 				return;
+
+			case SDL_MOUSEMOTION:
+				view.handleMouseMove(ev.motion.x, ev.motion.y,
+					buttonState(ev.motion.state));
+				break;
+
+			case SDL_MOUSEBUTTONDOWN:
+				view.handleMouseDown(ev.button.x, ev.button.y,
+					convertButton(ev.button.button));
+				break;
+
+			case SDL_MOUSEBUTTONUP:
+				view.handleMouseUp(ev.button.x, ev.button.y,
+					convertButton(ev.button.button));
+				break;
 			}
 		}
 
-		frame = (SDL_GetTicks() - start) / frametime;
-		render(img.textureID(frame % img.frameCount()));
+		view.redraw(SDL_GetTicks());
+		updateScreen();
 		SDL_Delay(10);
 	}
 }
 
 int main(int argc, char **argv) {
-	if (argc < 3) {
-		fprintf(stderr, "Usage: %s lbx_file asset_id\n", argv[0]);
-		return 1;
-	}
-
 	try {
 		initScreen();
-		main_loop(argv[1], atoi(argv[2]));
+		main_loop();
 		shutdownScreen();
 	} catch(std::exception &e) {
 		fprintf(stderr, "Error: %s\n", e.what());

@@ -1,5 +1,6 @@
-SOURCE_FILES = gfx.cpp gui.cpp lbx.cpp main.cpp sdl_screen.cpp stream.cpp
-HEADER_FILES = gfx.h gui.h lbx.h screen.h stream.h
+SOURCE_FILES = gfx.cpp gui.cpp lbx.cpp main.cpp mainmenu.cpp sdl_screen.cpp \
+	stream.cpp
+HEADER_FILES = gfx.h gui.h lbx.h mainmenu.h screen.h stream.h
 
 AM_CPPFLAGS = -DDATADIR='"$(pkgdatadir)"'
 
