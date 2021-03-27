@@ -57,7 +57,8 @@ ActiveZone::ActiveZone(unsigned left, unsigned top, unsigned w, unsigned h) :
 
 }
 
-GuiView::GuiView(void) : _zones(NULL), _zoneCount(0), _zoneMax(32) {
+GuiView::GuiView(void) : _zones(NULL), _currentZone(NULL), _zoneCount(0),
+	_zoneMax(32) {
 	_zones = new ActiveZone*[_zoneMax];
 }
 
