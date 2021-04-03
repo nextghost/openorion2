@@ -69,7 +69,7 @@ GuiView::~GuiView(void) {
 		delete _zones[i];
 	}
 
-	delete _zones;
+	delete[] _zones;
 }
 
 void GuiView::addZone(ActiveZone *zone) {
