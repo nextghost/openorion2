@@ -23,34 +23,40 @@
 #define ASSET_MENU_BACKGROUND 2
 
 MainMenuView::MainMenuView(void) : _background(NULL) {
-	ActiveZone *zone;
+	Widget *w;
 
 	_background = gameAssets->getImage("mainmenu.lbx",
 		ASSET_MENU_BACKGROUND);
 
-	zone = new ActiveZone(415, 172, 153, 23);
-	zone->onMouseUp = GuiMethod(*this, &MainMenuView::clickContinue);
-	addZone(zone);
+	w = new Widget(415, 172, 153, 23);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &MainMenuView::clickContinue));
+	addWidget(w);
 
-	zone = new ActiveZone(415, 195, 153, 22);
-	zone->onMouseUp = GuiMethod(*this, &MainMenuView::clickLoad);
-	addZone(zone);
+	w = new Widget(415, 195, 153, 22);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &MainMenuView::clickLoad));
+	addWidget(w);
 
-	zone = new ActiveZone(415, 217, 153, 23);
-	zone->onMouseUp = GuiMethod(*this, &MainMenuView::clickNew);
-	addZone(zone);
+	w = new Widget(415, 217, 153, 23);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &MainMenuView::clickNew));
+	addWidget(w);
 
-	zone = new ActiveZone(415, 240, 153, 22);
-	zone->onMouseUp = GuiMethod(*this, &MainMenuView::clickMultiplayer);
-	addZone(zone);
+	w = new Widget(415, 240, 153, 22);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &MainMenuView::clickMultiplayer));
+	addWidget(w);
 
-	zone = new ActiveZone(415, 262, 153, 23);
-	zone->onMouseUp = GuiMethod(*this, &MainMenuView::clickScoreboard);
-	addZone(zone);
+	w = new Widget(415, 262, 153, 23);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &MainMenuView::clickScoreboard));
+	addWidget(w);
 
-	zone = new ActiveZone(415, 285, 153, 22);
-	zone->onMouseUp = GuiMethod(*this, &MainMenuView::clickQuit);
-	addZone(zone);
+	w = new Widget(415, 285, 153, 22);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &MainMenuView::clickQuit));
+	addWidget(w);
 }
 
 MainMenuView::~MainMenuView(void) {

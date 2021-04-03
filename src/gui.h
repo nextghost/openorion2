@@ -22,14 +22,10 @@
 
 #include "gfx.h"
 
-#define ZSTATE_IDLE 0
-#define ZSTATE_MOUSEOVER 1
-#define ZSTATE_LEFTCLICK 2
-#define ZSTATE_RIGHTCLICK 4
-
 #define MBUTTON_LEFT 0
 #define MBUTTON_RIGHT 1
 #define MBUTTON_OTHER 2
+#define MBUTTON_COUNT 3
 
 class GuiCallback {
 private:
@@ -64,28 +60,45 @@ public:
 	void operator()(int x, int y);
 };
 
-class ActiveZone {
-public:
-	unsigned x, y, width, height, state;
-	GuiCallback onMouseOver, onMouseOut, onMouseMove, onMouseDown;
-	GuiCallback onMouseUp, onMouseRightDown, onMouseRightUp;
+class Widget {
+private:
+	unsigned _x, _y, _width, _height, _state;
+	GuiCallback _onMouseOver, _onMouseOut, _onMouseMove;
+	GuiCallback _onMouseDown[MBUTTON_COUNT], _onMouseUp[MBUTTON_COUNT];
 
-	explicit ActiveZone(unsigned left = 0, unsigned top = 0,
-		unsigned w = 0, unsigned h = 0);
+public:
+	Widget(unsigned x, unsigned y, unsigned width, unsigned height);
+	virtual ~Widget(void);
+
+	virtual int isInside(unsigned x, unsigned y) const;
+
+	virtual void setMouseOverCallback(const GuiCallback &callback);
+	virtual void setMouseMoveCallback(const GuiCallback &callback);
+	virtual void setMouseOutCallback(const GuiCallback &callback);
+	virtual void setMouseDownCallback(unsigned button,
+		const GuiCallback &callback);
+	virtual void setMouseUpCallback(unsigned button,
+		const GuiCallback &callback);
+
+	virtual void handleMouseOver(int x, int y, unsigned buttons);
+	virtual void handleMouseMove(int x, int y, unsigned buttons);
+	virtual void handleMouseOut(int x, int y, unsigned buttons);
+	virtual void handleMouseDown(int x, int y, unsigned button);
+	virtual void handleMouseUp(int x, int y, unsigned button);
 };
 
 class GuiView {
 private:
-	ActiveZone **_zones, *_currentZone;
-	size_t _zoneCount, _zoneMax;
+	Widget **_widgets, *_currentWidget;
+	size_t _widgetCount, _widgetMax;
 
 	// Do NOT implement
 	GuiView(const GuiView &other);
 	const GuiView &operator=(const GuiView &other);
 
 protected:
-	void addZone(ActiveZone *zone);
-	ActiveZone *findZone(int x, int y);
+	void addWidget(Widget *w);
+	Widget *findWidget(int x, int y);
 
 	// Discard this instance from view stack and switch to the next view
 	// (if any). It is safe to access instance variable after calling
