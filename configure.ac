@@ -41,6 +41,19 @@ esac
 
 CXXFLAGS="$SDL2_CFLAGS $CXXFLAGS $GCC_FLAGS $DEBUG_FLAGS"
 
+AC_CANONICAL_HOST
+
+case "${host_os}" in
+linux*|darwin*)
+	moo_system=unix ;;
+cygwin*|mingw*)
+	moo_system=windows ;;
+*)
+	AC_MSG_ERROR(["$host_os is not supported (yet)"])
+esac
+
+AM_CONDITIONAL([SYSTEM_UNIX], [test "x$moo_system" = "xunix"])
+AM_CONDITIONAL([SYSTEM_WINDOWS], [test "x$moo_system" = "xwindows"])
 
 AC_SUBST(LIBS)
 AC_SUBST(LDFLAGS)

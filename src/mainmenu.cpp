@@ -20,17 +20,13 @@
 #include "lbx.h"
 #include "mainmenu.h"
 
-#define ASSET_MENU_PALETTE
 #define ASSET_MENU_BACKGROUND 2
 
 MainMenuView::MainMenuView(void) : _background(NULL) {
-	LBXArchive lbx(DATADIR "/mainmenu.lbx");
-	MemoryReadStream *stream;
 	ActiveZone *zone;
 
-	stream = lbx.loadAsset(ASSET_MENU_BACKGROUND);
-	_background = new Image(*stream);
-	delete stream;
+	_background = gameAssets->getImage("mainmenu.lbx",
+		ASSET_MENU_BACKGROUND);
 
 	zone = new ActiveZone(415, 172, 153, 23);
 	zone->onMouseUp = GuiMethod(*this, &MainMenuView::clickContinue);
@@ -58,7 +54,7 @@ MainMenuView::MainMenuView(void) : _background(NULL) {
 }
 
 MainMenuView::~MainMenuView(void) {
-	delete _background;
+	gameAssets->freeImage(_background);
 }
 
 void MainMenuView::redraw(unsigned curtick) {

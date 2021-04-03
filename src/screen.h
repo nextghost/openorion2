@@ -27,6 +27,10 @@
 void initScreen(void);
 void updateScreen(void);
 void shutdownScreen(void);
+
+// registerTexture() must return (nearly) consecutive texture IDs.
+// If the backend does not guarantee consecutive integers, the implementation
+// must maintain an internal translation table.
 unsigned registerTexture(unsigned width, unsigned height, const uint32_t *data);
 unsigned registerTexture(unsigned width, unsigned height, const uint8_t *data,
 	uint8_t *palette, unsigned firstcolor, unsigned colors);

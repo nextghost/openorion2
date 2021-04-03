@@ -18,6 +18,8 @@
  */
 
 #include <stdexcept>
+#include <cstring>
+#include "system.h"
 #include "lbx.h"
 
 #define LBX_MAGIC 0xfead
@@ -61,6 +63,14 @@ LBXArchive::~LBXArchive(void) {
 	_file.close();
 }
 
+const char *LBXArchive::filename(void) const {
+	return _file.getName();
+}
+
+unsigned LBXArchive::assetCount(void) const {
+	return _assetCount;
+}
+
 MemoryReadStream *LBXArchive::loadAsset(unsigned id) {
 	if (id >= _assetCount) {
 		throw std::out_of_range("Invalid LBX asset ID");
@@ -68,4 +78,211 @@ MemoryReadStream *LBXArchive::loadAsset(unsigned id) {
 
 	_file.seek(_index[id].offset, SEEK_SET);
 	return _file.readStream(_index[id].size);
+}
+
+AssetManager::AssetManager(void) : _curfile(NULL), _cache(NULL),
+	_cacheCount(0), _cacheSize(32), _imgLookupSize(32) {
+
+	_cache = new FileCache[_cacheSize];
+	memset(_cache, 0, _cacheSize * sizeof(FileCache));
+
+	try {
+		_imageLookup = new CacheEntry<Image>*[_imgLookupSize];
+	} catch (...) {
+		delete[] _cache;
+		throw;
+	}
+
+	memset(_imageLookup, 0, _imgLookupSize * sizeof(size_t));
+}
+
+AssetManager::~AssetManager(void) {
+	size_t i, j;
+
+	for (i = 0; i < _cacheCount; i++) {
+		for (j = 0; j < _cache[i].size; j++) {
+			delete _cache[i].images[j].data;
+		}
+
+		delete[] _cache[i].filename;
+		delete[] _cache[i].images;
+	}
+
+	delete _curfile;
+	delete[] _cache;
+	delete[] _imageLookup;
+}
+
+AssetManager::FileCache *AssetManager::getCache(const char *filename) {
+	size_t i = 0, j = _cacheCount, tmp;
+	int dir;
+	char *realname;
+
+	while (i < j) {
+		tmp = (i + j) / 2;
+		dir = strcasecmp(filename, _cache[tmp].filename);
+
+		if (!dir) {
+			return _cache + tmp;
+		} else if (dir > 0) {
+			i = tmp + 1;
+		} else {
+			j = tmp;
+		}
+	}
+
+	realname = findDatadirFile(filename);
+
+	if (_cacheCount >= _cacheSize) {
+		size_t size = 2 * _cacheSize;
+		FileCache *ptr;
+
+		try {
+			ptr = new FileCache[size];
+		} catch (...) {
+			delete[] realname;
+			throw;
+		}
+
+		memcpy(ptr, _cache, i * sizeof(FileCache));
+		memcpy(ptr+i+1, _cache+i, (_cacheCount-i) * sizeof(FileCache));
+		delete[] _cache;
+		_cache = ptr;
+		_cacheSize = size;
+	} else {
+		for (j = _cacheCount; j > i; j--) {
+			_cache[j] = _cache[j - 1];
+		}
+	}
+
+	_cacheCount++;
+	_cache[i].filename = realname;
+	_cache[i].size = 0;
+	_cache[i].images = NULL;
+	return _cache + i;
+}
+
+void AssetManager::openArchive(FileCache *entry) {
+	LBXArchive *archive;
+	char *path;
+
+	if (_curfile && !strcmp(entry->filename, _curfile->filename())) {
+		return;
+	}
+
+	path = dataPath(entry->filename);
+
+	try {
+		archive = new LBXArchive(path);
+	} catch (...) {
+		delete[] path;
+		throw;
+	}
+
+	delete[] path;
+	delete _curfile;
+	_curfile = archive;
+
+	if (!entry->images) {
+		size_t size = _curfile->assetCount();
+
+		entry->images = new CacheEntry<Image>[size];
+		memset(entry->images, 0, size * sizeof(CacheEntry<Image>));
+		entry->size = size;
+	}
+}
+
+Image *AssetManager::getImage(const char *filename, unsigned id,
+	const uint8_t *palette) {
+
+	FileCache *entry;
+	MemoryReadStream *stream;
+	Image *img = NULL;
+	unsigned texid;
+
+	entry = getCache(filename);
+
+	if (entry->images && id < entry->size && entry->images[id].data) {
+		entry->images[id].refs++;
+		return entry->images[id].data;
+	}
+
+	openArchive(entry);
+
+	if (id >= entry->size) {
+		throw std::out_of_range("Invalid asset ID");
+	}
+
+	stream = _curfile->loadAsset(id);
+
+	try {
+		img = new Image(*stream, palette);
+		texid = img->textureID(0);
+
+		if (texid >= _imgLookupSize) {
+			CacheEntry<Image> **lookup = NULL;
+			size_t size;
+
+			size = _imgLookupSize;
+			size = (2 * size > texid) ? 2 * size : (texid + 1);
+			lookup = new CacheEntry<Image>*[size];
+			memcpy(lookup, _imageLookup,
+				_imgLookupSize * sizeof(*lookup));
+			memset(lookup + _imgLookupSize, 0,
+				(size - _imgLookupSize) * sizeof(*lookup));
+			delete[] _imageLookup;
+			_imageLookup = lookup;
+			_imgLookupSize = size;
+		}
+	} catch (...) {
+		delete img;
+		delete stream;
+		throw;
+	}
+
+
+	delete stream;
+	entry->images[id].data = img;
+	entry->images[id].refs = 1;
+	_imageLookup[texid] = entry->images + id;
+	return entry->images[id].data;
+}
+
+void AssetManager::takeImage(const Image *img) {
+	unsigned texid;
+
+	if (!img) {
+		return;
+	}
+
+	texid = img->textureID(0);
+
+	if (texid >= _imgLookupSize || !_imageLookup[texid]) {
+		throw std::runtime_error("The image does not belong to this asset manager");
+	}
+
+	_imageLookup[texid]->refs++;
+}
+
+void AssetManager::freeImage(const Image *img) {
+	unsigned texid;
+	CacheEntry<Image> *entry;
+
+	if (!img) {
+		return;
+	}
+
+	texid = img->textureID(0);
+
+	if (texid >= _imgLookupSize || !_imageLookup[texid]) {
+		throw std::runtime_error("The image does not belong to this asset manager");
+	}
+
+	entry = _imageLookup[texid];
+
+	if (!--entry->refs) {
+		delete entry->data;
+		entry->data = NULL;
+		_imageLookup[texid] = NULL;
+	}
 }

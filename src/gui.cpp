@@ -18,6 +18,7 @@
  */
 
 #include <cstring>
+#include "lbx.h"
 #include "gui.h"
 
 GuiCallback::GuiCallback(void) : _callback(NULL) {
@@ -194,10 +195,13 @@ TransitionView::TransitionView(Image *background, Image *animation, int x,
 	int y) : _background(background), _animation(animation), _x(x), _y(y),
 	_startTick(0) {
 
+	gameAssets->takeImage(_background);
+	gameAssets->takeImage(_animation);
 }
 
 TransitionView::~TransitionView(void) {
-
+	gameAssets->freeImage(_background);
+	gameAssets->freeImage(_animation);
 }
 
 void TransitionView::redraw(unsigned curtick) {

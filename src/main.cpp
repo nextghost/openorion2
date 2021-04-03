@@ -21,8 +21,11 @@
 #include <stdexcept>
 #include <SDL2/SDL.h>
 #include "screen.h"
+#include "lbx.h"
 #include "savegame.h"
 #include "mainmenu.h"
+
+AssetManager *gameAssets = NULL;
 
 unsigned buttonState(unsigned sdlButtons) {
 	unsigned ret = 0;
@@ -193,13 +196,23 @@ int main(int argc, char **argv) {
 	}
 
 	try {
+		gameAssets = new AssetManager;
 		initScreen();
-		main_loop();
-		shutdownScreen();
 	} catch(std::exception &e) {
 		fprintf(stderr, "Error: %s\n", e.what());
 		return 1;
 	}
 
+	try {
+		main_loop();
+	} catch(std::exception &e) {
+		shutdownScreen();
+		delete gameAssets;
+		fprintf(stderr, "Error: %s\n", e.what());
+		return 1;
+	}
+
+	shutdownScreen();
+	delete gameAssets;
 	return 0;
 }
