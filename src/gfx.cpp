@@ -32,7 +32,7 @@
 Image::Image(SeekableReadStream &stream, const uint8_t *base_palette) :
 	_width(0), _height(0), _frames(0), _textureIDs(NULL), _palette(NULL) {
 
-	unsigned i, tmp, palstart, palsize;
+	unsigned i, palstart, palsize;
 	size_t *offsets;
 	uint32_t *buffer;
 
@@ -62,7 +62,7 @@ Image::Image(SeekableReadStream &stream, const uint8_t *base_palette) :
 		}
 	}
 
-	if (offsets[_frames] != stream.size()) {
+	if (offsets[_frames] != (size_t)stream.size()) {
 		delete[] offsets;
 		throw std::runtime_error("Image data size mismatch");
 	}
@@ -290,8 +290,6 @@ int Font::renderChar(int x, int y, char ch) {
 }
 
 int Font::renderText(int x, int y, const char *str) {
-	unsigned idx;
-
 	for (; *str; str++) {
 		x = renderChar(x, y, *str);
 	}
