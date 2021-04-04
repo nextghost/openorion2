@@ -20,43 +20,73 @@
 #include "lbx.h"
 #include "mainmenu.h"
 
+#define MENU_ARCHIVE "mainmenu.lbx"
 #define ASSET_MENU_BACKGROUND 2
+#define ASSET_MENU_CONTINUE_ON 4
+#define ASSET_MENU_CONTINUE_OFF 5
+#define ASSET_MENU_LOAD_ON 7
+#define ASSET_MENU_LOAD_OFF 8
+#define ASSET_MENU_NEWGAME 10
+#define ASSET_MENU_MULTIPLAYER 13
+#define ASSET_MENU_SCORES 16
+#define ASSET_MENU_QUIT 19
 
 MainMenuView::MainMenuView(void) : _background(NULL) {
-	Widget *w;
+	Widget *w = NULL;
+	const uint8_t *pal;
 
-	_background = gameAssets->getImage("mainmenu.lbx",
-		ASSET_MENU_BACKGROUND);
+	_background = gameAssets->getImage(MENU_ARCHIVE, ASSET_MENU_BACKGROUND);
+	pal = _background->palette();
 
-	w = new Widget(415, 172, 153, 23);
-	w->setMouseUpCallback(MBUTTON_LEFT,
-		GuiMethod(*this, &MainMenuView::clickContinue));
-	addWidget(w);
+	try {
+		w = new Widget(415, 172, 153, 23);
+		w->setMouseUpCallback(MBUTTON_LEFT,
+			GuiMethod(*this, &MainMenuView::clickContinue));
+		w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_CONTINUE_ON,
+			pal, 0);
+		addWidget(w);
+		w = NULL;
 
-	w = new Widget(415, 195, 153, 22);
-	w->setMouseUpCallback(MBUTTON_LEFT,
-		GuiMethod(*this, &MainMenuView::clickLoad));
-	addWidget(w);
+		w = new Widget(415, 195, 153, 22);
+		w->setMouseUpCallback(MBUTTON_LEFT,
+			GuiMethod(*this, &MainMenuView::clickLoad));
+		w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_LOAD_ON, pal, 0);
+		addWidget(w);
+		w = NULL;
 
-	w = new Widget(415, 217, 153, 23);
-	w->setMouseUpCallback(MBUTTON_LEFT,
-		GuiMethod(*this, &MainMenuView::clickNew));
-	addWidget(w);
+		w = new Widget(415, 217, 153, 23);
+		w->setMouseUpCallback(MBUTTON_LEFT,
+			GuiMethod(*this, &MainMenuView::clickNew));
+		w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_NEWGAME, pal, 0);
+		addWidget(w);
+		w = NULL;
 
-	w = new Widget(415, 240, 153, 22);
-	w->setMouseUpCallback(MBUTTON_LEFT,
-		GuiMethod(*this, &MainMenuView::clickMultiplayer));
-	addWidget(w);
+		w = new Widget(415, 240, 153, 22);
+		w->setMouseUpCallback(MBUTTON_LEFT,
+			GuiMethod(*this, &MainMenuView::clickMultiplayer));
+		w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_MULTIPLAYER,
+			pal, 0);
+		addWidget(w);
+		w = NULL;
 
-	w = new Widget(415, 262, 153, 23);
-	w->setMouseUpCallback(MBUTTON_LEFT,
-		GuiMethod(*this, &MainMenuView::clickScoreboard));
-	addWidget(w);
+		w = new Widget(415, 262, 153, 23);
+		w->setMouseUpCallback(MBUTTON_LEFT,
+			GuiMethod(*this, &MainMenuView::clickScoreboard));
+		w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_SCORES, pal, 0);
+		addWidget(w);
+		w = NULL;
 
-	w = new Widget(415, 285, 153, 22);
-	w->setMouseUpCallback(MBUTTON_LEFT,
-		GuiMethod(*this, &MainMenuView::clickQuit));
-	addWidget(w);
+		w = new Widget(415, 285, 153, 22);
+		w->setMouseUpCallback(MBUTTON_LEFT,
+			GuiMethod(*this, &MainMenuView::clickQuit));
+		w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_QUIT, pal, 0);
+		addWidget(w);
+	} catch (...) {
+		delete w;
+		clearWidgets();
+		gameAssets->freeImage(_background);
+		throw;
+	}
 }
 
 MainMenuView::~MainMenuView(void) {
@@ -65,6 +95,7 @@ MainMenuView::~MainMenuView(void) {
 
 void MainMenuView::redraw(unsigned curtick) {
 	_background->draw(0, 0);
+	redrawWidgets(curtick);
 }
 
 void MainMenuView::clickContinue(int x, int y, int arg) {

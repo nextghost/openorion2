@@ -27,6 +27,12 @@
 #define MBUTTON_OTHER 2
 #define MBUTTON_COUNT 3
 
+#define WIDGET_SPRITES (MBUTTON_COUNT + 2)
+
+#define ANIM_LOOP -1	// play the animation in a loop
+#define ANIM_ONCE -2	// hide the animation after playing once
+#define ANIM_STICKY -3	// play the animation once and freeze on last frame
+
 class GuiCallback {
 private:
 	GuiCallback *_callback;
@@ -60,11 +66,34 @@ public:
 	void operator()(int x, int y);
 };
 
+class GuiSprite {
+private:
+	Image *_image;
+	unsigned _x, _y, _width, _height, _startTick;
+	int _offsx, _offsy, _frame;
+
+public:
+	explicit GuiSprite(Image *img, int offsx = 0, int offsy = 0,
+		int frame = ANIM_LOOP, unsigned imgx = 0, unsigned imgy = 0,
+		unsigned width = 0, unsigned height = 0);
+	virtual ~GuiSprite(void);
+
+	virtual void startAnimation(void);
+	virtual void stopAnimation(void);
+
+	// Draw subimage (_x, _y, _width, _height) at (x+_offsx, y+_offsy)
+	virtual void redraw(unsigned x, unsigned y, unsigned curtick);
+};
+
 class Widget {
 private:
 	unsigned _x, _y, _width, _height, _state;
 	GuiCallback _onMouseOver, _onMouseOut, _onMouseMove;
 	GuiCallback _onMouseDown[MBUTTON_COUNT], _onMouseUp[MBUTTON_COUNT];
+	GuiSprite *_cursprite, *_sprites[WIDGET_SPRITES];
+
+protected:
+	virtual void changeSprite(void);
 
 public:
 	Widget(unsigned x, unsigned y, unsigned width, unsigned height);
@@ -80,11 +109,28 @@ public:
 	virtual void setMouseUpCallback(unsigned button,
 		const GuiCallback &callback);
 
+	virtual void setIdleSprite(GuiSprite *sprite);
+	virtual void setIdleSprite(Image *img, int frame = ANIM_LOOP);
+	virtual void setIdleSprite(const char *archive, unsigned id,
+		const uint8_t *palette = NULL, int frame = ANIM_LOOP);
+	virtual void setMouseOverSprite(GuiSprite *sprite);
+	virtual void setMouseOverSprite(Image *img, int frame = ANIM_LOOP);
+	virtual void setMouseOverSprite(const char *archive, unsigned id,
+		const uint8_t *palette = NULL, int frame = ANIM_LOOP);
+	virtual void setClickSprite(unsigned button, GuiSprite *sprite);
+	virtual void setClickSprite(unsigned button, Image *img,
+		int frame = ANIM_LOOP);
+	virtual void setClickSprite(unsigned button, const char *archive,
+		unsigned id, const uint8_t *palette = NULL,
+		int frame = ANIM_LOOP);
+
 	virtual void handleMouseOver(int x, int y, unsigned buttons);
 	virtual void handleMouseMove(int x, int y, unsigned buttons);
 	virtual void handleMouseOut(int x, int y, unsigned buttons);
 	virtual void handleMouseDown(int x, int y, unsigned button);
 	virtual void handleMouseUp(int x, int y, unsigned button);
+
+	virtual void redraw(unsigned curtick);
 };
 
 class GuiView {
@@ -99,6 +145,8 @@ private:
 protected:
 	void addWidget(Widget *w);
 	Widget *findWidget(int x, int y);
+	void redrawWidgets(unsigned curtick);
+	void clearWidgets(void);
 
 	// Discard this instance from view stack and switch to the next view
 	// (if any). It is safe to access instance variable after calling

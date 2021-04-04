@@ -20,12 +20,20 @@
 #include <cstring>
 #include <stdexcept>
 #include "lbx.h"
+#include "screen.h"
 #include "gui.h"
 
 #define WSTATE_IDLE 0
 #define WSTATE_MOUSEOVER 1
 #define WSTATE_LEFTCLICK 2
 #define WSTATE_RIGHTCLICK 4
+
+#define WSPRITE_IDLE 0
+#define WSPRITE_MOUSEOVER 1
+#define WSPRITE_CLICK 2
+
+#define MIN_FRAMETIME 10
+#define DEFAULT_FRAMETIME 15
 
 GuiCallback::GuiCallback(void) : _callback(NULL) {
 
@@ -59,13 +67,102 @@ GuiCallback *GuiCallback::copy(void) const {
 	return NULL;
 }
 
-Widget::Widget(unsigned x, unsigned y, unsigned width, unsigned height) :
-	_x(x), _y(y), _width(width), _height(height), _state(WSTATE_IDLE) {
+GuiSprite::GuiSprite(Image *img, int offsx, int offsy, int frame,
+	unsigned imgx, unsigned imgy, unsigned width, unsigned height) :
+	_image(img), _x(imgx), _y(imgy), _width(0), _height(0), _startTick(0),
+	_offsx(offsx), _offsy(offsy), _frame(frame) {
+
+	if (!_image) {
+		throw std::runtime_error("Image is NULL");
+	}
+
+	if (_x >= _image->width() || _y >= _image->height()) {
+		throw std::out_of_range("Subimage offset out of range");
+	}
+
+	if (_frame >= 0 && _frame > _image->frameCount()) {
+		throw std::out_of_range("Image frame out of range");
+	}
+
+	gameAssets->takeImage(_image);
+	_width = width ? width : _image->width() - _x;
+	_height = height ? height : _image->height() - _y;
+}
+
+GuiSprite::~GuiSprite(void) {
+	gameAssets->freeImage(_image);
+}
+
+void GuiSprite::startAnimation(void) {
+	_startTick = 0;
+}
+
+void GuiSprite::stopAnimation(void) {
 
 }
 
-Widget::~Widget(void) {
+void GuiSprite::redraw(unsigned x, unsigned y, unsigned curtick) {
+	unsigned fid, ftime, fcount;
 
+	if (!_startTick) {
+		_startTick = curtick;
+	}
+
+	if (_frame >= 0) {
+		fid = _frame;
+	} else {
+		ftime = _image->frameTime();
+		ftime = ftime < MIN_FRAMETIME ? DEFAULT_FRAMETIME : ftime;
+		fid = ((curtick - _startTick) / ftime);
+		fcount = _image->frameCount();
+
+		if (fid >= fcount) {
+			if (_frame == ANIM_ONCE) {
+				return;
+			}
+
+			fid = _frame == ANIM_LOOP ? fid % fcount : fcount - 1;
+		}
+	}
+
+	drawTextureTile(_image->textureID(fid), x + _offsx, y + _offsy, _x,
+		_y, _width, _height);
+}
+
+Widget::Widget(unsigned x, unsigned y, unsigned width, unsigned height) :
+	_x(x), _y(y), _width(width), _height(height), _state(WSTATE_IDLE),
+	_cursprite(NULL) {
+
+	memset(_sprites, 0, WIDGET_SPRITES * sizeof(GuiSprite*));
+}
+
+Widget::~Widget(void) {
+	unsigned i;
+
+	for (i = 0; i < WIDGET_SPRITES; i++) {
+		delete _sprites[i];
+	}
+}
+
+void Widget::changeSprite(void) {
+	GuiSprite *newsprite = _sprites[WSPRITE_IDLE];
+	unsigned i;
+
+	for (i = 0; i < WIDGET_SPRITES - 1; i++) {
+		if (_state & (1 << i) && _sprites[i + 1]) {
+			newsprite = _sprites[i + 1];
+		}
+	}
+
+	if (_cursprite && _cursprite != newsprite) {
+		_cursprite->stopAnimation();
+	}
+
+	_cursprite = newsprite;
+
+	if (_cursprite) {
+		_cursprite->startAnimation();
+	}
 }
 
 int Widget::isInside(unsigned x, unsigned y) const {
@@ -102,18 +199,122 @@ void Widget::setMouseUpCallback(unsigned button, const GuiCallback &callback) {
 	_onMouseUp[button] = callback;
 }
 
+void Widget::setIdleSprite(GuiSprite *sprite) {
+	if (_sprites[WSPRITE_IDLE]) {
+		delete _sprites[WSPRITE_IDLE];
+	}
+
+	_sprites[WSPRITE_IDLE] = sprite;
+}
+
+void Widget::setIdleSprite(Image *img, int frame) {
+	GuiSprite *sprite = new GuiSprite(img, 0, 0, frame);
+
+	try {
+		setIdleSprite(sprite);
+	} catch (...) {
+		delete sprite;
+		throw;
+	}
+}
+
+void Widget::setIdleSprite(const char *archive, unsigned id,
+	const uint8_t *palette, int frame) {
+	Image *img = gameAssets->getImage(archive, id, palette);
+
+	try {
+		setIdleSprite(img, frame);
+	} catch (...) {
+		gameAssets->freeImage(img);
+		throw;
+	}
+
+	gameAssets->freeImage(img);
+}
+
+void Widget::setMouseOverSprite(GuiSprite *sprite) {
+	if (_sprites[WSPRITE_MOUSEOVER]) {
+		delete _sprites[WSPRITE_MOUSEOVER];
+	}
+
+	_sprites[WSPRITE_MOUSEOVER] = sprite;
+}
+
+void Widget::setMouseOverSprite(Image *img, int frame) {
+	GuiSprite *sprite = new GuiSprite(img, 0, 0, frame);
+
+	try {
+		setMouseOverSprite(sprite);
+	} catch (...) {
+		delete sprite;
+		throw;
+	}
+}
+
+void Widget::setMouseOverSprite(const char *archive, unsigned id,
+	const uint8_t *palette, int frame) {
+	Image *img = gameAssets->getImage(archive, id, palette);
+
+	try {
+		setMouseOverSprite(img, frame);
+	} catch (...) {
+		gameAssets->freeImage(img);
+		throw;
+	}
+
+	gameAssets->freeImage(img);
+}
+
+void Widget::setClickSprite(unsigned button, GuiSprite *sprite) {
+	if (button >= MBUTTON_COUNT) {
+		throw std::out_of_range("Invalid button ID");
+	}
+
+	if (_sprites[WSPRITE_CLICK + button]) {
+		delete _sprites[WSPRITE_CLICK + button];
+	}
+
+	_sprites[WSPRITE_CLICK + button] = sprite;
+}
+
+void Widget::setClickSprite(unsigned button, Image *img, int frame) {
+	GuiSprite *sprite = new GuiSprite(img, 0, 0, frame);
+
+	try {
+		setClickSprite(button, sprite);
+	} catch (...) {
+		delete sprite;
+		throw;
+	}
+}
+
+void Widget::setClickSprite(unsigned button, const char *archive, unsigned id,
+	const uint8_t *palette, int frame) {
+	Image *img = gameAssets->getImage(archive, id, palette);
+
+	try {
+		setClickSprite(button, img, frame);
+	} catch (...) {
+		gameAssets->freeImage(img);
+		throw;
+	}
+
+	gameAssets->freeImage(img);
+}
+
 void Widget::handleMouseOver(int x, int y, unsigned buttons) {
 	_state = WSTATE_MOUSEOVER;
 
-	if (buttons & MBUTTON_LEFT) {
+	if (buttons & (1 << MBUTTON_LEFT)) {
 		_state |= WSTATE_LEFTCLICK;
 	}
 
-	if (buttons & MBUTTON_RIGHT) {
+	if (buttons & (1 << MBUTTON_RIGHT)) {
 		_state |= WSTATE_RIGHTCLICK;
 	}
 
 	_onMouseOver(x, y);
+	changeSprite();
 }
 
 void Widget::handleMouseMove(int x, int y, unsigned buttons) {
@@ -123,6 +324,7 @@ void Widget::handleMouseMove(int x, int y, unsigned buttons) {
 void Widget::handleMouseOut(int x, int y, unsigned buttons) {
 	_state = WSTATE_IDLE;
 	_onMouseOut(x, y);
+	changeSprite();
 }
 
 void Widget::handleMouseDown(int x, int y, unsigned button) {
@@ -141,6 +343,7 @@ void Widget::handleMouseDown(int x, int y, unsigned button) {
 	}
 
 	_onMouseDown[button](x, y);
+	changeSprite();
 }
 
 void Widget::handleMouseUp(int x, int y, unsigned button) {
@@ -159,6 +362,13 @@ void Widget::handleMouseUp(int x, int y, unsigned button) {
 	}
 
 	_onMouseUp[button](x, y);
+	changeSprite();
+}
+
+void Widget::redraw(unsigned curtick) {
+	if (_cursprite) {
+		_cursprite->redraw(_x, _y, curtick);
+	}
 }
 
 GuiView::GuiView(void) : _widgets(NULL), _currentWidget(NULL), _widgetCount(0),
@@ -167,18 +377,12 @@ GuiView::GuiView(void) : _widgets(NULL), _currentWidget(NULL), _widgetCount(0),
 }
 
 GuiView::~GuiView(void) {
-	size_t i;
-
-	for (i = 0; i < _widgetCount; i++) {
-		delete _widgets[i];
-	}
-
-	delete[] _widgets;
+	clearWidgets();
 }
 
 void GuiView::addWidget(Widget *w) {
 	if (_widgetCount >= _widgetMax) {
-		size_t size = 2 * _widgetMax;
+		size_t size = _widgetMax ? 2 * _widgetMax : 32;
 		Widget **tmp = new Widget*[size];
 
 		memcpy(tmp, _widgets, _widgetCount * sizeof(Widget*));
@@ -205,6 +409,26 @@ Widget *GuiView::findWidget(int x, int y) {
 	}
 
 	return NULL;
+}
+
+void GuiView::redrawWidgets(unsigned curtick) {
+	size_t i;
+
+	for (i = 0; i < _widgetCount; i++) {
+		_widgets[i]->redraw(curtick);
+	}
+}
+
+void GuiView::clearWidgets(void) {
+	size_t i;
+
+	for (i = 0; i < _widgetCount; i++) {
+		delete _widgets[i];
+	}
+
+	delete[] _widgets;
+	_widgets = NULL;
+	_widgetCount = _widgetMax = 0;
 }
 
 void GuiView::exitView(void) {
@@ -286,7 +510,8 @@ void TransitionView::redraw(unsigned curtick) {
 
 	if (_animation) {
 		frameTime = _animation->frameTime();
-		frameTime = frameTime < 10 ? 10 : frameTime;
+		frameTime = frameTime < MIN_FRAMETIME ? DEFAULT_FRAMETIME :
+			frameTime;
 		frame = (curtick - _startTick) / frameTime;
 
 		if (frame >= _animation->frameCount()) {
