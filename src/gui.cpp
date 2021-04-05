@@ -89,8 +89,36 @@ GuiSprite::GuiSprite(Image *img, int offsx, int offsy, int frame,
 	_height = height ? height : _image->height() - _y;
 }
 
+GuiSprite::GuiSprite(const GuiSprite &other) : _image(other._image),
+	_x(other._x), _y(other._y), _width(other._width), _startTick(0),
+	_offsx(other._offsx), _offsy(other._offsy), _frame(other._frame) {
+
+	gameAssets->takeImage(_image);
+}
+
 GuiSprite::~GuiSprite(void) {
 	gameAssets->freeImage(_image);
+}
+
+const GuiSprite &GuiSprite::operator=(const GuiSprite &other) {
+	gameAssets->takeImage(other._image);
+
+	try {
+		gameAssets->freeImage(_image);
+	} catch (...) {
+		gameAssets->freeImage(other._image);
+		throw;
+	}
+
+	_image = other._image;
+	_x = other._x;
+	_y = other._y;
+	_width = other._width;
+	_startTick = 0;
+	_offsx = other._offsx;
+	_offsy = other._offsy;
+	_frame = other._frame;
+	return *this;
 }
 
 void GuiSprite::startAnimation(void) {

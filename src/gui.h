@@ -76,7 +76,10 @@ public:
 	explicit GuiSprite(Image *img, int offsx = 0, int offsy = 0,
 		int frame = ANIM_LOOP, unsigned imgx = 0, unsigned imgy = 0,
 		unsigned width = 0, unsigned height = 0);
+	GuiSprite(const GuiSprite &other);
 	virtual ~GuiSprite(void);
+
+	const GuiSprite &operator=(const GuiSprite &other);
 
 	virtual void startAnimation(void);
 	virtual void stopAnimation(void);
@@ -91,6 +94,10 @@ private:
 	GuiCallback _onMouseOver, _onMouseOut, _onMouseMove;
 	GuiCallback _onMouseDown[MBUTTON_COUNT], _onMouseUp[MBUTTON_COUNT];
 	GuiSprite *_cursprite, *_sprites[WIDGET_SPRITES];
+
+	// Do NOT implement
+	Widget(const Widget &other);
+	const Widget &operator=(const Widget &other);
 
 protected:
 	virtual void changeSprite(void);
