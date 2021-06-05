@@ -80,7 +80,7 @@ GuiSprite::GuiSprite(Image *img, int offsx, int offsy, int frame,
 		throw std::out_of_range("Subimage offset out of range");
 	}
 
-	if (_frame >= 0 && _frame > _image->frameCount()) {
+	if (_frame >= 0 && unsigned(_frame) > _image->frameCount()) {
 		throw std::out_of_range("Image frame out of range");
 	}
 

@@ -19,7 +19,7 @@
 
 #include <cstdio>
 #include <stdexcept>
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include "screen.h"
 #include "lbx.h"
 #include "savegame.h"
