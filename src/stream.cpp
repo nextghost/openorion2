@@ -73,9 +73,9 @@ uint64_t double_to_x86(double num) {
 
 	if (isnan(num)) {
 		if (num < 0) {
-			return 0xfff8000000000000;
+			return uint64_t(0x1fff) << 51;
 		} else {
-			return 0x7ff8000000000000;
+			return uint64_t(0xfff) << 51;
 		}
 	}
 
@@ -91,7 +91,7 @@ uint64_t double_to_x86(double num) {
 		return sign;
 	} else if (ex > 0x7fe) {
 		// INFINITY (ex == INT_MAX) or x86 range overflow
-		return sign | 0x7ff0000000000000;
+		return sign | uint64_t(0x7ff) << 52;
 	}
 
 	mantissa = (uint64_t)scalbn(num, 52 - ex);
@@ -103,8 +103,8 @@ uint64_t double_to_x86(double num) {
 		ex = 0;
 	}
 
-	mantissa &= 0xfffffffffffff;
-	return sign | (((uint64_t)ex) << 52) | mantissa;
+	mantissa &= ~(uint64_t(0xfff) << 52);
+	return sign | (uint64_t(ex) << 52) | mantissa;
 }
 
 float float_from_x86(uint32_t bin) {
@@ -134,8 +134,8 @@ float float_from_x86(uint32_t bin) {
 }
 
 double double_from_x86(uint64_t bin) {
-	uint64_t sign = bin >> 63, ex = (bin >> 52) & 0x7ff;
-	uint64_t mantissa = bin & 0xfffffffffffff;
+	uint64_t sign = bin >> 63, mantissa = bin & ~(uint64_t(0xfff) << 52);
+	int ex = (bin >> 52) & 0x7ff;
 	double ret;
 
 	if (ex == 0x7ff) {
@@ -146,7 +146,7 @@ double double_from_x86(uint64_t bin) {
 		return sign ? -INFINITY : INFINITY;
 	} else if (ex) {
 		// add the omitted highest bit to normal mantissa
-		mantissa |= 1UL << 52;
+		mantissa |= uint64_t(1) << 52;
 	} else if (!mantissa) {
 		return 0.0f;
 	} else {
@@ -535,7 +535,9 @@ File::~File(void) {
 }
 
 int File::open(const char *filename, unsigned mode) {
-	static const char *modelist[] = {NULL, "r", "a", "r+", NULL, "w", "w+"};
+	static const char *modelist[] = {
+		NULL, "rb", "ab", "rb+", NULL, "wb", "wb+"
+	};
 	const char *modestr = NULL;
 
 	close();
