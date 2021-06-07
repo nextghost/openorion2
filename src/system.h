@@ -32,4 +32,10 @@ char *findDatadirFile(const char *filename);
 // Returns newly allocated string
 char *dataPath(const char *filename);
 
+// Init relative datadir path on certain systems
+void init_datadir(const char *exepath);
+
+// Free memory allocated by init_datadir()
+void cleanup_datadir(void);
+
 #endif

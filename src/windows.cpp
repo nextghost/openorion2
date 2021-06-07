@@ -22,6 +22,8 @@
 #include <stdexcept>
 #include "system.h"
 
+static char *data_basepath = NULL;
+
 static char *copystr(const char *str) {
 	char *ret = new char[strlen(str) + 1];
 
@@ -30,25 +32,38 @@ static char *copystr(const char *str) {
 }
 
 char *concatPath(const char *basepath, const char *relpath) {
-	size_t baselen;
+	size_t i, baselen, pathlen;
 	char *ret;
 
 	baselen = strlen(basepath);
-	ret = new char[baselen + strlen(relpath) + 2];
+	pathlen = relpath ? strlen(relpath) : 0;
+	ret = new char[baselen + pathlen + 2];
 	strcpy(ret, basepath);
 
-	if (baselen) {
-		ret[baselen++] = '\\';
+	if (relpath && *relpath) {
+		if (baselen && ret[baselen - 1] != '/' &&
+			ret[baselen - 1] != '\\') {
+			ret[baselen++] = '\\';
+		}
+
+		strcpy(ret + baselen, relpath);
 	}
 
-	strcpy(ret + baselen, relpath);
+	for (i = 0; ret[i]; i++) {
+		if (ret[i] == '/') {
+			ret[i] = '\\';
+		}
+	}
+
 	return ret;
 }
 
 char *findDatadirFile(const char *filename) {
+	char *path = dataPath(filename);
 	FILE *fr;
 
-	fr = fopen(filename, "r");
+	fr = fopen(path, "r");
+	delete[] path;
 
 	if (!fr) {
 		throw std::runtime_error("File not found");
@@ -59,5 +74,29 @@ char *findDatadirFile(const char *filename) {
 }
 
 char *dataPath(const char *filename) {
-	return copystr(filename);
+	return concatPath(data_basepath, filename);
+}
+
+void init_datadir(const char *exepath) {
+	size_t i;
+	const char *basepath = ".";
+	char *tmp;
+
+	for (i = 0; exepath[i]; i++) {
+		if (exepath[i] == '\\') {
+			basepath = exepath;
+			break;
+		}
+	}
+
+	data_basepath = copystr(basepath);
+	tmp = strrchr(data_basepath, '\\');
+
+	if (tmp) {
+		*tmp = '\0';
+	}
+}
+
+void cleanup_datadir(void) {
+	delete[] data_basepath;
 }

@@ -24,6 +24,7 @@
 #include "lbx.h"
 #include "savegame.h"
 #include "mainmenu.h"
+#include "system.h"
 
 AssetManager *gameAssets = NULL;
 
@@ -196,9 +197,12 @@ int main(int argc, char **argv) {
 	}
 
 	try {
+		init_datadir(argv[0]);
 		gameAssets = new AssetManager;
 		initScreen();
 	} catch(std::exception &e) {
+		delete gameAssets;
+		cleanup_datadir();
 		fprintf(stderr, "Error: %s\n", e.what());
 		return 1;
 	}
@@ -208,11 +212,13 @@ int main(int argc, char **argv) {
 	} catch(std::exception &e) {
 		shutdownScreen();
 		delete gameAssets;
+		cleanup_datadir();
 		fprintf(stderr, "Error: %s\n", e.what());
 		return 1;
 	}
 
 	shutdownScreen();
 	delete gameAssets;
+	cleanup_datadir();
 	return 0;
 }

@@ -25,14 +25,15 @@
 #include "system.h"
 
 char *concatPath(const char *basepath, const char *relpath) {
-	size_t baselen;
+	size_t baselen, pathlen;
 	char *ret;
 
 	baselen = strlen(basepath);
-	ret = new char[baselen + strlen(relpath) + 2];
+	pathlen = relpath ? strlen(relpath) : 0;
+	ret = new char[baselen + pathlen + 2];
 	strcpy(ret, basepath);
 
-	if (baselen) {
+	if (baselen && ret[baselen - 1] != '/') {
 		ret[baselen++] = '/';
 	}
 
@@ -85,3 +86,10 @@ char *dataPath(const char *filename) {
 	return concatPath(DATADIR, filename);
 }
 
+void init_datadir(const char *exepath) {
+
+}
+
+void cleanup_datadir(void) {
+
+}
