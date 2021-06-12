@@ -201,24 +201,24 @@ int main(int argc, char **argv) {
 		gameAssets = new AssetManager;
 		initScreen();
 	} catch(std::exception &e) {
+		fprintf(stderr, "Error: %s\n", e.what());
 		delete gameAssets;
 		cleanup_datadir();
-		fprintf(stderr, "Error: %s\n", e.what());
 		return 1;
 	}
 
 	try {
 		main_loop();
 	} catch(std::exception &e) {
-		shutdownScreen();
-		delete gameAssets;
-		cleanup_datadir();
 		fprintf(stderr, "Error: %s\n", e.what());
+		delete gameAssets;
+		shutdownScreen();
+		cleanup_datadir();
 		return 1;
 	}
 
-	shutdownScreen();
 	delete gameAssets;
+	shutdownScreen();
 	cleanup_datadir();
 	return 0;
 }
