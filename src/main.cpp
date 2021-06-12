@@ -61,33 +61,47 @@ unsigned convertButton(unsigned sdlButton) {
 
 void main_loop(void) {
 	SDL_Event ev;
-	MainMenuView view;
+	GuiView *view, *prev_view = NULL;
 
-	while (1) {
+	while (!gui_stack->is_empty()) {
+		view = gui_stack->top();
+
+		if (view != prev_view) {
+			if (prev_view) {
+				prev_view->close();
+			}
+
+			view->open();
+			prev_view = view;
+		}
+
+		gui_stack->flush();
+
 		while (SDL_PollEvent(&ev)) {
 			switch (ev.type) {
 			case SDL_QUIT:
-				view.close();
+				view->close();
+				gui_stack->clear();
 				return;
 
 			case SDL_MOUSEMOTION:
-				view.handleMouseMove(ev.motion.x, ev.motion.y,
+				view->handleMouseMove(ev.motion.x, ev.motion.y,
 					buttonState(ev.motion.state));
 				break;
 
 			case SDL_MOUSEBUTTONDOWN:
-				view.handleMouseDown(ev.button.x, ev.button.y,
+				view->handleMouseDown(ev.button.x, ev.button.y,
 					convertButton(ev.button.button));
 				break;
 
 			case SDL_MOUSEBUTTONUP:
-				view.handleMouseUp(ev.button.x, ev.button.y,
+				view->handleMouseUp(ev.button.x, ev.button.y,
 					convertButton(ev.button.button));
 				break;
 			}
 		}
 
-		view.redraw(SDL_GetTicks());
+		view->redraw(SDL_GetTicks());
 		updateScreen();
 		SDL_Delay(10);
 	}
@@ -190,6 +204,36 @@ void dump(const GameState* state) {
     }
 }
 
+void prepare_main_menu(void) {
+	Image *bg = NULL, *anim = NULL;
+	GuiView *view = NULL;
+
+	try {
+		view = new MainMenuView;
+		gui_stack->push(view);
+		view = NULL;
+		bg = gameAssets->getImage("mainmenu.lbx", 1);
+		anim = gameAssets->getImage("mainmenu.lbx", 0, bg->palette());
+		view = new TransitionView(bg, anim);
+		gameAssets->freeImage(bg);
+		bg = NULL;
+		gameAssets->freeImage(anim);
+		anim = NULL;
+		gui_stack->push(view);
+		view = NULL;
+		anim = gameAssets->getImage("logo.lbx", 1);
+		view = new TransitionView(NULL, anim);
+		gameAssets->freeImage(anim);
+		anim = NULL;
+		gui_stack->push(view);
+	} catch (...) {
+		delete view;
+		gameAssets->freeImage(bg);
+		gameAssets->freeImage(anim);
+		throw;
+	}
+}
+
 int main(int argc, char **argv) {
 	if (argc >= 2) {
 		GameState* game = Savegame::load(argv[1]);
@@ -199,24 +243,29 @@ int main(int argc, char **argv) {
 	try {
 		init_datadir(argv[0]);
 		gameAssets = new AssetManager;
+		gui_stack = new ViewStack;
 		initScreen();
 	} catch(std::exception &e) {
 		fprintf(stderr, "Error: %s\n", e.what());
+		delete gui_stack;
 		delete gameAssets;
 		cleanup_datadir();
 		return 1;
 	}
 
 	try {
+		prepare_main_menu();
 		main_loop();
 	} catch(std::exception &e) {
 		fprintf(stderr, "Error: %s\n", e.what());
+		delete gui_stack;
 		delete gameAssets;
 		shutdownScreen();
 		cleanup_datadir();
 		return 1;
 	}
 
+	delete gui_stack;
 	delete gameAssets;
 	shutdownScreen();
 	cleanup_datadir();

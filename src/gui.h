@@ -197,6 +197,41 @@ public:
 	void handleMouseUp(int x, int y, unsigned button);
 };
 
+class ViewStack {
+private:
+	GuiView **_stack, **_garbage;
+	size_t _top, _size, _garbage_size, _garbage_count;
+
+	// Do NOT implement
+	ViewStack(const ViewStack &other);
+	const ViewStack &operator=(const ViewStack &other);
+
+protected:
+	void expand_garbage_bin(size_t size = 0);
+
+public:
+	ViewStack(void);
+	~ViewStack(void);
+
+	int is_empty(void) const;
+
+	// Add new view on top of the stack. Adding the same view instance more
+	// than once is not allowed.
+	// Only one thread may modify the stack at a time.
+	void push(GuiView *view);
+	void pop(void);
+	void remove(GuiView *view);
+
+	// move all current views to garbage
+	void clear(void);
+
+	// collect garbage
+	void flush(void);
+
+	// Returns the current view. Thread safe.
+	GuiView *top(void);
+};
+
 // Helper function for creating GuiMethodCallbacks with type inference
 template <class C>
 GuiCallback GuiMethod(C &instance, void (C::*method)(int,int,int), int arg=0) {
@@ -226,5 +261,8 @@ template <class C>
 GuiCallback *GuiMethodCallback<C>::copy(void) const {
 	return new GuiMethodCallback<C>(*this);
 }
+
+
+extern ViewStack *gui_stack;
 
 #endif

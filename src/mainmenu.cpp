@@ -119,5 +119,5 @@ void MainMenuView::clickScoreboard(int x, int y, int arg) {
 }
 
 void MainMenuView::clickQuit(int x, int y, int arg) {
-	printf("Quit clicked\n");
+	gui_stack->clear();
 }
