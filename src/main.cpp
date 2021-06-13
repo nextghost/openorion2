@@ -205,7 +205,7 @@ void dump(const GameState* state) {
 }
 
 void prepare_main_menu(void) {
-	Image *bg = NULL, *anim = NULL;
+	ImageAsset bg, anim;
 	GuiView *view = NULL;
 
 	try {
@@ -214,22 +214,14 @@ void prepare_main_menu(void) {
 		view = NULL;
 		bg = gameAssets->getImage("mainmenu.lbx", 1);
 		anim = gameAssets->getImage("mainmenu.lbx", 0, bg->palette());
-		view = new TransitionView(bg, anim);
-		gameAssets->freeImage(bg);
-		bg = NULL;
-		gameAssets->freeImage(anim);
-		anim = NULL;
+		view = new TransitionView((Image*)bg, (Image*)anim);
 		gui_stack->push(view);
 		view = NULL;
 		anim = gameAssets->getImage("logo.lbx", 1);
-		view = new TransitionView(NULL, anim);
-		gameAssets->freeImage(anim);
-		anim = NULL;
+		view = new TransitionView(NULL, (Image*)anim);
 		gui_stack->push(view);
 	} catch (...) {
 		delete view;
-		gameAssets->freeImage(bg);
-		gameAssets->freeImage(anim);
 		throw;
 	}
 }

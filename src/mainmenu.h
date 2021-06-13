@@ -20,11 +20,12 @@
 #ifndef MAINMENU_H_
 #define MAINMENU_H_
 
+#include "lbx.h"
 #include "gui.h"
 
 class MainMenuView : public GuiView {
 private:
-	Image *_background;
+	ImageAsset _background;
 
 public:
 	MainMenuView(void);

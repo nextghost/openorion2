@@ -31,7 +31,7 @@
 #define ASSET_MENU_SCORES 16
 #define ASSET_MENU_QUIT 19
 
-MainMenuView::MainMenuView(void) : _background(NULL) {
+MainMenuView::MainMenuView(void) : _background() {
 	Widget *w = NULL;
 	const uint8_t *pal;
 
@@ -84,13 +84,12 @@ MainMenuView::MainMenuView(void) : _background(NULL) {
 	} catch (...) {
 		delete w;
 		clearWidgets();
-		gameAssets->freeImage(_background);
 		throw;
 	}
 }
 
 MainMenuView::~MainMenuView(void) {
-	gameAssets->freeImage(_background);
+
 }
 
 void MainMenuView::redraw(unsigned curtick) {

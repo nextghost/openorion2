@@ -20,6 +20,7 @@
 #ifndef LBX_H_
 #define LBX_H_
 
+#include <stdexcept>
 #include "stream.h"
 #include "gfx.h"
 
@@ -46,6 +47,36 @@ public:
 
 	MemoryReadStream *loadAsset(unsigned id);
 };
+
+class AssetManager;
+
+template <class C> class AssetPointer {
+private:
+	AssetManager *_manager;
+	C *_asset;
+
+protected:
+	AssetPointer(AssetManager *manager, C *asset);
+
+public:
+	AssetPointer(void);
+	AssetPointer(const AssetPointer &other);
+	~AssetPointer(void);
+
+	const AssetPointer &operator=(const AssetPointer &other);
+	C *operator->(void);
+
+	// Explicit-only to avoid accidental asset release immediately after
+	// load. Image *img = (Image*)gameAssets->getImage(...) will not work
+	// because the AssetPointer gets destroyed before you can call
+	// gameAssets->takeAsset(img) and the just-loaded asset will be freed
+	// with it.
+	explicit operator C*(void);
+
+	friend class AssetManager;
+};
+
+typedef AssetPointer<Image> ImageAsset;
 
 class AssetManager {
 private:
@@ -77,18 +108,83 @@ public:
 
 	// Get asset from cache, loading it from disk if necessary. Reference
 	// counter gets automatically increased.
-	Image *getImage(const char *filename, unsigned id,
+	ImageAsset getImage(const char *filename, unsigned id,
 		const uint8_t *palette = NULL);
 
 	// Bump the asset reference counter to ensure it does not get deleted
-	// by another part of code. You must call freeImage() later.
+	// by another part of code. You must call freeAsset() later.
 	// NULL values are silently ignored.
-	void takeImage(const Image *img);
+	void takeAsset(const Image *img);
 
 	// Decrease the reference counter and delete the asset when it's
 	// no longer in use. NULL values are silently ignored.
-	void freeImage(const Image *img);
+	void freeAsset(const Image *img);
 };
+
+template <class C>
+AssetPointer<C>::AssetPointer(void) : _manager(NULL), _asset(NULL) {
+
+}
+
+template <class C>
+AssetPointer<C>::AssetPointer(AssetManager *manager, C *asset) :
+	_manager(manager), _asset(asset) {
+
+	if (_asset) {
+		if (!_manager) {
+			throw std::invalid_argument("Non-null asset pointer needs manager");
+		}
+
+		_manager->takeAsset(asset);
+	}
+}
+
+template <class C>
+AssetPointer<C>::AssetPointer(const AssetPointer &other) :
+	_manager(other._manager), _asset(other._asset) {
+
+	if (_asset) {
+		_manager->takeAsset(_asset);
+	}
+}
+
+template <class C>
+AssetPointer<C>::~AssetPointer(void) {
+	if (_asset) {
+		_manager->freeAsset(_asset);
+	}
+}
+
+template <class C>
+const AssetPointer<C> &AssetPointer<C>::operator=(const AssetPointer &other) {
+	if (_asset) {
+		_manager->freeAsset(_asset);
+	}
+
+	_manager = other._manager;
+	_asset = other._asset;
+
+	if (_asset) {
+		_manager->takeAsset(_asset);
+	}
+
+	return *this;
+}
+
+
+template <class C>
+C *AssetPointer<C>::operator->(void) {
+	if (!_asset) {
+		throw std::runtime_error("Member access on NULL asset pointer");
+	}
+
+	return _asset;
+}
+
+template <class C>
+AssetPointer<C>::operator C*(void) {
+	return _asset;
+}
 
 extern AssetManager *gameAssets;
 

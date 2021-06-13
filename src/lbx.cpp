@@ -192,7 +192,7 @@ void AssetManager::openArchive(FileCache *entry) {
 	}
 }
 
-Image *AssetManager::getImage(const char *filename, unsigned id,
+ImageAsset AssetManager::getImage(const char *filename, unsigned id,
 	const uint8_t *palette) {
 
 	FileCache *entry;
@@ -203,8 +203,7 @@ Image *AssetManager::getImage(const char *filename, unsigned id,
 	entry = getCache(filename);
 
 	if (entry->images && id < entry->size && entry->images[id].data) {
-		entry->images[id].refs++;
-		return entry->images[id].data;
+		return ImageAsset(this, entry->images[id].data);
 	}
 
 	openArchive(entry);
@@ -243,12 +242,12 @@ Image *AssetManager::getImage(const char *filename, unsigned id,
 
 	delete stream;
 	entry->images[id].data = img;
-	entry->images[id].refs = 1;
+	entry->images[id].refs = 0;
 	_imageLookup[texid] = entry->images + id;
-	return entry->images[id].data;
+	return ImageAsset(this, entry->images[id].data);
 }
 
-void AssetManager::takeImage(const Image *img) {
+void AssetManager::takeAsset(const Image *img) {
 	unsigned texid;
 
 	if (!img) {
@@ -264,7 +263,7 @@ void AssetManager::takeImage(const Image *img) {
 	_imageLookup[texid]->refs++;
 }
 
-void AssetManager::freeImage(const Image *img) {
+void AssetManager::freeAsset(const Image *img) {
 	unsigned texid;
 	CacheEntry<Image> *entry;
 

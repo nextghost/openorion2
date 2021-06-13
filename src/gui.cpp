@@ -86,7 +86,7 @@ GuiSprite::GuiSprite(Image *img, int offsx, int offsy, int frame,
 		throw std::out_of_range("Image frame out of range");
 	}
 
-	gameAssets->takeImage(_image);
+	gameAssets->takeAsset(_image);
 	_width = width ? width : _image->width() - _x;
 	_height = height ? height : _image->height() - _y;
 }
@@ -95,20 +95,20 @@ GuiSprite::GuiSprite(const GuiSprite &other) : _image(other._image),
 	_x(other._x), _y(other._y), _width(other._width), _startTick(0),
 	_offsx(other._offsx), _offsy(other._offsy), _frame(other._frame) {
 
-	gameAssets->takeImage(_image);
+	gameAssets->takeAsset(_image);
 }
 
 GuiSprite::~GuiSprite(void) {
-	gameAssets->freeImage(_image);
+	gameAssets->freeAsset(_image);
 }
 
 const GuiSprite &GuiSprite::operator=(const GuiSprite &other) {
-	gameAssets->takeImage(other._image);
+	gameAssets->takeAsset(other._image);
 
 	try {
-		gameAssets->freeImage(_image);
+		gameAssets->freeAsset(_image);
 	} catch (...) {
-		gameAssets->freeImage(other._image);
+		gameAssets->freeAsset(other._image);
 		throw;
 	}
 
@@ -250,16 +250,9 @@ void Widget::setIdleSprite(Image *img, int frame) {
 
 void Widget::setIdleSprite(const char *archive, unsigned id,
 	const uint8_t *palette, int frame) {
-	Image *img = gameAssets->getImage(archive, id, palette);
+	ImageAsset img = gameAssets->getImage(archive, id, palette);
 
-	try {
-		setIdleSprite(img, frame);
-	} catch (...) {
-		gameAssets->freeImage(img);
-		throw;
-	}
-
-	gameAssets->freeImage(img);
+	setIdleSprite((Image*)img, frame);
 }
 
 void Widget::setMouseOverSprite(GuiSprite *sprite) {
@@ -283,16 +276,9 @@ void Widget::setMouseOverSprite(Image *img, int frame) {
 
 void Widget::setMouseOverSprite(const char *archive, unsigned id,
 	const uint8_t *palette, int frame) {
-	Image *img = gameAssets->getImage(archive, id, palette);
+	ImageAsset img = gameAssets->getImage(archive, id, palette);
 
-	try {
-		setMouseOverSprite(img, frame);
-	} catch (...) {
-		gameAssets->freeImage(img);
-		throw;
-	}
-
-	gameAssets->freeImage(img);
+	setMouseOverSprite((Image*)img, frame);
 }
 
 void Widget::setClickSprite(unsigned button, GuiSprite *sprite) {
@@ -320,16 +306,9 @@ void Widget::setClickSprite(unsigned button, Image *img, int frame) {
 
 void Widget::setClickSprite(unsigned button, const char *archive, unsigned id,
 	const uint8_t *palette, int frame) {
-	Image *img = gameAssets->getImage(archive, id, palette);
+	ImageAsset img = gameAssets->getImage(archive, id, palette);
 
-	try {
-		setClickSprite(button, img, frame);
-	} catch (...) {
-		gameAssets->freeImage(img);
-		throw;
-	}
-
-	gameAssets->freeImage(img);
+	setClickSprite(button, (Image*)img, frame);
 }
 
 void Widget::handleMouseOver(int x, int y, unsigned buttons) {
@@ -517,13 +496,13 @@ TransitionView::TransitionView(Image *background, Image *animation, int x,
 	int y) : _background(background), _animation(animation), _x(x), _y(y),
 	_startTick(0) {
 
-	gameAssets->takeImage(_background);
-	gameAssets->takeImage(_animation);
+	gameAssets->takeAsset(_background);
+	gameAssets->takeAsset(_animation);
 }
 
 TransitionView::~TransitionView(void) {
-	gameAssets->freeImage(_background);
-	gameAssets->freeImage(_animation);
+	gameAssets->freeAsset(_background);
+	gameAssets->freeAsset(_animation);
 }
 
 void TransitionView::redraw(unsigned curtick) {
