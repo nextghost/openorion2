@@ -554,44 +554,14 @@ void TransitionView::handleMouseUp(int x, int y, unsigned button) {
 	exitView();
 }
 
-ViewStack::ViewStack(void) : _stack(NULL), _garbage(NULL), _top(0), _size(8),
-	_garbage_size(8), _garbage_count(0) {
-
+ViewStack::ViewStack(void) : _stack(NULL), _top(0), _size(8) {
 	_stack = new GuiView*[_size];
 	_stack[0] = NULL;
-
-	try {
-		_garbage = new GuiView*[_garbage_size];
-	} catch (...) {
-		delete[] _stack;
-		throw;
-	}
 }
 
 ViewStack::~ViewStack(void) {
-	size_t i;
-
-	for (i = 0; i <= _top; i++) {
-		delete _stack[i];
-	}
-
-	flush();
+	clear();
 	delete[] _stack;
-	delete[] _garbage;
-}
-
-void ViewStack::expand_garbage_bin(size_t size) {
-	GuiView **ptr;
-
-	if (size < _garbage_size) {
-		size = _garbage_size;
-	}
-
-	ptr = new GuiView*[_garbage_size + size];
-	memcpy(ptr, _garbage, _garbage_count * sizeof(GuiView*));
-	delete[] _garbage;
-	_garbage = ptr;
-	_garbage_size += size;
 }
 
 int ViewStack::is_empty(void) const {
@@ -620,11 +590,7 @@ void ViewStack::push(GuiView *view) {
 }
 
 void ViewStack::pop(void) {
-	if (_garbage_count >= _garbage_size) {
-		expand_garbage_bin();
-	}
-
-	_garbage[_garbage_count] = _stack[_top];
+	GuiView *ptr = _stack[_top];
 
 	if (_top > 0) {
 		_top--;
@@ -632,9 +598,7 @@ void ViewStack::pop(void) {
 		_stack[_top] = NULL;
 	}
 
-	if (_garbage[_garbage_count]) {
-		_garbage_count++;
-	}
+	GarbageCollector::discard(ptr);
 }
 
 void ViewStack::remove(GuiView *view) {
@@ -646,12 +610,6 @@ void ViewStack::remove(GuiView *view) {
 		return;
 	}
 
-	if (_garbage_count >= _garbage_size) {
-		expand_garbage_bin();
-	}
-
-	_garbage[_garbage_count] = _stack[i];
-
 	for (; i < _top; i++) {
 		_stack[i] = _stack[i + 1];
 	}
@@ -662,34 +620,18 @@ void ViewStack::remove(GuiView *view) {
 		_stack[_top] = NULL;
 	}
 
-	if (_garbage[_garbage_count]) {
-		_garbage_count++;
-	}
+	GarbageCollector::discard(view);
 }
 
 void ViewStack::clear(void) {
 	size_t i;
 
-	if (_top + 1 > _garbage_size - _garbage_count) {
-		expand_garbage_bin(_top + 1);
-	}
-
 	for (i = 0; i <= _top; i++) {
-		_garbage[_garbage_count++] = _stack[i];
+		GarbageCollector::discard(_stack[i]);
 	}
 
 	_stack[0] = NULL;
 	_top = 0;
-}
-
-void ViewStack::flush(void) {
-	size_t i;
-
-	for (i = 0; i < _garbage_count; i++) {
-		delete _garbage[i];
-	}
-
-	_garbage_count = 0;
 }
 
 GuiView *ViewStack::top(void) {

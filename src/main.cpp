@@ -75,7 +75,7 @@ void main_loop(void) {
 			prev_view = view;
 		}
 
-		gui_stack->flush();
+		GarbageCollector::flush();
 
 		while (SDL_PollEvent(&ev)) {
 			switch (ev.type) {
@@ -240,6 +240,7 @@ int main(int argc, char **argv) {
 	} catch(std::exception &e) {
 		fprintf(stderr, "Error: %s\n", e.what());
 		delete gui_stack;
+		GarbageCollector::flush();
 		delete gameAssets;
 		cleanup_datadir();
 		return 1;
@@ -251,6 +252,7 @@ int main(int argc, char **argv) {
 	} catch(std::exception &e) {
 		fprintf(stderr, "Error: %s\n", e.what());
 		delete gui_stack;
+		GarbageCollector::flush();
 		delete gameAssets;
 		shutdownScreen();
 		cleanup_datadir();
@@ -258,6 +260,7 @@ int main(int argc, char **argv) {
 	}
 
 	delete gui_stack;
+	GarbageCollector::flush();
 	delete gameAssets;
 	shutdownScreen();
 	cleanup_datadir();

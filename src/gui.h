@@ -21,6 +21,7 @@
 #define GUI_H_
 
 #include "gfx.h"
+#include "utils.h"
 
 #define MBUTTON_LEFT 0
 #define MBUTTON_RIGHT 1
@@ -140,7 +141,7 @@ public:
 	virtual void redraw(unsigned curtick);
 };
 
-class WidgetContainer {
+class WidgetContainer : public Recyclable {
 private:
 	Widget **_widgets, *_currentWidget;
 	size_t _widgetCount, _widgetMax;
@@ -157,7 +158,7 @@ protected:
 
 public:
 	WidgetContainer(void);
-	virtual ~WidgetContainer(void);
+	~WidgetContainer(void);
 
 	virtual void redraw(unsigned curtick) = 0;
 
@@ -206,15 +207,12 @@ public:
 
 class ViewStack {
 private:
-	GuiView **_stack, **_garbage;
-	size_t _top, _size, _garbage_size, _garbage_count;
+	GuiView **_stack;
+	size_t _top, _size;
 
 	// Do NOT implement
 	ViewStack(const ViewStack &other);
 	const ViewStack &operator=(const ViewStack &other);
-
-protected:
-	void expand_garbage_bin(size_t size = 0);
 
 public:
 	ViewStack(void);
@@ -231,9 +229,6 @@ public:
 
 	// move all current views to garbage
 	void clear(void);
-
-	// collect garbage
-	void flush(void);
 
 	// Returns the current view. Thread safe.
 	GuiView *top(void);
