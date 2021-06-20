@@ -140,14 +140,14 @@ public:
 	virtual void redraw(unsigned curtick);
 };
 
-class GuiView {
+class WidgetContainer {
 private:
 	Widget **_widgets, *_currentWidget;
 	size_t _widgetCount, _widgetMax;
 
 	// Do NOT implement
-	GuiView(const GuiView &other);
-	const GuiView &operator=(const GuiView &other);
+	WidgetContainer(const WidgetContainer &other);
+	const WidgetContainer &operator=(const WidgetContainer &other);
 
 protected:
 	void addWidget(Widget *w);
@@ -155,6 +155,19 @@ protected:
 	void redrawWidgets(unsigned curtick);
 	void clearWidgets(void);
 
+public:
+	WidgetContainer(void);
+	virtual ~WidgetContainer(void);
+
+	virtual void redraw(unsigned curtick) = 0;
+
+	virtual void handleMouseMove(int x, int y, unsigned buttons);
+	virtual void handleMouseDown(int x, int y, unsigned button);
+	virtual void handleMouseUp(int x, int y, unsigned button);
+};
+
+class GuiView : public WidgetContainer {
+protected:
 	// Discard this instance from view stack and switch to the next view
 	// (if any). It is safe to access instance variable after calling
 	// this method. The instance will be garbage collected after control
@@ -163,18 +176,12 @@ protected:
 
 public:
 	GuiView(void);
-	virtual ~GuiView(void);
-
-	virtual void redraw(unsigned curtick) = 0;
+	~GuiView(void);
 
 	// methods called on view transitions (may be called multiple times
 	// on the same instance)
 	virtual void open(void);
 	virtual void close(void);
-
-	virtual void handleMouseMove(int x, int y, unsigned buttons);
-	virtual void handleMouseDown(int x, int y, unsigned button);
-	virtual void handleMouseUp(int x, int y, unsigned button);
 };
 
 // Simple skippable view transition animation

@@ -380,22 +380,25 @@ void Widget::redraw(unsigned curtick) {
 	}
 }
 
-GuiView::GuiView(void) : _widgets(NULL), _currentWidget(NULL), _widgetCount(0),
-	_widgetMax(32) {
+WidgetContainer::WidgetContainer(void) : _widgets(NULL), _currentWidget(NULL),
+	_widgetCount(0), _widgetMax(32) {
 	_widgets = new Widget*[_widgetMax];
 }
 
-GuiView::~GuiView(void) {
+WidgetContainer::~WidgetContainer(void) {
 	clearWidgets();
 }
 
-void GuiView::addWidget(Widget *w) {
+void WidgetContainer::addWidget(Widget *w) {
 	if (_widgetCount >= _widgetMax) {
 		size_t size = _widgetMax ? 2 * _widgetMax : 32;
 		Widget **tmp = new Widget*[size];
 
-		memcpy(tmp, _widgets, _widgetCount * sizeof(Widget*));
-		delete[] _widgets;
+		if (_widgets) {
+			memcpy(tmp, _widgets, _widgetCount * sizeof(Widget*));
+			delete[] _widgets;
+		}
+
 		_widgets = tmp;
 		_widgetMax = size;
 	}
@@ -403,7 +406,7 @@ void GuiView::addWidget(Widget *w) {
 	_widgets[_widgetCount++] = w;
 }
 
-Widget *GuiView::findWidget(int x, int y) {
+Widget *WidgetContainer::findWidget(int x, int y) {
 	size_t i;
 	Widget **ptr;
 
@@ -420,7 +423,7 @@ Widget *GuiView::findWidget(int x, int y) {
 	return NULL;
 }
 
-void GuiView::redrawWidgets(unsigned curtick) {
+void WidgetContainer::redrawWidgets(unsigned curtick) {
 	size_t i;
 
 	for (i = 0; i < _widgetCount; i++) {
@@ -428,7 +431,7 @@ void GuiView::redrawWidgets(unsigned curtick) {
 	}
 }
 
-void GuiView::clearWidgets(void) {
+void WidgetContainer::clearWidgets(void) {
 	size_t i;
 
 	for (i = 0; i < _widgetCount; i++) {
@@ -440,19 +443,7 @@ void GuiView::clearWidgets(void) {
 	_widgetCount = _widgetMax = 0;
 }
 
-void GuiView::exitView(void) {
-	gui_stack->remove(this);
-}
-
-void GuiView::open(void) {
-
-}
-
-void GuiView::close(void) {
-
-}
-
-void GuiView::handleMouseMove(int x, int y, unsigned buttons) {
+void WidgetContainer::handleMouseMove(int x, int y, unsigned buttons) {
 	Widget *w = findWidget(x, y);
 
 	if (_currentWidget != w) {
@@ -472,7 +463,7 @@ void GuiView::handleMouseMove(int x, int y, unsigned buttons) {
 	}
 }
 
-void GuiView::handleMouseDown(int x, int y, unsigned button) {
+void WidgetContainer::handleMouseDown(int x, int y, unsigned button) {
 	if (!_currentWidget) {
 		_currentWidget = findWidget(x, y);
 	}
@@ -482,7 +473,7 @@ void GuiView::handleMouseDown(int x, int y, unsigned button) {
 	}
 }
 
-void GuiView::handleMouseUp(int x, int y, unsigned button) {
+void WidgetContainer::handleMouseUp(int x, int y, unsigned button) {
 	if (!_currentWidget) {
 		_currentWidget = findWidget(x, y);
 	}
@@ -490,6 +481,26 @@ void GuiView::handleMouseUp(int x, int y, unsigned button) {
 	if (_currentWidget) {
 		_currentWidget->handleMouseUp(x, y, button);
 	}
+}
+
+GuiView::GuiView(void) {
+
+}
+
+GuiView::~GuiView(void) {
+
+}
+
+void GuiView::exitView(void) {
+	gui_stack->remove(this);
+}
+
+void GuiView::open(void) {
+
+}
+
+void GuiView::close(void) {
+
 }
 
 TransitionView::TransitionView(Image *background, Image *animation, int x,
