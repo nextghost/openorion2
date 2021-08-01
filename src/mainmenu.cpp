@@ -21,7 +21,7 @@
 #include "mainmenu.h"
 
 #define MENU_ARCHIVE "mainmenu.lbx"
-#define ASSET_MENU_BACKGROUND 2
+#define ASSET_MENU_BACKGROUND 21
 #define ASSET_MENU_CONTINUE_ON 4
 #define ASSET_MENU_CONTINUE_OFF 5
 #define ASSET_MENU_LOAD_ON 7
