@@ -20,6 +20,8 @@
 #ifndef SDL_SCREEN_H_
 #define SDL_SCREEN_H_
 
+#include <cstdint>
+
 // Logical screen size
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
