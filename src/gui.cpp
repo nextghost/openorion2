@@ -374,9 +374,9 @@ void Widget::handleMouseUp(int x, int y, unsigned button) {
 	changeSprite();
 }
 
-void Widget::redraw(unsigned curtick) {
+void Widget::redraw(int x, int y, unsigned curtick) {
 	if (_cursprite) {
-		_cursprite->redraw(_x, _y, curtick);
+		_cursprite->redraw(x + _x, y + _y, curtick);
 	}
 }
 
@@ -423,11 +423,11 @@ Widget *WidgetContainer::findWidget(int x, int y) {
 	return NULL;
 }
 
-void WidgetContainer::redrawWidgets(unsigned curtick) {
+void WidgetContainer::redrawWidgets(int x, int y, unsigned curtick) {
 	size_t i;
 
 	for (i = 0; i < _widgetCount; i++) {
-		_widgets[i]->redraw(curtick);
+		_widgets[i]->redraw(x, y, curtick);
 	}
 }
 
@@ -483,12 +483,165 @@ void WidgetContainer::handleMouseUp(int x, int y, unsigned button) {
 	}
 }
 
-GuiView::GuiView(void) {
+GuiWindow::GuiWindow(GuiView *parent, unsigned flags) : _parent(parent), _x(0),
+	_y(0), _grabx(-1), _graby(-1), _width(0), _height(0), _flags(flags) {
+	if (_parent) {
+		_parent->addWindow(this);
+	}
+}
 
+GuiWindow::~GuiWindow(void) {
+	if (_parent) {
+		_parent->removeWindow(this);
+	}
+}
+
+void GuiWindow::discard(void) {
+	if (_parent) {
+		_parent->removeWindow(this);
+	}
+
+	WidgetContainer::discard();
+}
+
+int GuiWindow::isInside(int x, int y) const {
+	return x >= _x && x < _x + (int)_width && y >= _y &&
+		y < _y + (int)_height;
+}
+
+int GuiWindow::isModal(void) const {
+	return _flags & WINDOW_MODAL;
+}
+
+int GuiWindow::isGrabbed(void) const {
+	return _grabx >= 0;
+}
+
+void GuiWindow::close(int x, int y, int arg) {
+	discard();
+}
+
+void GuiWindow::handleMouseMove(int x, int y, unsigned buttons) {
+	if ((_flags & WINDOW_MOVABLE) && _grabx >= 0) {
+		_x = x - _grabx;
+		_y = y - _graby;
+		return;
+	}
+
+	WidgetContainer::handleMouseMove(x - _x, y - _y, buttons);
+}
+
+void GuiWindow::handleMouseDown(int x, int y, unsigned button) {
+	x -= _x;
+	y -= _y;
+	WidgetContainer::handleMouseDown(x, y, button);
+
+	if ((_flags & WINDOW_MOVABLE) && !_currentWidget &&
+		button == MBUTTON_LEFT) {
+		_grabx = x;
+		_graby = y;
+	}
+}
+
+void GuiWindow::handleMouseUp(int x, int y, unsigned button) {
+	WidgetContainer::handleMouseUp(x - _x, y - _y, button);
+
+	if (button == MBUTTON_LEFT) {
+		_grabx = _graby = -1;
+	}
+}
+
+GuiView::GuiView(void) {
+	// Initialize window list
+	_firstWindow.insert_before(&_lastWindow);
 }
 
 GuiView::~GuiView(void) {
+	BilistNode<GuiWindow> *next, *ptr = _firstWindow.next();
 
+	// Prevent GuiWindow destructor from discarding list nodes
+	_firstWindow.unlink();
+
+	for (; ptr && ptr != &_lastWindow; ptr = next) {
+		next = ptr->next();
+		delete ptr->data;
+		delete ptr;
+	}
+}
+
+void GuiView::addWindow(GuiWindow *window) {
+	BilistNode<GuiWindow> *node = new BilistNode<GuiWindow>;
+
+	node->data = window;
+	node->insert_after(&_firstWindow);
+}
+
+void GuiView::removeWindow(GuiWindow *window) {
+	BilistNode<GuiWindow> *node = _firstWindow.next();
+
+	for (; node && node != &_lastWindow; node = node->next()) {
+		if (window != node->data) {
+			continue;
+		}
+
+		node->discard();
+		return;
+	}
+}
+
+void GuiView::focusWindow(BilistNode<GuiWindow> *node) {
+	BilistNode<GuiWindow> *newnode;
+
+	if (node == _firstWindow.next() || !node->data) {
+		return;
+	}
+
+	newnode = new BilistNode<GuiWindow>;
+	newnode->data = node->data;
+	node->discard();
+	newnode->insert_after(&_firstWindow);
+}
+
+BilistNode<GuiWindow> *GuiView::findWindowAt(int x, int y, int ignore_modal) {
+	BilistNode<GuiWindow> *node = _firstWindow.next();
+
+	for (; node && node != &_lastWindow; node = node->next()) {
+		if (!ignore_modal && node->data->isModal()) {
+			// Modal window is blocked unless it's already on top
+			if (node == _firstWindow.next() &&
+				node->data->isInside(x, y)) {
+				return node;
+			}
+
+			return NULL;
+		}
+
+		if (node->data->isInside(x, y)) {
+			return node;
+		}
+	}
+
+	return NULL;
+}
+
+BilistNode<GuiWindow> *GuiView::findModalWindow(void) {
+	BilistNode<GuiWindow> *node = _firstWindow.next();
+
+	for (; node && node != &_lastWindow; node = node->next()) {
+		if (node->data->isModal()) {
+			return node;
+		}
+	}
+
+	return NULL;
+}
+
+void GuiView::redrawWindows(unsigned curtick) {
+	BilistNode<GuiWindow> *node = _lastWindow.prev();
+
+	for (; node && node != &_firstWindow; node = node->prev()) {
+		node->data->redraw(curtick);
+	}
 }
 
 void GuiView::exitView(void) {
@@ -501,6 +654,65 @@ void GuiView::open(void) {
 
 void GuiView::close(void) {
 
+}
+
+void GuiView::handleMouseMove(int x, int y, unsigned buttons) {
+	BilistNode<GuiWindow> *node = _firstWindow.next();
+
+	node = (node == &_lastWindow) ? NULL : node;
+
+	if (node && !node->data->isGrabbed()) {
+		node = findWindowAt(x, y);
+	}
+
+	if (node) {
+		if (_currentWidget) {
+			_currentWidget->handleMouseOut(x, y, buttons);
+		}
+
+		_currentWidget = NULL;
+		node->data->handleMouseMove(x, y, buttons);
+		return;
+	}
+
+	if (findModalWindow()) {
+		return;
+	}
+
+	WidgetContainer::handleMouseMove(x, y, buttons);
+}
+
+void GuiView::handleMouseDown(int x, int y, unsigned button) {
+	BilistNode<GuiWindow> *node = findWindowAt(x, y);
+
+	if (node) {
+		GuiWindow *w = node->data;
+
+		focusWindow(node);
+		w->handleMouseDown(x, y, button);
+		return;
+	}
+
+	if (findModalWindow()) {
+		return;
+	}
+
+	WidgetContainer::handleMouseDown(x, y, button);
+}
+
+void GuiView::handleMouseUp(int x, int y, unsigned button) {
+	BilistNode<GuiWindow> *node = findWindowAt(x, y);
+
+	if (node) {
+		node->data->handleMouseUp(x, y, button);
+		return;
+	}
+
+	if (findModalWindow()) {
+		return;
+	}
+
+	WidgetContainer::handleMouseUp(x, y, button);
 }
 
 TransitionView::TransitionView(Image *background, Image *animation, int x,

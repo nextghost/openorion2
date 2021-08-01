@@ -34,6 +34,9 @@
 #define ANIM_ONCE -2	// hide the animation after playing once
 #define ANIM_STICKY -3	// play the animation once and freeze on last frame
 
+#define WINDOW_MODAL 1
+#define WINDOW_MOVABLE 2
+
 class GuiCallback {
 private:
 	GuiCallback *_callback;
@@ -138,12 +141,12 @@ public:
 	virtual void handleMouseDown(int x, int y, unsigned button);
 	virtual void handleMouseUp(int x, int y, unsigned button);
 
-	virtual void redraw(unsigned curtick);
+	virtual void redraw(int x, int y, unsigned curtick);
 };
 
 class WidgetContainer : public Recyclable {
 private:
-	Widget **_widgets, *_currentWidget;
+	Widget **_widgets;
 	size_t _widgetCount, _widgetMax;
 
 	// Do NOT implement
@@ -151,9 +154,11 @@ private:
 	const WidgetContainer &operator=(const WidgetContainer &other);
 
 protected:
+	Widget *_currentWidget;
+
 	void addWidget(Widget *w);
 	Widget *findWidget(int x, int y);
-	void redrawWidgets(unsigned curtick);
+	void redrawWidgets(int x, int y, unsigned curtick);
 	void clearWidgets(void);
 
 public:
@@ -167,8 +172,47 @@ public:
 	virtual void handleMouseUp(int x, int y, unsigned button);
 };
 
-class GuiView : public WidgetContainer {
+class GuiView;
+
+class GuiWindow : public WidgetContainer {
 protected:
+	GuiView *_parent;
+	int _x, _y, _grabx, _graby;
+	unsigned _width, _height, _flags;
+
+public:
+	explicit GuiWindow(GuiView *parent, unsigned flags = WINDOW_MOVABLE);
+	~GuiWindow(void);
+
+	void discard(void);
+
+	virtual int isInside(int x, int y) const;
+	int isModal(void) const;
+	int isGrabbed(void) const;
+
+	virtual void close(int x = 0, int y = 0, int arg = 0);
+
+	void handleMouseMove(int x, int y, unsigned buttons);
+	void handleMouseDown(int x, int y, unsigned button);
+	void handleMouseUp(int x, int y, unsigned button);
+};
+
+class GuiView : public WidgetContainer {
+private:
+	BilistNode<GuiWindow> _firstWindow, _lastWindow;
+
+protected:
+	void addWindow(GuiWindow *window);
+
+	// Removes window from view but does not delete or discard it
+	void removeWindow(GuiWindow *window);
+
+	// Moves window to the front, node is discarded in the process
+	void focusWindow(BilistNode<GuiWindow> *node);
+	BilistNode<GuiWindow> *findWindowAt(int x, int y, int ignore_modal = 0);
+	BilistNode<GuiWindow> *findModalWindow(void);
+	void redrawWindows(unsigned curtick);
+
 	// Discard this instance from view stack and switch to the next view
 	// (if any). It is safe to access instance variable after calling
 	// this method. The instance will be garbage collected after control
@@ -183,6 +227,12 @@ public:
 	// on the same instance)
 	virtual void open(void);
 	virtual void close(void);
+
+	void handleMouseMove(int x, int y, unsigned buttons);
+	void handleMouseDown(int x, int y, unsigned button);
+	void handleMouseUp(int x, int y, unsigned button);
+
+	friend class GuiWindow;
 };
 
 // Simple skippable view transition animation

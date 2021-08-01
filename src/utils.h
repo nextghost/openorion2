@@ -20,6 +20,8 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
+#include <stdexcept>
+
 class Mutex {
 private:
 	struct MutexImpl *_mutex;
@@ -71,5 +73,112 @@ public:
 	// after it has stopped using all the stale references.
 	static void flush(void);
 };
+
+template <class C> class BilistNode : public Recyclable {
+private:
+	BilistNode *_prev, *_next;
+
+	// Do NOT implement
+	BilistNode(const BilistNode &other);
+	const BilistNode &operator=(const BilistNode &other);
+
+public:
+	C *data;
+
+	BilistNode(void);
+	~BilistNode(void);
+
+	// Insert this instance into existing list before or after given node
+	void insert_before(BilistNode *node);
+	void insert_after(BilistNode *node);
+	void unlink(void);
+
+	// Unlink this node from parent list, then put it in the garbage
+	// collector but keep references to _next and _prev in case another
+	// thread is still using this object.
+	void discard(void);
+
+	BilistNode *prev(void);
+	BilistNode *next(void);
+};
+
+template <class C>
+BilistNode<C>::BilistNode(void) : _prev(NULL), _next(NULL), data(NULL) {
+
+}
+
+template <class C>
+BilistNode<C>::~BilistNode(void) {
+	unlink();
+}
+
+template <class C>
+void BilistNode<C>::insert_before(BilistNode<C> *node) {
+	if (!node) {
+		throw std::invalid_argument("Cannot insert list node before NULL value");
+	}
+
+	unlink();
+	_next = node;
+	_prev = node->_prev;
+	node->_prev = this;
+
+	if (_prev) {
+		_prev->_next = this;
+	}
+}
+
+template <class C>
+void BilistNode<C>::insert_after(BilistNode<C> *node) {
+	if (!node) {
+		throw std::invalid_argument("Cannot append list node after NULL value");
+	}
+
+	unlink();
+	_prev = node;
+	_next = node->_next;
+	node->_next = this;
+
+	if (_next) {
+		_next->_prev = this;
+	}
+}
+
+template <class C>
+void BilistNode<C>::unlink(void) {
+	if (_prev) {
+		_prev->_next = _next;
+	}
+
+	if (_next) {
+		_next->_prev = _prev;
+	}
+
+	_next = NULL;
+	_prev = NULL;
+}
+
+template <class C>
+void BilistNode<C>::discard(void) {
+	if (_prev) {
+		_prev->_next = _next;
+	}
+
+	if (_next) {
+		_next->_prev = _prev;
+	}
+
+	Recyclable::discard();
+}
+
+template <class C>
+BilistNode<C> *BilistNode<C>::prev(void) {
+	return _prev;
+}
+
+template <class C>
+BilistNode<C> *BilistNode<C>::next(void) {
+	return _next;
+}
 
 #endif

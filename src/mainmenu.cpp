@@ -94,7 +94,8 @@ MainMenuView::~MainMenuView(void) {
 
 void MainMenuView::redraw(unsigned curtick) {
 	_background->draw(0, 0);
-	redrawWidgets(curtick);
+	redrawWidgets(0, 0, curtick);
+	redrawWindows(curtick);
 }
 
 void MainMenuView::clickContinue(int x, int y, int arg) {
