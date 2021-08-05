@@ -226,6 +226,14 @@ void prepare_main_menu(void) {
 	}
 }
 
+void engine_shutdown(void) {
+	delete gui_stack;
+	GarbageCollector::flush();
+	delete gameAssets;
+	shutdownScreen();
+	cleanup_datadir();
+}
+
 int main(int argc, char **argv) {
 	if (argc >= 2) {
 		GameState* game = Savegame::load(argv[1]);
@@ -239,10 +247,7 @@ int main(int argc, char **argv) {
 		initScreen();
 	} catch(std::exception &e) {
 		fprintf(stderr, "Error: %s\n", e.what());
-		delete gui_stack;
-		GarbageCollector::flush();
-		delete gameAssets;
-		cleanup_datadir();
+		engine_shutdown();
 		return 1;
 	}
 
@@ -251,18 +256,10 @@ int main(int argc, char **argv) {
 		main_loop();
 	} catch(std::exception &e) {
 		fprintf(stderr, "Error: %s\n", e.what());
-		delete gui_stack;
-		GarbageCollector::flush();
-		delete gameAssets;
-		shutdownScreen();
-		cleanup_datadir();
+		engine_shutdown();
 		return 1;
 	}
 
-	delete gui_stack;
-	GarbageCollector::flush();
-	delete gameAssets;
-	shutdownScreen();
-	cleanup_datadir();
+	engine_shutdown();
 	return 0;
 }

@@ -88,7 +88,10 @@ void shutdownScreen(void) {
 		}
 	}
 
-	SDL_DestroyWindow(window);
+	if (window) {
+		SDL_DestroyWindow(window);
+	}
+
 	SDL_Quit();
 }
 
