@@ -276,8 +276,13 @@ void drawTextureTile(unsigned id, int x, int y, int offsx, int offsy,
 	SDL_BlitSurface(textures[id].drawsurf, &src, wsurface, &dst);
 }
 
-void clearScreen(uint8_t r, uint8_t g, uint8_t b) {
-	SDL_Rect rect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+void fillRect(int x, int y, unsigned width, unsigned height, uint8_t r,
+	uint8_t g, uint8_t b) {
+	SDL_Rect rect = {x, y, (int)width, (int)height};
 
 	SDL_FillRect(wsurface, &rect, SDL_MapRGB(wsurface->format, r, g, b));
+}
+
+void clearScreen(uint8_t r, uint8_t g, uint8_t b) {
+	fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, r, g, b);
 }

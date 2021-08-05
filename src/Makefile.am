@@ -1,7 +1,7 @@
-SOURCE_FILES = gfx.cpp gui.cpp lbx.cpp main.cpp mainmenu.cpp sdl_screen.cpp \
-	sdl_utils.cpp stream.cpp savegame.cpp utils.cpp
-HEADER_FILES = gfx.h gui.h lbx.h mainmenu.h screen.h stream.h savegame.h \
-	system.h utils.h
+SOURCE_FILES = gfx.cpp gui.cpp guimisc.cpp lbx.cpp main.cpp mainmenu.cpp \
+	sdl_screen.cpp sdl_utils.cpp stream.cpp savegame.cpp utils.cpp
+HEADER_FILES = gfx.h gui.h guimisc.h lbx.h mainmenu.h screen.h stream.h \
+	savegame.h system.h utils.h
 
 if SYSTEM_UNIX
 SOURCE_FILES += unix.cpp

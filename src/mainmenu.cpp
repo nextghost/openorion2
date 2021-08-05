@@ -18,6 +18,7 @@
  */
 
 #include "lbx.h"
+#include "guimisc.h"
 #include "mainmenu.h"
 
 #define MENU_ARCHIVE "mainmenu.lbx"
@@ -99,23 +100,33 @@ void MainMenuView::redraw(unsigned curtick) {
 }
 
 void MainMenuView::clickContinue(int x, int y, int arg) {
-	printf("Continue clicked\n");
+	TextBoxWindow *w;
+
+	w = new TextBoxWindow(this, "Continue not implemented yet");
 }
 
 void MainMenuView::clickLoad(int x, int y, int arg) {
-	printf("Load Game clicked\n");
+	TextBoxWindow *w;
+
+	w = new TextBoxWindow(this, "Load Game not implemented yet");
 }
 
 void MainMenuView::clickNew(int x, int y, int arg) {
-	printf("New Game clicked\n");
+	TextBoxWindow *w;
+
+	w = new TextBoxWindow(this, "New Game not implemented yet");
 }
 
 void MainMenuView::clickMultiplayer(int x, int y, int arg) {
-	printf("Multiplayer clicked\n");
+	TextBoxWindow *w;
+
+	w = new TextBoxWindow(this, "Multiplayer not implemented yet");
 }
 
 void MainMenuView::clickScoreboard(int x, int y, int arg) {
-	printf("Hall of Fame clicked\n");
+	TextBoxWindow *w;
+
+	w = new TextBoxWindow(this, "Hall of Fame not implemented yet");
 }
 
 void MainMenuView::clickQuit(int x, int y, int arg) {
