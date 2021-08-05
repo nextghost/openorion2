@@ -285,3 +285,33 @@ void AssetManager::freeAsset(const Image *img) {
 		_imageLookup[texid] = NULL;
 	}
 }
+
+MemoryReadStream *AssetManager::rawData(const char *filename, unsigned id) {
+	FileCache *entry;
+	MemoryReadStream *stream;
+
+	entry = getCache(filename);
+	openArchive(entry);
+
+	if (id >= entry->size) {
+		throw std::out_of_range("Invalid asset ID");
+	}
+
+	return _curfile->loadAsset(id);
+}
+
+void load_fonts(const char *filename) {
+	MemoryReadStream *stream;
+
+	stream = gameAssets->rawData(filename, 0);
+
+	try {
+		gameFonts.clear();
+		gameFonts.loadFonts(*stream);
+	} catch (...) {
+		delete stream;
+		throw;
+	}
+
+	delete stream;
+}

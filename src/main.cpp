@@ -27,6 +27,7 @@
 #include "system.h"
 
 AssetManager *gameAssets = NULL;
+FontManager gameFonts;
 
 unsigned buttonState(unsigned sdlButtons) {
 	unsigned ret = 0;
@@ -229,6 +230,7 @@ void prepare_main_menu(void) {
 void engine_shutdown(void) {
 	delete gui_stack;
 	GarbageCollector::flush();
+	gameFonts.clear();
 	delete gameAssets;
 	shutdownScreen();
 	cleanup_datadir();
@@ -245,6 +247,8 @@ int main(int argc, char **argv) {
 		gameAssets = new AssetManager;
 		gui_stack = new ViewStack;
 		initScreen();
+		// TODO: add multilingual support
+		load_fonts("fonts.lbx");
 	} catch(std::exception &e) {
 		fprintf(stderr, "Error: %s\n", e.what());
 		engine_shutdown();

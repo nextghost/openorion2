@@ -119,6 +119,8 @@ public:
 	// Decrease the reference counter and delete the asset when it's
 	// no longer in use. NULL values are silently ignored.
 	void freeAsset(const Image *img);
+
+	MemoryReadStream *rawData(const char *filename, unsigned id);
 };
 
 template <class C>
@@ -187,5 +189,8 @@ AssetPointer<C>::operator C*(void) {
 }
 
 extern AssetManager *gameAssets;
+extern FontManager gameFonts;
+
+void load_fonts(const char *filename);
 
 #endif
