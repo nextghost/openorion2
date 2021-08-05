@@ -281,16 +281,3 @@ void clearScreen(uint8_t r, uint8_t g, uint8_t b) {
 
 	SDL_FillRect(wsurface, &rect, SDL_MapRGB(wsurface->format, r, g, b));
 }
-
-// FIXME: replace with real rendering engine
-void render(unsigned id) {
-	SDL_Rect rect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
-
-	SDL_FillRect(wsurface, &rect, SDL_MapRGB(wsurface->format, 0, 0, 0));
-
-	if (textures[id].drawsurf) {
-		SDL_BlitSurface(textures[id].drawsurf, NULL, wsurface, &rect);
-	}
-
-	SDL_UpdateWindowSurface(window);
-}

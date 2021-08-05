@@ -49,7 +49,4 @@ void drawTextureTile(unsigned id, int x, int y, int offsx, int offsy,
 
 void clearScreen(uint8_t r = 0, uint8_t g = 0, uint8_t b = 0);
 
-// FIXME: replace with real rendering engine
-void render(unsigned id);
-
 #endif
