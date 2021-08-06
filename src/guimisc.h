@@ -23,14 +23,14 @@
 #include "lbx.h"
 #include "gui.h"
 
-class TextBoxWindow : public GuiWindow {
+class MessageBoxWindow : public GuiWindow {
 private:
 	ImageAsset _header, _body, _footer;
 	char *_text;
 
 public:
-	TextBoxWindow(GuiView *parent, const char *text);
-	~TextBoxWindow(void);
+	MessageBoxWindow(GuiView *parent, const char *text);
+	~MessageBoxWindow(void);
 
 	void redraw(unsigned curtick);
 };

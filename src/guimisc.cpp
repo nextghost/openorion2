@@ -27,7 +27,7 @@
 #define ASSET_TEXTBOX_FOOTER 2
 #define ASSET_TEXTBOX_BUTTON 3
 
-TextBoxWindow::TextBoxWindow(GuiView *parent, const char *text) :
+MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text) :
 	GuiWindow(parent) {
 
 	Widget *w = NULL;
@@ -50,7 +50,7 @@ TextBoxWindow::TextBoxWindow(GuiView *parent, const char *text) :
 		w->setClickSprite(MBUTTON_LEFT, TEXTBOX_ARCHIVE,
 			ASSET_TEXTBOX_BUTTON, _header->palette(), 1);
 		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod<GuiWindow>(*this, &TextBoxWindow::close));
+			GuiMethod<GuiWindow>(*this, &MessageBoxWindow::close));
 		addWidget(w);
 	} catch (...) {
 		delete _text;
@@ -60,11 +60,11 @@ TextBoxWindow::TextBoxWindow(GuiView *parent, const char *text) :
 	}
 }
 
-TextBoxWindow::~TextBoxWindow(void) {
+MessageBoxWindow::~MessageBoxWindow(void) {
 	delete[] _text;
 }
 
-void TextBoxWindow::redraw(unsigned curtick) {
+void MessageBoxWindow::redraw(unsigned curtick) {
 	Font *fnt;
 	int y, by = _header->height(), fh = _footer->height();
 	uint8_t palette[] = {0, 0, 0, 0, 255, 48, 40, 4, 255, 32, 156, 28,

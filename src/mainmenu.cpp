@@ -100,33 +100,33 @@ void MainMenuView::redraw(unsigned curtick) {
 }
 
 void MainMenuView::clickContinue(int x, int y, int arg) {
-	TextBoxWindow *w;
+	MessageBoxWindow *w;
 
-	w = new TextBoxWindow(this, "Continue not implemented yet");
+	w = new MessageBoxWindow(this, "Continue not implemented yet");
 }
 
 void MainMenuView::clickLoad(int x, int y, int arg) {
-	TextBoxWindow *w;
+	MessageBoxWindow *w;
 
-	w = new TextBoxWindow(this, "Load Game not implemented yet");
+	w = new MessageBoxWindow(this, "Load Game not implemented yet");
 }
 
 void MainMenuView::clickNew(int x, int y, int arg) {
-	TextBoxWindow *w;
+	MessageBoxWindow *w;
 
-	w = new TextBoxWindow(this, "New Game not implemented yet");
+	w = new MessageBoxWindow(this, "New Game not implemented yet");
 }
 
 void MainMenuView::clickMultiplayer(int x, int y, int arg) {
-	TextBoxWindow *w;
+	MessageBoxWindow *w;
 
-	w = new TextBoxWindow(this, "Multiplayer not implemented yet");
+	w = new MessageBoxWindow(this, "Multiplayer not implemented yet");
 }
 
 void MainMenuView::clickScoreboard(int x, int y, int arg) {
-	TextBoxWindow *w;
+	MessageBoxWindow *w;
 
-	w = new TextBoxWindow(this, "Hall of Fame not implemented yet");
+	w = new MessageBoxWindow(this, "Hall of Fame not implemented yet");
 }
 
 void MainMenuView::clickQuit(int x, int y, int arg) {
