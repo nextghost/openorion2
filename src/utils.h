@@ -77,6 +77,7 @@ public:
 template <class C> class BilistNode : public Recyclable {
 private:
 	BilistNode *_prev, *_next;
+	int _discarded;
 
 	// Do NOT implement
 	BilistNode(const BilistNode &other);
@@ -103,18 +104,23 @@ public:
 };
 
 template <class C>
-BilistNode<C>::BilistNode(void) : _prev(NULL), _next(NULL), data(NULL) {
+BilistNode<C>::BilistNode(void) : _prev(NULL), _next(NULL), _discarded(0),
+	data(NULL) {
 
 }
 
 template <class C>
 BilistNode<C>::~BilistNode(void) {
-	unlink();
+	if (!_discarded) {
+		unlink();
+	}
 }
 
 template <class C>
 void BilistNode<C>::insert_before(BilistNode<C> *node) {
-	if (!node) {
+	if (_discarded) {
+		throw std::invalid_argument("Cannot insert a discarded node");
+	} else if (!node) {
 		throw std::invalid_argument("Cannot insert list node before NULL value");
 	}
 
@@ -130,7 +136,9 @@ void BilistNode<C>::insert_before(BilistNode<C> *node) {
 
 template <class C>
 void BilistNode<C>::insert_after(BilistNode<C> *node) {
-	if (!node) {
+	if (_discarded) {
+		throw std::invalid_argument("Cannot insert a discarded node");
+	} else if (!node) {
 		throw std::invalid_argument("Cannot append list node after NULL value");
 	}
 
@@ -160,6 +168,8 @@ void BilistNode<C>::unlink(void) {
 
 template <class C>
 void BilistNode<C>::discard(void) {
+	_discarded = 1;
+
 	if (_prev) {
 		_prev->_next = _next;
 	}
