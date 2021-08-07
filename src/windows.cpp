@@ -21,15 +21,9 @@
 #include <cstring>
 #include <stdexcept>
 #include "system.h"
+#include "utils.h"
 
 static char *data_basepath = NULL;
-
-static char *copystr(const char *str) {
-	char *ret = new char[strlen(str) + 1];
-
-	strcpy(ret, str);
-	return ret;
-}
 
 char *concatPath(const char *basepath, const char *relpath) {
 	size_t i, baselen, pathlen;

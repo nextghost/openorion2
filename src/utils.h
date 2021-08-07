@@ -103,6 +103,8 @@ public:
 	BilistNode *next(void);
 };
 
+char *copystr(const char *str);
+
 template <class C>
 BilistNode<C>::BilistNode(void) : _prev(NULL), _next(NULL), _discarded(0),
 	data(NULL) {

@@ -18,6 +18,7 @@
  */
 
 #include <cstddef>
+#include <cstring>
 #include "utils.h"
 
 Recyclable *GarbageCollector::_garbage = NULL;
@@ -58,4 +59,11 @@ void GarbageCollector::flush(void) {
 		next = cur->_nextGarbage;
 		delete cur;
 	}
+}
+
+char *copystr(const char *str) {
+	char *ret = new char[strlen(str) + 1];
+
+	strcpy(ret, str);
+	return ret;
 }

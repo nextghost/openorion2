@@ -42,8 +42,7 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text) :
 	_height = _header->height() + _footer->height() + fnt->height();
 	_x = (SCREEN_WIDTH - _width) / 2;
 	_y = (SCREEN_HEIGHT - _height) / 2;
-	_text = new char[strlen(text) + 1];
-	strcpy(_text, text);
+	_text = copystr(text);
 
 	try {
 		w = new Widget(158, _height - 27, 64, 19);
