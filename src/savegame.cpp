@@ -1,3 +1,4 @@
+#include <cstring>
 #include <stdexcept>
 #include "savegame.h"
 
@@ -9,237 +10,483 @@ const int STARS_DATA_OFFSET 		= 0x017ad3;
 
 const int PLAYERS_DATA_OFFSET 		= 0x01aa0f;
 
-GameState* Savegame::load(const char *fileName) {
-    File file;
-    GameState* gameState;
-
-    if (!file.open(fileName)) {
-        throw std::runtime_error("Cannot open savegame file");
-    }
-
-    MemoryReadStream* stream = file.readStream(file.size());
-    file.close();
-
-    gameState = new GameState;
-    readConfig(*stream, gameState);
-    readGalaxy(*stream, gameState);
-    readStars(*stream, gameState);
-    readLeaders(*stream, gameState);
-    readPlayers(*stream, gameState);
-    delete stream;
-
-    return gameState;
+GameConfig::GameConfig(void) {
+	version = 0;
+	memset(saveGameName, 0, SAVE_GAME_NAME_SIZE);
+	stardate = 0;
+	endOfTurnSummary = 0;
+	endOfTurnWait = 0;
+	randomEvents = 0;
+	enemyMoves = 0;
+	expandingHelp = 0;
+	autoSelectShips = 0;
+	animations = 0;
+	autoSelectColony = 0;
+	showRelocationLines = 0;
+	showGNNReport = 0;
+	autoDeleteTradeGoodHousing = 0;
+	showOnlySeriousTurnSummary = 0;
+	shipInitiative = 0;
 }
 
-void Savegame::readConfig(SeekableReadStream& stream, GameState* state) {
-    state->_gameConfig.version = stream.readUint32LE();
-    stream.read(state->_gameConfig.saveGameName, SAVE_GAME_NAME_SIZE);
-    state->_gameConfig.stardate = stream.readUint16LE();
+void GameConfig::load(ReadStream &stream) {
+	version = stream.readUint32LE();
+	stream.read(saveGameName, SAVE_GAME_NAME_SIZE);
+	saveGameName[SAVE_GAME_NAME_SIZE - 1] = '\0';
+	stardate = stream.readUint16LE();
 
-    stream.seek(0x2E, SEEK_SET);
-    state->_gameConfig.endOfTurnSummary = stream.readUint8();
-    state->_gameConfig.endOfTurnWait = stream.readUint8();
-    state->_gameConfig.randomEvents = stream.readUint8();
-    state->_gameConfig.enemyMoves = stream.readUint8();
-    state->_gameConfig.expandingHelp = stream.readUint8();
-    state->_gameConfig.autoSelectShips = stream.readUint8();
-    state->_gameConfig.animations = stream.readUint8();
-    state->_gameConfig.autoSelectColony = stream.readUint8();
-    state->_gameConfig.showRelocationLines = stream.readUint8();
-    state->_gameConfig.showGNNReport = stream.readUint8();
-    state->_gameConfig.autoDeleteTradeGoodHousing = stream.readUint8();
-    state->_gameConfig.showOnlySeriousTurnSummary = stream.readUint8();
-    state->_gameConfig.shipInitiative = stream.readUint8();
+	stream.readUint16LE();
+	stream.readUint8();
+	endOfTurnSummary = stream.readUint8();
+	endOfTurnWait = stream.readUint8();
+	randomEvents = stream.readUint8();
+	enemyMoves = stream.readUint8();
+	expandingHelp = stream.readUint8();
+	autoSelectShips = stream.readUint8();
+	animations = stream.readUint8();
+	autoSelectColony = stream.readUint8();
+	showRelocationLines = stream.readUint8();
+	showGNNReport = stream.readUint8();
+	autoDeleteTradeGoodHousing = stream.readUint8();
+	showOnlySeriousTurnSummary = stream.readUint8();
+	shipInitiative = stream.readUint8();
 }
 
-void Savegame::readGalaxy(SeekableReadStream& stream, GameState* state) {
-    stream.seek(0x31be4, SEEK_SET);
-    state->_galaxy.sizeFactor = stream.readUint8();
-    stream.readUint32LE(); // Skip unknown data
-    state->_galaxy.width = stream.readUint16LE();
-    state->_galaxy.height = stream.readUint16LE();
+Galaxy::Galaxy(void) : sizeFactor(0), width(0), height(0) {
+
 }
 
-void Savegame::readLeaders(SeekableReadStream& stream, GameState* state) {
-    int offset = 0;
-    for (int i = 0; i < LEADER_COUNT; i++) {
-        offset = LEADERS_DATA_OFFSET + (LEADER_RECORD_SIZE * i);
-
-        stream.seek(offset, SEEK_SET);
-        stream.read(state->_leaders[i].name, LEADER_NAME_SIZE);
-
-        stream.seek(offset+LEADER_NAME_SIZE, SEEK_SET);
-        stream.read(state->_leaders[i].title, LEADER_TITLE_SIZE);
-
-        stream.seek(offset+LEADER_TYPE_OFFSET, SEEK_SET);
-        state->_leaders[i].type = stream.readUint8();
-        state->_leaders[i].experience = stream.readUint16LE();
-
-        state->_leaders[i].commonSkills = stream.readUint64LE();
-        state->_leaders[i].specialSkills = stream.readUint64LE();
-        for (int j = 0; j < MAX_LEADER_TECH_SKILLS; j++) {
-            state->_leaders[i].techs[j] = stream.readUint8();
-        }
-        state->_leaders[i].picture = stream.readUint8();
-        state->_leaders[i].skillValue = stream.readUint16LE();
-        state->_leaders[i].level = stream.readUint8();
-        state->_leaders[i].location = stream.readUint16LE();
-        state->_leaders[i].eta = stream.readUint8();
-        state->_leaders[i].displayLevelUp = stream.readUint8();
-        state->_leaders[i].status = stream.readUint8();
-        state->_leaders[i].playerIndex = stream.readUint8();
-    }
+void Galaxy::load(ReadStream &stream) {
+	sizeFactor = stream.readUint8();
+	stream.readUint32LE(); // Skip unknown data
+	width = stream.readUint16LE();
+	height = stream.readUint16LE();
 }
 
-void Savegame::readPlayers(SeekableReadStream& stream, GameState* state) {
-    const int PLAYERS_RECORD_SIZE = 3753;
-    int offset = 0;
+Leader::Leader(void) {
+	int i;
 
-    for (int i = 0; i < PLAYER_COUNT; i++) {
-        offset = PLAYERS_DATA_OFFSET + (PLAYERS_RECORD_SIZE * i);
+	memset(name, 0, LEADER_NAME_SIZE);
+	memset(title, 0, LEADER_TITLE_SIZE);
+	type = 0;
+	experience = 0;
+	commonSkills = 0;
+	specialSkills = 0;
 
-        stream.seek(offset, SEEK_SET);
-        stream.read(state->_players[i].name, PLAYER_NAME_SIZE);
-        stream.read(state->_players[i].race, PLAYER_RACE_SIZE);
-        state->_players[i].picture = stream.readUint8();
-        state->_players[i].color = stream.readUint8();
-        state->_players[i].personality = stream.readUint8();
-        // 100 = Human player
-        state->_players[i].objective = stream.readUint8();
-        state->_players[i].homePlayerId = stream.readUint16LE();
-        state->_players[i].networkPlayerId = stream.readUint16LE();
-        state->_players[i].playerDoneFlags = stream.readUint8();
-        stream.readUint16LE(); // Dead field
-        state->_players[i].researchBreakthrough = stream.readUint8();
-        state->_players[i].taxRate = stream.readUint8();
-        state->_players[i].BC = stream.readUint32LE();
-        state->_players[i].totalFreighters = stream.readUint16LE();
-        state->_players[i].surplusFreighters = stream.readUint16LE();
-        state->_players[i].commandPoints = stream.readUint16LE();
-        state->_players[i].usedCommandPoints = stream.readSint16LE();
-        state->_players[i].foodFreighted = stream.readUint16LE();
-        state->_players[i].settlersFreighted = stream.readUint16LE();
+	for (i = 0; i < MAX_LEADER_TECH_SKILLS; i++) {
+		techs[i] = 0;
+	}
 
-        BitStream bitstream(stream);
-        for (int j = 0; j < MAX_SETTLERS; j++) {
-            state->_players[i].settlers[j].sourceColony = bitstream.readBitsLE(8);
-            state->_players[i].settlers[j].destinationPlanet = bitstream.readBitsLE(8);
-            state->_players[i].settlers[j].player = bitstream.readBitsLE(4);
-            state->_players[i].settlers[j].eta = bitstream.readBitsLE(4);
-            state->_players[i].settlers[j].job = bitstream.readBitsLE(2);
-            bitstream.readBitsLE(6);
-        }
-
-        state->_players[i].totalPop = stream.readUint16LE();
-        state->_players[i].foodProduced = stream.readUint16LE();
-        state->_players[i].industryProduced = stream.readUint16LE();
-        state->_players[i].researchProduced = stream.readUint16LE();
-        state->_players[i].bcProduced = stream.readUint16LE();
-
-        state->_players[i].surplusFood = stream.readSint16LE();
-        state->_players[i].surplusBC = stream.readSint16LE();
-
-        state->_players[i].totalMaintenance = stream.readSint32LE();
-        state->_players[i].researchArea = ResearchArea(stream.readUint8());
-        state->_players[i].researchItem = stream.readUint8();
-
-        stream.seek(offset + 0x89E, SEEK_SET);
-        state->_players[i].racePicks.government = stream.readUint8();
-        state->_players[i].racePicks.population = stream.readSint8();
-        state->_players[i].racePicks.farming = stream.readSint8();
-        state->_players[i].racePicks.industry = stream.readSint8();
-        state->_players[i].racePicks.science = stream.readSint8();
-        state->_players[i].racePicks.money = stream.readSint8();
-        state->_players[i].racePicks.shipDefense = stream.readSint8();
-        state->_players[i].racePicks.shipAttack = stream.readSint8();
-        state->_players[i].racePicks.groundCombat = stream.readSint8();
-        state->_players[i].racePicks.spying = stream.readSint8();
-        state->_players[i].racePicks.lowG = stream.readUint8();
-        state->_players[i].racePicks.highG = stream.readUint8();
-        state->_players[i].racePicks.aquatic = stream.readUint8();
-        state->_players[i].racePicks.subterranean = stream.readUint8();
-        state->_players[i].racePicks.largeHomeworld = stream.readUint8();
-        state->_players[i].racePicks.richHomeworld = stream.readSint8();
-        stream.seek(offset + 0x8ae, SEEK_SET);
-        state->_players[i].racePicks.artifactsHomeworld = stream.readUint8();
-        state->_players[i].racePicks.cybernetic = stream.readUint8();
-        state->_players[i].racePicks.lithovore = stream.readUint8();
-        state->_players[i].racePicks.repulsive = stream.readUint8();
-        state->_players[i].racePicks.charismatic = stream.readUint8();
-        state->_players[i].racePicks.uncreative = stream.readUint8();
-        state->_players[i].racePicks.creative = stream.readUint8();
-        state->_players[i].racePicks.tolerant = stream.readUint8();
-        state->_players[i].racePicks.fantasticTraders = stream.readUint8();
-        state->_players[i].racePicks.telepathic = stream.readUint8();
-        state->_players[i].racePicks.lucky = stream.readUint8();
-        state->_players[i].racePicks.omniscience = stream.readUint8();
-        state->_players[i].racePicks.stealthyShips = stream.readUint8();
-        state->_players[i].racePicks.transDimensional = stream.readUint8();
-        state->_players[i].racePicks.warlord = stream.readUint8();
-    }
+	picture = 0;
+	skillValue = 0;
+	level = 0;
+	location = -1;
+	eta = 0;
+	displayLevelUp = 0;
+	status = 0;
+	playerIndex = 0;
 }
 
-void Savegame::readStars(SeekableReadStream& stream, GameState* state) {
-    int offset = STARS_COUNT_DATA_OFFSET;
-    stream.seek(offset, SEEK_SET);
-    state->_starSystemCount = stream.readUint8();
+void Leader::load(ReadStream &stream) {
+	int i;
 
-    for (int i = 0; i < state->_starSystemCount; i++) {
-        int record_offset = STARS_DATA_OFFSET + STARS_RECORD_SIZE * i;
-        stream.seek(record_offset, SEEK_SET);
-        stream.read(state->_starSystems[i].name, STARS_NAME_SIZE);
-        state->_starSystems[i].x = stream.readUint16LE();
-        state->_starSystems[i].y = stream.readUint16LE();
-        state->_starSystems[i].size = StarSize(stream.readUint8());
-        state->_starSystems[i].owner = stream.readUint8();
-        state->_starSystems[i].pictureType = stream.readUint8();
-        state->_starSystems[i].spectralClass = SpectralClass(stream.readUint8());
+	stream.read(name, LEADER_NAME_SIZE);
+	name[LEADER_NAME_SIZE - 1] = '\0';
+	stream.read(title, LEADER_TITLE_SIZE);
+	title[LEADER_TITLE_SIZE - 1] = '\0';
+	type = stream.readUint8();
+	experience = stream.readUint16LE();
+	commonSkills = stream.readUint32LE();
+	specialSkills = stream.readUint32LE();
 
-        for (int j = 0; j < (MAX_STARS + 7)/8; j++) {
-            state->_starSystems[i].blackHoleBlocks[j] = stream.readUint8();
-        }
+	for (i = 0; i < MAX_LEADER_TECH_SKILLS; i++) {
+		techs[i] = stream.readUint8();
+	}
 
-        state->_starSystems[i].special = SpecialType(stream.readUint8());
-        state->_starSystems[i].wormhole = stream.readUint8();
-        state->_starSystems[i].blockaded = stream.readUint8();
-
-        for (int j = 0; j < MAX_PLAYERS; j++) {
-            state->_starSystems[i].blockadedBy[j] = stream.readUint8();
-        }
-        state->_starSystems[i].visited = stream.readUint8();
-        state->_starSystems[i].justVisited = stream.readUint8();
-        state->_starSystems[i].ignoreColonyShips = stream.readUint8();
-        state->_starSystems[i].ignoreCombatShips = stream.readUint8();
-        state->_starSystems[i].colonizePlayer = stream.readSint8();
-        state->_starSystems[i].hasColony = stream.readUint8();
-        state->_starSystems[i].hasWarpFieldInterdictor = stream.readUint8();
-        state->_starSystems[i].nextWFIInList = stream.readUint8();
-        state->_starSystems[i].hasTachyon = stream.readUint8();
-        state->_starSystems[i].hasSubspace = stream.readUint8();
-        state->_starSystems[i].hasStargate = stream.readUint8();
-        state->_starSystems[i].hasJumpgate = stream.readUint8();
-        state->_starSystems[i].hasArtemisNet = stream.readUint8();
-        state->_starSystems[i].hasDimensionalPortal = stream.readUint8();
-        state->_starSystems[i].isStagepoint = stream.readUint8();
-
-        for (int j = 0; j < MAX_PLAYERS; j++) {
-            state->_starSystems[i].officerIndex[j] = stream.readUint8();
-        }
-        for (int j = 0; j < MAX_PLANETS_PER_SYSTEM; j++) {
-            state->_starSystems[i].planetIndex[j] = stream.readUint16LE();
-        }
-        for (int j = 0; j < MAX_PLAYERS; j++) {
-            state->_starSystems[i].relocateShipTo[j] = stream.readUint16LE();
-        }
-        stream.readUint8();
-        stream.readUint8();
-        stream.readUint8();
-
-        for (int j = 0; j < MAX_PLAYERS; j++) {
-            state->_starSystems[i].surrenderTo[j] = stream.readUint8();
-        }
-        state->_starSystems[i].inNebula = stream.readUint8();
-        state->_starSystems[i].artifactsGaveApp = stream.readUint8();
-    }
+	picture = stream.readUint8();
+	skillValue = stream.readUint16LE();
+	level = stream.readUint8();
+	location = stream.readSint16LE();
+	eta = stream.readUint8();
+	displayLevelUp = stream.readUint8();
+	status = stream.readUint8();
+	playerIndex = stream.readUint8();
 }
 
+void RacePicks::load(ReadStream &stream) {
+	government = stream.readUint8();
+	population = stream.readSint8();
+	farming = stream.readSint8();
+	industry = stream.readSint8();
+	science = stream.readSint8();
+	money = stream.readSint8();
+	shipDefense = stream.readSint8();
+	shipAttack = stream.readSint8();
+	groundCombat = stream.readSint8();
+	spying = stream.readSint8();
+	lowG = stream.readUint8();
+	highG = stream.readUint8();
+	aquatic = stream.readUint8();
+	subterranean = stream.readUint8();
+	largeHomeworld = stream.readUint8();
+	richHomeworld = stream.readSint8();
+	artifactsHomeworld = stream.readUint8();
+	cybernetic = stream.readUint8();
+	lithovore = stream.readUint8();
+	repulsive = stream.readUint8();
+	charismatic = stream.readUint8();
+	uncreative = stream.readUint8();
+	creative = stream.readUint8();
+	tolerant = stream.readUint8();
+	fantasticTraders = stream.readUint8();
+	telepathic = stream.readUint8();
+	lucky = stream.readUint8();
+	omniscience = stream.readUint8();
+	stealthyShips = stream.readUint8();
+	transDimensional = stream.readUint8();
+	warlord = stream.readUint8();
+}
+
+void SettlerInfo::load(ReadStream &stream) {
+	BitStream data(stream);
+
+	sourceColony = data.readBitsLE(8);
+	destinationPlanet = data.readBitsLE(8);
+	player = data.readBitsLE(4);
+	eta = data.readBitsLE(4);
+	job = data.readBitsLE(2);
+	//data.readBitsLE(6);
+}
+
+Player::Player(void) {
+	memset(name, 0, PLAYER_NAME_SIZE);
+	memset(race, 0, PLAYER_RACE_SIZE);
+	picture = 0;
+	color = 0;
+	personality = 0;
+	objective = 0;
+
+	homePlayerId = 0;
+	networkPlayerId = 0;
+	playerDoneFlags = 0;
+	researchBreakthrough = 0;
+	taxRate = 0;
+	BC = 0;
+	totalFreighters = 0;
+	surplusFreighters = 0;
+	commandPoints = 0;
+	usedCommandPoints = 0;
+	foodFreighted = 0;
+	settlersFreighted = 0;
+
+	totalPop = 0;
+	foodProduced = 0;
+	industryProduced = 0;
+	researchProduced = 0;
+	bcProduced = 0;
+
+	surplusFood = 0;
+	surplusBC = 0;
+
+	totalMaintenance = 0;
+	researchArea = ResearchArea::None;
+	researchItem = 0;
+}
+
+void Player::load(SeekableReadStream &stream) {
+	int i;
+
+	stream.read(name, PLAYER_NAME_SIZE);
+	name[PLAYER_NAME_SIZE - 1] = '\0';
+	stream.read(race, PLAYER_RACE_SIZE);
+	race[PLAYER_RACE_SIZE - 1] = '\0';
+	picture = stream.readUint8();
+	color = stream.readUint8();
+	// 100 = Human player
+	personality = stream.readUint8();
+	objective = stream.readUint8();
+
+	homePlayerId = stream.readUint16LE();
+	networkPlayerId = stream.readUint16LE();
+	playerDoneFlags = stream.readUint8();
+	stream.readUint16LE(); // Dead field
+	researchBreakthrough = stream.readUint8();
+	taxRate = stream.readUint8();
+	BC = stream.readUint32LE();
+	totalFreighters = stream.readUint16LE();
+	surplusFreighters = stream.readUint16LE();
+	commandPoints = stream.readUint16LE();
+	usedCommandPoints = stream.readSint16LE();
+	foodFreighted = stream.readUint16LE();
+	settlersFreighted = stream.readUint16LE();
+
+	for (i = 0; i < MAX_SETTLERS; i++) {
+		settlers[i].load(stream);
+	}
+
+	totalPop = stream.readUint16LE();
+	foodProduced = stream.readUint16LE();
+	industryProduced = stream.readUint16LE();
+	researchProduced = stream.readUint16LE();
+	bcProduced = stream.readUint16LE();
+
+	surplusFood = stream.readSint16LE();
+	surplusBC = stream.readSint16LE();
+
+	// FIXME: check maintenance offset in save file
+	totalMaintenance = stream.readSint32LE();
+	stream.seek(0x269, SEEK_CUR);
+	researchArea = ResearchArea(stream.readUint8());
+	researchItem = stream.readUint8();
+
+	stream.seek(0x57c, SEEK_CUR);
+	racePicks.load(stream);
+	stream.seek(0x5ec, SEEK_CUR);
+}
+
+Star::Star(void) {
+	memset(name, 0, STARS_NAME_SIZE);
+	x = 0;
+	y = 0;
+	size = StarSize::Large;
+	owner = 0;
+	pictureType = 0;
+	spectralClass = SpectralClass::Blue;
+
+	memset(lastPlanetSelected, 0, sizeof(lastPlanetSelected));
+	memset(blackHoleBlocks, 0, sizeof(blackHoleBlocks));
+
+	special = SpecialType::None;
+	wormhole = 0;
+	blockaded = 0;
+
+	memset(blockadedBy, 0, sizeof(blockadedBy));
+
+	visited = 0;
+	justVisited = 0;
+	ignoreColonyShips = 0;
+	ignoreCombatShips = 0;
+	colonizePlayer = 0;
+	hasColony = 0;
+	hasWarpFieldInterdictor = 0;
+	nextWFIInList = 0;
+	hasTachyon = 0;
+	hasSubspace = 0;
+	hasStargate = 0;
+	hasJumpgate = 0;
+	hasArtemisNet = 0;
+	hasDimensionalPortal = 0;
+	isStagepoint = 0;
+
+	memset(officerIndex, 0, sizeof(officerIndex));
+	memset(planetIndex, 0, sizeof(planetIndex));
+	memset(relocateShipTo, 0, sizeof(relocateShipTo));
+	memset(surrenderTo, 0, sizeof(surrenderTo));
+
+	inNebula = 0;
+	artifactsGaveApp = 0;
+}
+
+void Star::load(ReadStream &stream) {
+	int i;
+
+	stream.read(name, STARS_NAME_SIZE);
+	name[STARS_NAME_SIZE - 1] = '\0';
+	x = stream.readUint16LE();
+	y = stream.readUint16LE();
+	size = StarSize(stream.readUint8());
+	owner = stream.readUint8();
+	pictureType = stream.readUint8();
+	spectralClass = SpectralClass(stream.readUint8());
+
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		lastPlanetSelected[i] = stream.readUint8();
+	}
+
+	for (i = 0; i < (MAX_STARS + 7)/8; i++) {
+		blackHoleBlocks[i] = stream.readUint8();
+	}
+
+	special = SpecialType(stream.readUint8());
+	wormhole = stream.readUint8();
+	blockaded = stream.readUint8();
+
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		blockadedBy[i] = stream.readUint8();
+	}
+
+	visited = stream.readUint8();
+	justVisited = stream.readUint8();
+	ignoreColonyShips = stream.readUint8();
+	ignoreCombatShips = stream.readUint8();
+	colonizePlayer = stream.readSint8();
+	hasColony = stream.readUint8();
+	hasWarpFieldInterdictor = stream.readUint8();
+	nextWFIInList = stream.readUint8();
+	hasTachyon = stream.readUint8();
+	hasSubspace = stream.readUint8();
+	hasStargate = stream.readUint8();
+	hasJumpgate = stream.readUint8();
+	hasArtemisNet = stream.readUint8();
+	hasDimensionalPortal = stream.readUint8();
+	isStagepoint = stream.readUint8();
+
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		officerIndex[i] = stream.readUint8();
+	}
+
+	for (i = 0; i < MAX_PLANETS_PER_SYSTEM; i++) {
+		planetIndex[i] = stream.readUint16LE();
+	}
+
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		relocateShipTo[i] = stream.readUint16LE();
+	}
+
+	stream.readUint8();
+	stream.readUint8();
+	stream.readUint8();
+
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		surrenderTo[i] = stream.readUint8();
+	}
+
+	inNebula = stream.readUint8();
+	artifactsGaveApp = stream.readUint8();
+}
+
+void GameState::load(SeekableReadStream &stream) {
+	int i;
+
+	// FIXME: get rid of seeks
+	_gameConfig.load(stream);
+	stream.seek(0x31be4, SEEK_SET);
+	_galaxy.load(stream);
+	stream.seek(STARS_COUNT_DATA_OFFSET, SEEK_SET);
+	// FIXME: Uint16LE?
+	_starSystemCount = stream.readUint8();
+	stream.readUint8();
+
+	for (i = 0; i < _starSystemCount; i++) {
+		_starSystems[i].load(stream);
+	}
+
+	stream.seek(LEADERS_DATA_OFFSET, SEEK_SET);
+
+	for (i = 0; i < LEADER_COUNT; i++) {
+		_leaders[i].load(stream);
+	}
+
+	stream.seek(PLAYERS_DATA_OFFSET, SEEK_SET);
+
+	for (i = 0; i < PLAYER_COUNT; i++) {
+		_players[i].load(stream);
+	}
+}
+
+void GameState::load(const char *filename) {
+	File fr;
+
+	if (!fr.open(filename)) {
+		throw std::runtime_error("Cannot open savegame file");
+	}
+
+	load(fr);
+}
+
+void GameState::dump(void) const {
+	fprintf(stdout, "=== Config ===\n");
+	fprintf(stdout, "Version: %d\n", _gameConfig.version);
+	fprintf(stdout, "Save game name: %s\n", _gameConfig.saveGameName);
+	fprintf(stdout, "Stardate: %d\n", _gameConfig.stardate);
+	fprintf(stdout, "End of turn summary: %d\n", _gameConfig.endOfTurnSummary);
+	fprintf(stdout, "End of turn wait: %d\n", _gameConfig.endOfTurnWait);
+	fprintf(stdout, "Random events: %d\n", _gameConfig.randomEvents);
+	fprintf(stdout, "Enemy moves: %d\n", _gameConfig.enemyMoves);
+	fprintf(stdout, "Expanding help: %d\n", _gameConfig.expandingHelp);
+	fprintf(stdout, "Autoselect ships: %d\n", _gameConfig.autoSelectShips);
+	fprintf(stdout, "Animations: %d\n", _gameConfig.animations);
+	fprintf(stdout, "Auto select colony: %d\n", _gameConfig.autoSelectColony);
+	fprintf(stdout, "Show relocation lines: %d\n", _gameConfig.showRelocationLines);
+	fprintf(stdout, "Show GNN Report: %d\n", _gameConfig.showGNNReport);
+	fprintf(stdout, "Auto delete trade good housing: %d\n", _gameConfig.autoDeleteTradeGoodHousing);
+	fprintf(stdout, "Show only serious turn summary: %d\n", _gameConfig.showOnlySeriousTurnSummary);
+	fprintf(stdout, "Ship initiative: %d\n", _gameConfig.shipInitiative);
+
+	fprintf(stdout, "=== Galaxy ===\n");
+	fprintf(stdout, "Size factor: %d\n", _galaxy.sizeFactor);
+	fprintf(stdout, "width: %d\n", _galaxy.width);
+	fprintf(stdout, "height: %d\n", _galaxy.height);
+
+	fprintf(stdout, "\n=== Hero ===\n");
+	for (int i = 0; i < LEADER_COUNT; i++) {
+		fprintf(stdout, "Name: %s\n", _leaders[i].name);
+		fprintf(stdout, "Title: %s\n", _leaders[i].title);
+		fprintf(stdout, "Type: %d\n", _leaders[i].type);
+		fprintf(stdout, "Experience: %d\n", _leaders[i].experience);
+		fprintf(stdout, "Common skills: %lu\n", _leaders[i].commonSkills);
+		fprintf(stdout, "Special skills: %lu\n", _leaders[i].specialSkills);
+		for (int j = 0; j < MAX_LEADER_TECH_SKILLS; j++) {
+			fprintf(stdout, "Tech: %d\n", _leaders[i].techs[j]);
+		}
+		fprintf(stdout, "Picture: %d\n", _leaders[i].picture);
+		fprintf(stdout, "Skill value: %d\n", _leaders[i].skillValue);
+		fprintf(stdout, "Level: %d\n", _leaders[i].level);
+		fprintf(stdout, "Location: %d\n", _leaders[i].location);
+		fprintf(stdout, "ETA: %d\n", _leaders[i].eta);
+		fprintf(stdout, "Level up: %d\n", _leaders[i].displayLevelUp);
+		fprintf(stdout, "Status: %d\n", _leaders[i].status);
+		fprintf(stdout, "Player: %d\n", _leaders[i].playerIndex);
+	}
+
+	fprintf(stdout, "\n=== Player ===\n");
+	for (int i = 0; i < PLAYER_COUNT; i++) {
+		fprintf(stdout, "Name:\t%s\tRace:\t%s\n",
+			_players[i].name, _players[i].race);
+		fprintf(stdout, "Picture:\t\t%d\tColor:\t\t\t%d\tPersonality:\t\t%d\n",
+			_players[i].picture, _players[i].color, _players[i].personality);
+		fprintf(stdout, "Objective:\t\t%d\tTax rate:\t\t%d\tBC:\t\t\t%lu\n",
+			_players[i].objective, _players[i].taxRate, _players[i].BC);
+		fprintf(stdout, "Total freighters:\t%d\tUsed freighters:\t%d\tCommand points:\t\t%d\n",
+			_players[i].totalFreighters, _players[i].surplusFreighters, _players[i].commandPoints);
+		fprintf(stdout, "Total production:\t%d\tRP:\t\t\t%d\tFood:\t\t\t%d\n",
+			_players[i].industryProduced, _players[i].researchProduced, _players[i].surplusFood);
+		fprintf(stdout, "Yearly BC:\t\t%d\tResearch progress:\t%d\tResearch Area:\t\t%d\n",
+			_players[i].surplusBC, _players[i].researchProduced, (int)_players[i].researchArea);
+		fprintf(stdout, "Research Item:\t\t%d\n",
+			_players[i].researchItem);
+
+		fprintf(stdout, "--- Racepicks ---\n");
+		fprintf(stdout, "Government:\t\t%d\tPopulation:\t\t%d\tFarming:\t\t%d\tScience:\t\t%d\n",
+			_players[i].racePicks.government, _players[i].racePicks.population,
+			_players[i].racePicks.farming, _players[i].racePicks.science);
+		fprintf(stdout, "Money:\t\t\t%d\tShip defense:\t\t%d\tShip attack:\t\t%d\tGround combat:\t\t%d\n",
+			_players[i].racePicks.money, _players[i].racePicks.shipDefense,
+			_players[i].racePicks.shipAttack, _players[i].racePicks.groundCombat);
+		fprintf(stdout, "Spying:\t\t\t%d\tLow G:\t\t\t%d\tHigh G:\t\t\t%d\tAquatic:\t\t%d\n",
+			_players[i].racePicks.spying, _players[i].racePicks.lowG,
+			_players[i].racePicks.highG, _players[i].racePicks.aquatic);
+		fprintf(stdout, "Subterranian:\t\t%d\tLarge homeworld:\t%d\tRich/Poor homeworld:\t%d\tArtifacts homeworld:\t%d\n",
+			_players[i].racePicks.subterranean, _players[i].racePicks.largeHomeworld,
+			_players[i].racePicks.richHomeworld, _players[i].racePicks.artifactsHomeworld);
+		fprintf(stdout, "Cybernetic:\t\t%d\tLithovore:\t\t%d\tRepulsive:\t\t%d\tCharismatic:\t\t%d\n",
+			_players[i].racePicks.cybernetic, _players[i].racePicks.lithovore,
+			_players[i].racePicks.repulsive, _players[i].racePicks.charismatic);
+		fprintf(stdout, "Uncreative:\t\t%d\tCreative:\t\t%d\tTolerant:\t\t%d\tFantastic traders:\t%d\n",
+			_players[i].racePicks.uncreative, _players[i].racePicks.creative,
+			_players[i].racePicks.tolerant, _players[i].racePicks.fantasticTraders);
+		fprintf(stdout, "Telepathic:\t\t%d\tLucky:\t\t\t%d\tOmniscience:\t\t%d\tStealthy ships:\t\t%d\n",
+			_players[i].racePicks.telepathic, _players[i].racePicks.lucky,
+			_players[i].racePicks.omniscience, _players[i].racePicks.stealthyShips);
+		fprintf(stdout, "Transdimensional:\t%d\tWarlord:\t\t%d\n",
+			_players[i].racePicks.transDimensional, _players[i].racePicks.warlord);
+	}
+
+	fprintf(stdout, "Number of stars: %d\n", _starSystemCount);
+	for (auto star : _starSystems) {
+		fprintf(stdout, "\nName:\t%s\n", star.name);
+		fprintf(stdout, "Class:\t\t%x\t\tSize:\t\t%x\n", (unsigned)star.spectralClass, (unsigned)star.size);
+		fprintf(stdout, "Position:\t%d,%d\tPrimary owner:\t%d\n", star.x, star.y, star.owner);
+		fprintf(stdout, "Special:\t%d\t\tWormhole:\t%d\n", (int)star.special, star.wormhole);
+	}
+}
