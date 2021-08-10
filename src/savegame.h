@@ -24,6 +24,12 @@ const int MAX_TECHNOLOGIES 			= 0xcb;
 const int MAX_STARS					= 72;
 const int MAX_SETTLERS				= 25;
 
+enum MultiplayerType {
+	Single = 0,
+	Hotseat = 1,
+	Network = 2,
+};
+
 enum class StarSize: uint8_t {
     Large 	= 0x00,
     Medium	= 0x01,
@@ -70,6 +76,7 @@ struct GameConfig {
 	uint32_t version;
 	char saveGameName[SAVE_GAME_NAME_SIZE];
 	unsigned int stardate;
+	uint8_t multiplayer;
 	uint8_t endOfTurnSummary;
 	uint8_t endOfTurnWait;
 	uint8_t randomEvents;

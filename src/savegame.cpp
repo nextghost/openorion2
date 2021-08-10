@@ -14,6 +14,7 @@ GameConfig::GameConfig(void) {
 	version = 0;
 	memset(saveGameName, 0, SAVE_GAME_NAME_SIZE);
 	stardate = 0;
+	multiplayer = 0;
 	endOfTurnSummary = 0;
 	endOfTurnWait = 0;
 	randomEvents = 0;
@@ -33,10 +34,8 @@ void GameConfig::load(ReadStream &stream) {
 	version = stream.readUint32LE();
 	stream.read(saveGameName, SAVE_GAME_NAME_SIZE);
 	saveGameName[SAVE_GAME_NAME_SIZE - 1] = '\0';
-	stardate = stream.readUint16LE();
-
-	stream.readUint16LE();
-	stream.readUint8();
+	stardate = stream.readUint32LE();
+	multiplayer = stream.readUint8();
 	endOfTurnSummary = stream.readUint8();
 	endOfTurnWait = stream.readUint8();
 	randomEvents = stream.readUint8();
