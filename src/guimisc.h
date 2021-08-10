@@ -35,4 +35,18 @@ public:
 	void redraw(unsigned curtick);
 };
 
+class ErrorWindow : public GuiWindow {
+private:
+	ImageAsset _bg;
+	unsigned _animStart;
+	char *_text;
+
+public:
+	ErrorWindow(GuiView *parent, const char *text);
+	~ErrorWindow(void);
+
+	void redraw(unsigned curtick);
+	void handleMouseUp(int x, int y, unsigned button);
+};
+
 #endif
