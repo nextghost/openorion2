@@ -235,6 +235,7 @@ void Widget::setIdleSprite(GuiSprite *sprite) {
 	}
 
 	_sprites[WSPRITE_IDLE] = sprite;
+	changeSprite();
 }
 
 void Widget::setIdleSprite(Image *img, int frame) {
@@ -261,6 +262,7 @@ void Widget::setMouseOverSprite(GuiSprite *sprite) {
 	}
 
 	_sprites[WSPRITE_MOUSEOVER] = sprite;
+	changeSprite();
 }
 
 void Widget::setMouseOverSprite(Image *img, int frame) {
@@ -291,6 +293,7 @@ void Widget::setClickSprite(unsigned button, GuiSprite *sprite) {
 	}
 
 	_sprites[WSPRITE_CLICK + button] = sprite;
+	changeSprite();
 }
 
 void Widget::setClickSprite(unsigned button, Image *img, int frame) {
