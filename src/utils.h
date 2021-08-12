@@ -104,6 +104,8 @@ public:
 };
 
 char *copystr(const char *str);
+char *strlower(const char *str);
+char *strupper(const char *str);
 
 template <class C>
 BilistNode<C>::BilistNode(void) : _prev(NULL), _next(NULL), _discarded(0),

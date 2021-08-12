@@ -20,8 +20,11 @@
 #ifndef MAINMENU_H_
 #define MAINMENU_H_
 
+#include <time.h>
 #include "lbx.h"
 #include "gui.h"
+
+#define SAVEGAME_SLOTS 10
 
 class MainMenuView : public GuiView {
 private:
@@ -39,6 +42,34 @@ public:
 	void clickMultiplayer(int x, int y, int arg);
 	void clickScoreboard(int x, int y, int arg);
 	void clickQuit(int x, int y, int arg);
+};
+
+struct SaveGameInfo {
+	char *filename;
+	time_t mtime;
+	GameConfig header;
+
+	SaveGameInfo(void);
+	~SaveGameInfo(void);
+};
+
+class LoadGameWindow : public GuiWindow {
+private:
+	ImageAsset _bg, _singleIcon, _hotseatIcon, _networkIcon, _modemIcon;
+	int _quickload, _selected;
+	SaveGameInfo *_saveFiles;
+
+protected:
+	void drawSlot(unsigned slot, Font *fnt, Font *smallfnt);
+
+public:
+	LoadGameWindow(GuiView *parent, int quickload);
+	~LoadGameWindow(void);
+
+	void redraw(unsigned curtick);
+
+	void selectSlot(int x, int y, int slot);
+	void handleLoad(int x = 0, int y = 0, int arg = 0);
 };
 
 #endif

@@ -19,6 +19,7 @@
 
 #include <cstddef>
 #include <cstring>
+#include <cctype>
 #include "utils.h"
 
 Recyclable *GarbageCollector::_garbage = NULL;
@@ -65,5 +66,29 @@ char *copystr(const char *str) {
 	char *ret = new char[strlen(str) + 1];
 
 	strcpy(ret, str);
+	return ret;
+}
+
+char *strlower(const char *str) {
+	size_t i;
+	char *ret = new char[strlen(str) + 1];
+
+	for (i = 0; str[i]; i++) {
+		ret[i] = tolower(str[i]);
+	}
+
+	ret[i] = '\0';
+	return ret;
+}
+
+char *strupper(const char *str) {
+	size_t i;
+	char *ret = new char[strlen(str) + 1];
+
+	for (i = 0; str[i]; i++) {
+		ret[i] = toupper(str[i]);
+	}
+
+	ret[i] = '\0';
 	return ret;
 }
