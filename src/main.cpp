@@ -19,6 +19,7 @@
 
 #include <cstdio>
 #include <stdexcept>
+#include <clocale>
 #include <SDL.h>
 #include "screen.h"
 #include "lbx.h"
@@ -140,6 +141,9 @@ void engine_shutdown(void) {
 }
 
 int main(int argc, char **argv) {
+	// Honor system locale
+	setlocale(LC_ALL, "");
+
 	if (argc >= 2) {
 		GameState* game = NULL;
 
