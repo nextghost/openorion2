@@ -17,6 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <direct.h>
 #include <cstdio>
 #include <cstring>
 #include <stdexcept>
@@ -24,6 +25,12 @@
 #include "utils.h"
 
 static char *data_basepath = NULL;
+
+void create_dir(const char *path) {
+	if (mkdir(path)) {
+		throw std::runtime_error("Could not create directory");
+	}
+}
 
 char *concatPath(const char *basepath, const char *relpath) {
 	size_t i, baselen, pathlen;
@@ -71,7 +78,28 @@ char *dataPath(const char *filename) {
 	return concatPath(data_basepath, filename);
 }
 
-void init_datadir(const char *exepath) {
+char *configPath(const char *filename) {
+	const char *basedir;
+	char *tmp = NULL, *ret = NULL;
+
+	basedir = getenv("APPDATA");
+
+	if (!basedir || !*basedir) {
+		return dataPath(filename);
+	}
+
+	try {
+		tmp = concatPath(basedir, "openorion2");
+		ret = concatPath(tmp, filename);
+	} catch (...) {
+		delete[] tmp;
+		throw;
+	}
+
+	return ret;
+}
+
+void init_paths(const char *exepath) {
 	size_t i;
 	const char *basepath = ".";
 	char *tmp;
@@ -83,14 +111,19 @@ void init_datadir(const char *exepath) {
 		}
 	}
 
-	data_basepath = copystr(basepath);
-	tmp = strrchr(data_basepath, '\\');
+	data_basepath = parent_dir(basepath);
+	tmp = configPath(NULL);
 
-	if (tmp) {
-		*tmp = '\0';
+	try {
+		create_path(tmp);
+	} catch (...) {
+		delete[] tmp;
+		throw;
 	}
+
+	delete[] tmp;
 }
 
-void cleanup_datadir(void) {
+void cleanup_paths(void) {
 	delete[] data_basepath;
 }

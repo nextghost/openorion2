@@ -20,9 +20,18 @@
 #include <cstring>
 #include <cerrno>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
+#include <pwd.h>
+#include <unistd.h>
 #include <stdexcept>
 #include "system.h"
+
+void create_dir(const char *path) {
+	if (mkdir(path, 0755)) {
+		throw std::runtime_error("Could not create directory");
+	}
+}
 
 char *concatPath(const char *basepath, const char *relpath) {
 	size_t baselen, pathlen;
@@ -32,6 +41,10 @@ char *concatPath(const char *basepath, const char *relpath) {
 	pathlen = relpath ? strlen(relpath) : 0;
 	ret = new char[baselen + pathlen + 2];
 	strcpy(ret, basepath);
+
+	if (!relpath || !*relpath) {
+		return ret;
+	}
 
 	if (baselen && ret[baselen - 1] != '/') {
 		ret[baselen++] = '/';
@@ -86,10 +99,54 @@ char *dataPath(const char *filename) {
 	return concatPath(DATADIR, filename);
 }
 
-void init_datadir(const char *exepath) {
+char *configPath(const char *filename) {
+	struct passwd *user;
+	const char *basedir;
+	char *tmp = NULL, *ret = NULL;
 
+	basedir = getenv("HOME");
+
+	if (!basedir || !*basedir) {
+		user = getpwuid(getuid());
+
+		if (user) {
+			basedir = user->pw_dir;
+		}
+	}
+
+	if (!basedir || !*basedir) {
+		throw std::runtime_error("Cannot find user's home directory");
+	}
+
+	try {
+		ret = concatPath(basedir, ".config");
+		tmp = concatPath(ret, "openorion2");
+		delete[] ret;
+		ret = NULL;
+		ret = concatPath(tmp, filename);
+	} catch (...) {
+		delete[] ret;
+		delete[] tmp;
+		throw;
+	}
+
+	delete[] tmp;
+	return ret;
 }
 
-void cleanup_datadir(void) {
+void init_paths(const char *exepath) {
+	char *tmp = configPath(NULL);
+
+	try {
+		create_path(tmp);
+	} catch (...) {
+		delete[] tmp;
+		throw;
+	}
+
+	delete[] tmp;
+}
+
+void cleanup_paths(void) {
 
 }

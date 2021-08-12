@@ -20,6 +20,15 @@
 #ifndef SYSTEM_H_
 #define SYSTEM_H_
 
+// Return the name of parent directory
+char *parent_dir(const char *path);
+
+// Create a single directory
+void create_dir(const char *path);
+
+// Create a whole path
+void create_path(const char *path);
+
 // Join two path segments using the appropriate directory separator
 // Returns newly allocated string
 char *concatPath(const char *basepath, const char *relpath);
@@ -32,10 +41,14 @@ char *findDatadirFile(const char *filename);
 // Returns newly allocated string
 char *dataPath(const char *filename);
 
-// Init relative datadir path on certain systems
-void init_datadir(const char *exepath);
+// Return path to a file in config directory
+// Returns newly allocated string
+char *configPath(const char *filename);
 
-// Free memory allocated by init_datadir()
-void cleanup_datadir(void);
+// Init relative datadir path on certain systems
+void init_paths(const char *exepath);
+
+// Free memory allocated by init_paths()
+void cleanup_paths(void);
 
 #endif

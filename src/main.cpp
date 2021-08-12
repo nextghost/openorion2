@@ -136,7 +136,7 @@ void engine_shutdown(void) {
 	gameFonts.clear();
 	delete gameAssets;
 	shutdownScreen();
-	cleanup_datadir();
+	cleanup_paths();
 }
 
 int main(int argc, char **argv) {
@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
 	}
 
 	try {
-		init_datadir(argv[0]);
+		init_paths(argv[0]);
 		gameAssets = new AssetManager;
 		gui_stack = new ViewStack;
 		initScreen();
