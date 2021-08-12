@@ -23,7 +23,7 @@
 #include <SDL.h>
 #include "screen.h"
 #include "lbx.h"
-#include "savegame.h"
+#include "gamestate.h"
 #include "mainmenu.h"
 #include "system.h"
 

@@ -25,7 +25,7 @@
 #include "screen.h"
 #include "system.h"
 #include "guimisc.h"
-#include "savegame.h"
+#include "gamestate.h"
 #include "mainmenu.h"
 
 #define MENU_ARCHIVE "mainmenu.lbx"

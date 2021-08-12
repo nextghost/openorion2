@@ -1,6 +1,6 @@
 #include <cstring>
 #include <stdexcept>
-#include "savegame.h"
+#include "gamestate.h"
 
 const int LEADERS_DATA_OFFSET 		= 0x019a9b;
 const int LEADER_TYPE_OFFSET		= 0x24;
