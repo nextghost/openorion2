@@ -23,6 +23,7 @@
 #include <time.h>
 #include "lbx.h"
 #include "gui.h"
+#include "gamestate.h"
 
 #define SAVEGAME_SLOTS 10
 

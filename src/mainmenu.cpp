@@ -25,7 +25,7 @@
 #include "screen.h"
 #include "system.h"
 #include "guimisc.h"
-#include "gamestate.h"
+#include "galaxy.h"
 #include "mainmenu.h"
 
 #define MENU_ARCHIVE "mainmenu.lbx"
@@ -122,6 +122,7 @@ SaveGameInfo *findSavedGames(void) {
 
 void loadGame(const char *filename) {
 	GameState* game = NULL;
+	GuiView *view = NULL;
 	char *path = NULL;
 
 	try {
@@ -129,14 +130,17 @@ void loadGame(const char *filename) {
 		game = new GameState;
 		game->load(path);
 		game->dump();
+		view = new GalaxyView(game);
+		game = NULL;
+		gui_stack->push(view);
 	} catch (std::exception &e) {
 		delete[] path;
 		delete game;
+		delete view;
 		throw;
 	}
 
 	delete[] path;
-	delete game;
 }
 
 MainMenuView::MainMenuView(void) : _background() {
@@ -265,7 +269,7 @@ void MainMenuView::clickContinue(int x, int y, int arg) {
 	}
 
 	delete[] saveFiles;
-	//exitView();
+	exitView();
 }
 
 void MainMenuView::clickLoad(int x, int y, int arg) {
@@ -451,12 +455,10 @@ void LoadGameWindow::handleLoad(int x, int y, int arg) {
 
 	try {
 		loadGame(_saveFiles[_selected].filename);
+		_parent->exitView();
 	} catch (std::exception &e) {
 		sprintf(buf, "Cannot load %s", _saveFiles[_selected].filename);
 		new ErrorWindow(_parent, buf);
 		return;
 	}
-
-	close();
-	//_parent->exitView();
 }

@@ -43,20 +43,22 @@ const int MAX_TECHNOLOGIES 			= 0xcb;
 const int MAX_STARS					= 72;
 const int MAX_SETTLERS				= 25;
 
+#define STAR_TYPE_COUNT 6
+
 enum MultiplayerType {
 	Single = 0,
 	Hotseat = 1,
 	Network = 2,
 };
 
-enum class StarSize: uint8_t {
+enum StarSize {
     Large 	= 0x00,
     Medium	= 0x01,
     Small 	= 0x02,
     Tiny 	= 0x03
 };
 
-enum class SpectralClass: uint8_t {
+enum SpectralClass {
     Blue 		= 0x00,
     White 		= 0x01,
     Yellow		= 0x02,
@@ -241,14 +243,14 @@ struct Star {
 	char name[STARS_NAME_SIZE];
 	uint16_t x;
 	uint16_t y;
-	StarSize size;
+	uint8_t size;
 	/*
 	* 0-7: player id
 	* 0xFF: no owner
 	*/
 	uint8_t owner;
 	uint8_t pictureType;
-	SpectralClass spectralClass;
+	uint8_t spectralClass;
 	// Remembers the last selected planet for the system for each player
 	uint8_t lastPlanetSelected[MAX_PLAYERS];
 	// Precomputed bitfield that tells wether there is a black hole between two stars
