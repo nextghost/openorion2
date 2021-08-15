@@ -213,12 +213,6 @@ protected:
 	BilistNode<GuiWindow> *findModalWindow(void);
 	void redrawWindows(unsigned curtick);
 
-	// Discard this instance from view stack and switch to the next view
-	// (if any). It is safe to access instance variable after calling
-	// this method. The instance will be garbage collected after control
-	// returns to the main loop.
-	void exitView(void);
-
 public:
 	GuiView(void);
 	~GuiView(void);
@@ -227,6 +221,12 @@ public:
 	// on the same instance)
 	virtual void open(void);
 	virtual void close(void);
+
+	// Discard this instance from view stack and switch to the next view
+	// (if any). It is safe to access instance variable after calling
+	// this method. The instance will be garbage collected after control
+	// returns to the main loop.
+	void exitView(void);
 
 	void handleMouseMove(int x, int y, unsigned buttons);
 	void handleMouseDown(int x, int y, unsigned button);
