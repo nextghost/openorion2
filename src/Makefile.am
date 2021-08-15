@@ -1,6 +1,6 @@
 SOURCE_FILES = gamestate.cpp gfx.cpp gui.cpp guimisc.cpp lbx.cpp main.cpp \
-	mainmenu.cpp sdl_screen.cpp sdl_utils.cpp stream.cpp system.cpp \
-	utils.cpp
+	mainmenu.cpp sdl_events.cpp sdl_screen.cpp sdl_utils.cpp stream.cpp \
+	system.cpp utils.cpp
 HEADER_FILES = gamestate.h gfx.h gui.h guimisc.h lbx.h mainmenu.h screen.h \
 	stream.h system.h utils.h
 

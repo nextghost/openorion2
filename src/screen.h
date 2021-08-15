@@ -51,4 +51,7 @@ void fillRect(int x, int y, unsigned width, unsigned height, uint8_t r = 0,
 	uint8_t g = 0, uint8_t b = 0);
 void clearScreen(uint8_t r = 0, uint8_t g = 0, uint8_t b = 0);
 
+// Main event loop
+void main_loop(void);
+
 #endif
