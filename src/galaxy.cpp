@@ -17,6 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <cstring>
 #include "screen.h"
 #include "guimisc.h"
 #include "mainmenu.h"
@@ -29,6 +30,7 @@
 
 #define STARBG_ARCHIVE "starbg.lbx"
 #define ASSET_STARBG 3
+#define ASSET_STARBG_NEBULA_IMAGES 6
 
 #define GAMEMENU_ARCHIVE "game.lbx"
 #define ASSET_GAMEMENU_BG 0
@@ -43,6 +45,7 @@ const unsigned galaxySizeFactors[] = {10, 15, 20, 30, 0};
 
 GalaxyView::GalaxyView(GameState *game) : _game(game), _zoom(0), _zoomX(0),
 	_zoomY(0) {
+	uint8_t tpal[PALSIZE];
 	const uint8_t *pal;
 	int i, j, k;
 	Widget *w;
@@ -60,15 +63,25 @@ GalaxyView::GalaxyView(GameState *game) : _game(game), _zoom(0), _zoomX(0),
 
 	_gui = gameAssets->getImage(GALAXY_ARCHIVE, ASSET_GALAXY_GUI);
 	pal = _gui->palette();
+	// convert to transparent palette
+	memcpy(tpal, pal, PALSIZE);
+	memset(tpal, 0, 4);
 
 	for (i = 0, k = 0; i < STAR_TYPE_COUNT; i++) {
 		for (j = 0; j < GALAXY_STAR_SIZES; j++, k++) {
 			_starimg[i][j] = gameAssets->getImage(GALAXY_ARCHIVE,
-				ASSET_GALAXY_STAR_IMAGES + k, pal);
+				ASSET_GALAXY_STAR_IMAGES + k, tpal);
 		}
 	}
 
 	_bg = gameAssets->getImage(STARBG_ARCHIVE, ASSET_STARBG, pal);
+
+	for (i = 0, k = 0; i < NEBULA_TYPE_COUNT; i++) {
+		for (j = 0; j < GALAXY_ZOOM_LEVELS; j++, k++) {
+			_nebulaimg[i][j] = gameAssets->getImage(STARBG_ARCHIVE,
+				ASSET_STARBG_NEBULA_IMAGES + k, tpal);
+		}
+	}
 
 	try {
 		w = new Widget(249, 5, 59, 17);
@@ -102,6 +115,14 @@ void GalaxyView::redraw(unsigned curtick) {
 
 	clearScreen();
 	_bg->draw(0, 0);
+
+	for (i = 0; i < _game->_galaxy.nebulaCount; i++) {
+		Nebula *ptr = _game->_galaxy.nebulas + i;
+
+		x = 21 + 10 * (ptr->x - _zoomX) / galaxySizeFactors[_zoom];
+		y = 21 + 10 * (ptr->y - _zoomY) / galaxySizeFactors[_zoom];
+		_nebulaimg[ptr->type][_zoom]->draw(x, y);
+	}
 
 	for (i = 0; i < _game->_starSystemCount; i++) {
 		Star *ptr = _game->_starSystems + i;

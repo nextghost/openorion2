@@ -42,8 +42,10 @@ const int MAX_PLAYERS				= 8;
 const int MAX_TECHNOLOGIES 			= 0xcb;
 const int MAX_STARS					= 72;
 const int MAX_SETTLERS				= 25;
+#define MAX_NEBULAS 4
 
 #define STAR_TYPE_COUNT 6
+#define NEBULA_TYPE_COUNT 12
 
 enum MultiplayerType {
 	Single = 0,
@@ -117,10 +119,21 @@ struct GameConfig {
 	void load(ReadStream &stream);
 };
 
+struct Nebula {
+	uint16_t x, y;
+	uint8_t type;
+
+	Nebula(void);
+
+	void load(ReadStream &stream);
+};
+
 struct Galaxy {
 	uint8_t sizeFactor;
 	uint16_t width;
 	uint16_t height;
+	Nebula nebulas[MAX_NEBULAS];
+	uint8_t nebulaCount;
 
 	Galaxy(void);
 

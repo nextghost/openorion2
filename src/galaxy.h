@@ -29,6 +29,7 @@
 class GalaxyView : public GuiView {
 private:
 	ImageAsset _bg, _gui, _starimg[STAR_TYPE_COUNT][GALAXY_STAR_SIZES];
+	ImageAsset _nebulaimg[NEBULA_TYPE_COUNT][GALAXY_ZOOM_LEVELS];
 	GameState *_game;
 	unsigned _zoom, _zoomX, _zoomY;
 

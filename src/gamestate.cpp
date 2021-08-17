@@ -70,7 +70,21 @@ void GameConfig::load(ReadStream &stream) {
 	shipInitiative = stream.readUint8();
 }
 
-Galaxy::Galaxy(void) : sizeFactor(0), width(0), height(0) {
+Nebula::Nebula(void) : x(0), y(0), type(0) {
+
+}
+
+void Nebula::load(ReadStream &stream) {
+	x = stream.readUint16LE();
+	y = stream.readUint16LE();
+	type = stream.readUint8();
+
+	if (type >= NEBULA_TYPE_COUNT) {
+		throw std::runtime_error("Invalid nebula type");
+	}
+}
+
+Galaxy::Galaxy(void) : sizeFactor(0), width(0), height(0), nebulaCount(0) {
 
 }
 
@@ -79,6 +93,17 @@ void Galaxy::load(ReadStream &stream) {
 	stream.readUint32LE(); // Skip unknown data
 	width = stream.readUint16LE();
 	height = stream.readUint16LE();
+	stream.readUint16LE(); // Skip unknown data
+
+	for (int i = 0; i < MAX_NEBULAS; i++) {
+		nebulas[i].load(stream);
+	}
+
+	nebulaCount = stream.readUint8();
+
+	if (nebulaCount > MAX_NEBULAS) {
+		throw std::runtime_error("Invalid nebula count");
+	}
 }
 
 Leader::Leader(void) {
