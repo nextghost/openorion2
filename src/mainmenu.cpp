@@ -260,8 +260,11 @@ void MainMenuView::clickContinue(int x, int y, int arg) {
 
 	try {
 		loadGame(saveFiles[slot].filename);
-	} catch (...) {
+	} catch (std::exception &e) {
 		char buf[64];
+
+		fprintf(stderr, "Error loading %s: %s\n",
+			saveFiles[slot].filename, e.what());
 		sprintf(buf, "Cannot load %s", saveFiles[slot].filename);
 		new ErrorWindow(this, buf);
 		delete[] saveFiles;
@@ -457,6 +460,8 @@ void LoadGameWindow::handleLoad(int x, int y, int arg) {
 		loadGame(_saveFiles[_selected].filename);
 		_parent->exitView();
 	} catch (std::exception &e) {
+		fprintf(stderr, "Error loading %s: %s\n",
+			_saveFiles[_selected].filename, e.what());
 		sprintf(buf, "Cannot load %s", _saveFiles[_selected].filename);
 		new ErrorWindow(_parent, buf);
 		return;
