@@ -101,6 +101,14 @@ GalaxyView::~GalaxyView(void) {
 	delete _game;
 }
 
+int GalaxyView::transformX(int x) const {
+	return 21 + 10 * (x - _zoomX) / galaxySizeFactors[_zoom];
+}
+
+int GalaxyView::transformY(int y) const {
+	return 21 + 10 * (y - _zoomY) / galaxySizeFactors[_zoom];
+}
+
 void GalaxyView::redraw(unsigned curtick) {
 	unsigned i, cls;
 	int x, y;
@@ -119,8 +127,8 @@ void GalaxyView::redraw(unsigned curtick) {
 	for (i = 0; i < _game->_galaxy.nebulaCount; i++) {
 		Nebula *ptr = _game->_galaxy.nebulas + i;
 
-		x = 21 + 10 * (ptr->x - _zoomX) / galaxySizeFactors[_zoom];
-		y = 21 + 10 * (ptr->y - _zoomY) / galaxySizeFactors[_zoom];
+		x = transformX(ptr->x);
+		y = transformY(ptr->y);
 		_nebulaimg[ptr->type][_zoom]->draw(x, y);
 	}
 
@@ -130,10 +138,8 @@ void GalaxyView::redraw(unsigned curtick) {
 		if (ptr->spectralClass < SpectralClass::BlackHole) {
 			cls = ptr->spectralClass;
 			img = (Image*)_starimg[cls][_zoom + ptr->size];
-			x = 10 * (ptr->x - _zoomX) / galaxySizeFactors[_zoom];
-			x = x + 21;
-			y = 10 * (ptr->y - _zoomY) / galaxySizeFactors[_zoom];
-			y = y + 21 - img->height() / 2;
+			x = transformX(ptr->x);
+			y = transformY(ptr->y) - img->height() / 2;
 			img->draw(x - img->width() / 2, y);
 			x -= fnt->textWidth(ptr->name) / 2;
 			y += img->height();

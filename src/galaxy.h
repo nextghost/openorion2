@@ -33,6 +33,11 @@ private:
 	GameState *_game;
 	unsigned _zoom, _zoomX, _zoomY;
 
+protected:
+	// galaxy coordinates to screen coordinates conversion
+	int transformX(int x) const;
+	int transformY(int y) const;
+
 public:
 	// Gamestate must be dynamically allocated and GalaxyView takes
 	// ownership of the instance
