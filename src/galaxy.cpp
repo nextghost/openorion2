@@ -27,6 +27,7 @@
 #define ASSET_GALAXY_GUI 0
 #define ASSET_GALAXY_GAME_BUTTON 1
 #define ASSET_GALAXY_STAR_IMAGES 148
+#define ASSET_GALAXY_BHOLE_IMAGES 184
 
 #define STARBG_ARCHIVE "starbg.lbx"
 #define ASSET_STARBG 3
@@ -74,6 +75,11 @@ GalaxyView::GalaxyView(GameState *game) : _game(game), _zoom(0), _zoomX(0),
 		}
 	}
 
+	for (i = 0; i < GALAXY_ZOOM_LEVELS; i++) {
+		_bholeimg[i] = gameAssets->getImage(GALAXY_ARCHIVE,
+			ASSET_GALAXY_BHOLE_IMAGES + i, tpal);
+	}
+
 	_bg = gameAssets->getImage(STARBG_ARCHIVE, ASSET_STARBG, pal);
 
 	for (i = 0, k = 0; i < NEBULA_TYPE_COUNT; i++) {
@@ -109,14 +115,22 @@ int GalaxyView::transformY(int y) const {
 	return 21 + 10 * (y - _zoomY) / galaxySizeFactors[_zoom];
 }
 
+void GalaxyView::open(void) {
+	_startTick = 0;
+}
+
 void GalaxyView::redraw(unsigned curtick) {
-	unsigned i, cls;
+	unsigned i, cls, frame, bhshift = 0;
 	int x, y;
 	Image *img;
 	Font *fnt;
 	unsigned font_sizes[] = {3, 2, 2, 1};
 	uint8_t palette[] = {0, 0, 0, 0, 255, 0, 12, 0, 255, 108, 108, 116,
 		255, 0, 12, 0};
+
+	if (!_startTick) {
+		_startTick = curtick;
+	}
 
 	fnt = gameFonts.getFont(font_sizes[_zoom]);
 	fnt->setPalette(palette, 4);
@@ -135,17 +149,25 @@ void GalaxyView::redraw(unsigned curtick) {
 	for (i = 0; i < _game->_starSystemCount; i++) {
 		Star *ptr = _game->_starSystems + i;
 
+		x = transformX(ptr->x);
+		y = transformY(ptr->y);
+
 		if (ptr->spectralClass < SpectralClass::BlackHole) {
 			cls = ptr->spectralClass;
 			img = (Image*)_starimg[cls][_zoom + ptr->size];
-			x = transformX(ptr->x);
-			y = transformY(ptr->y) - img->height() / 2;
+			y -= img->height() / 2;
 			img->draw(x - img->width() / 2, y);
 			x -= fnt->textWidth(ptr->name) / 2;
 			y += img->height();
 			fnt->renderText(x, y, ptr->name);
 		} else if (ptr->spectralClass == SpectralClass::BlackHole) {
-			// TODO
+			img = (Image*)_bholeimg[_zoom];
+			// Draw different frame for each black hole
+			// using bhshift as a counter
+			frame = (curtick - _startTick) / 120 + bhshift++;
+			frame %= img->frameCount();
+			img->draw(x - img->width() / 2, y - img->height() / 2,
+				frame);
 		}
 	}
 

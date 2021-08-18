@@ -30,8 +30,9 @@ class GalaxyView : public GuiView {
 private:
 	ImageAsset _bg, _gui, _starimg[STAR_TYPE_COUNT][GALAXY_STAR_SIZES];
 	ImageAsset _nebulaimg[NEBULA_TYPE_COUNT][GALAXY_ZOOM_LEVELS];
+	ImageAsset _bholeimg[GALAXY_ZOOM_LEVELS];
 	GameState *_game;
-	unsigned _zoom, _zoomX, _zoomY;
+	unsigned _zoom, _zoomX, _zoomY, _startTick;
 
 protected:
 	// galaxy coordinates to screen coordinates conversion
@@ -43,6 +44,8 @@ public:
 	// ownership of the instance
 	GalaxyView(GameState *game);
 	~GalaxyView(void);
+
+	void open(void);
 
 	void redraw(unsigned curtick);
 
