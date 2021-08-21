@@ -337,10 +337,18 @@ void Star::load(ReadStream &stream) {
 	name[STARS_NAME_SIZE - 1] = '\0';
 	x = stream.readUint16LE();
 	y = stream.readUint16LE();
-	size = StarSize(stream.readUint8());
+	size = stream.readUint8();
 	owner = stream.readUint8();
 	pictureType = stream.readUint8();
-	spectralClass = SpectralClass(stream.readUint8());
+	spectralClass = stream.readUint8();
+
+	if (size > StarSize::Small) {
+		throw std::out_of_range("Invalid star size");
+	}
+
+	if (spectralClass > SpectralClass::BlackHole) {
+		throw std::out_of_range("Invalid star spectral class");
+	}
 
 	for (i = 0; i < MAX_PLAYERS; i++) {
 		lastPlanetSelected[i] = stream.readUint8();
@@ -412,6 +420,23 @@ void GameState::load(SeekableReadStream &stream) {
 
 	for (i = 0; i < _starSystemCount; i++) {
 		_starSystems[i].load(stream);
+	}
+
+	for (i = 0; i < _starSystemCount; i++) {
+		Star *ptr = _starSystems + i;
+
+		if (ptr->x >= _galaxy.width || ptr->y >= _galaxy.height) {
+			throw std::out_of_range("Star outside galaxy area");
+		}
+
+		if (ptr->wormhole >= _starSystemCount) {
+			throw std::out_of_range("Invalid wormhole index");
+		}
+
+		if (ptr->wormhole >= 0 &&
+			_starSystems[ptr->wormhole].wormhole != i) {
+			std::logic_error("One-way wormholes not allowed");
+		}
 	}
 
 	stream.seek(LEADERS_DATA_OFFSET, SEEK_SET);
