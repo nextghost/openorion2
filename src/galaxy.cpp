@@ -146,6 +146,22 @@ void GalaxyView::redraw(unsigned curtick) {
 		_nebulaimg[ptr->type][_zoom]->draw(x, y);
 	}
 
+	// Draw wormholes
+	for (i = 0; i < _game->_starSystemCount; i++) {
+		Star *s1, *s2;
+
+		s1 = _game->_starSystems + i;
+
+		if (s1->wormhole < (int)i) {
+			continue;
+		}
+
+		s2 = _game->_starSystems + s1->wormhole;
+		drawLine(transformX(s1->x), transformY(s1->y),
+			transformX(s2->x), transformY(s2->y), 36, 36, 40);
+	}
+
+	// Draw stars and black holes
 	for (i = 0; i < _game->_starSystemCount; i++) {
 		Star *ptr = _game->_starSystems + i;
 

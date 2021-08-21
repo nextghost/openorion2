@@ -276,6 +276,49 @@ void drawTextureTile(unsigned id, int x, int y, int offsx, int offsy,
 	SDL_BlitSurface(textures[id].drawsurf, &src, wsurface, &dst);
 }
 
+void drawLine(int x1, int y1, int x2, int y2, uint8_t r, uint8_t g, uint8_t b) {
+	int x, y, dx, dy;
+	unsigned xlen, ylen, steps, len, cur, i = 0;
+	uint32_t color = SDL_MapRGB(wsurface->format, r, g, b);
+	SDL_Rect rect = {x1, y1, 1, 1};
+
+	xlen = (x1 < x2 ? x2 - x1 : x1 - x2) + 1;
+	ylen = (y1 < y2 ? y2 - y1 : y1 - y2) + 1;
+
+	if (xlen > ylen) {
+		steps = ylen;
+		len = xlen;
+		x = x1 < x2 ? x1 : x2;
+		y = x1 < x2 ? y1 : y2;
+		dy = y1 < y2 ? 1 : -1;
+		dy = x1 < x2 ? dy : -dy;
+	} else {
+		steps = xlen;
+		len = ylen;
+		x = y1 < y2 ? x1 : x2;
+		y = y1 < y2 ? y1 : y2;
+		dx = x1 < x2 ? 1 : -1;
+		dx = y1 < y2 ? dx : -dx;
+	}
+
+	rect.x = x;
+	rect.y = y;
+
+	for (i = 0; i < steps; i++) {
+		cur = (len * (i + 1)) / steps;
+
+		if (xlen > ylen) {
+			rect.w = dx = x + cur - rect.x;
+		} else {
+			rect.h = dy = y + cur - rect.y;
+		}
+
+		SDL_FillRect(wsurface, &rect, color);
+		rect.x += dx;
+		rect.y += dy;
+	}
+}
+
 void fillRect(int x, int y, unsigned width, unsigned height, uint8_t r,
 	uint8_t g, uint8_t b) {
 	SDL_Rect rect = {x, y, (int)width, (int)height};

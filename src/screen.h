@@ -47,6 +47,8 @@ void drawTexture(unsigned id, int x, int y);
 void drawTextureTile(unsigned id, int x, int y, int offsx, int offsy,
 	unsigned width, unsigned height);
 
+void drawLine(int x1, int y1, int x2, int y2, uint8_t r, uint8_t g, uint8_t b);
+
 void fillRect(int x, int y, unsigned width, unsigned height, uint8_t r = 0,
 	uint8_t g = 0, uint8_t b = 0);
 void clearScreen(uint8_t r = 0, uint8_t g = 0, uint8_t b = 0);
