@@ -351,7 +351,7 @@ void Star::load(ReadStream &stream) {
 	}
 
 	special = SpecialType(stream.readUint8());
-	wormhole = stream.readUint8();
+	wormhole = stream.readSint8();
 	blockaded = stream.readUint8();
 
 	for (i = 0; i < MAX_PLAYERS; i++) {

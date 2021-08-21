@@ -270,7 +270,7 @@ struct Star {
 	uint8_t blackHoleBlocks[(MAX_STARS + 7) / 8];
 	SpecialType special;
 	// 0-7F = system, FF = no wormhole
-	uint8_t wormhole;
+	int8_t wormhole;
 	// Bitmask that tells if a uses is blockaded
 	uint8_t blockaded;
 	/*
