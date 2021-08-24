@@ -36,12 +36,17 @@ const int PLAYER_COUNT 				= 0x08;
 const int PLAYER_NAME_SIZE 			= 0x14;
 const int PLAYER_RACE_SIZE 			= 0x10;
 
+#define SHIP_NAME_SIZE 16
+
 const int MAX_LEADER_TECH_SKILLS	= 3;
 const int MAX_PLANETS_PER_SYSTEM	= 5;
 const int MAX_PLAYERS				= 8;
 const int MAX_TECHNOLOGIES 			= 0xcb;
 const int MAX_STARS					= 72;
 const int MAX_SETTLERS				= 25;
+#define MAX_SHIP_SPECIALS 39
+#define MAX_SHIP_WEAPONS 8
+#define MAX_PLAYER_BLUEPRINTS 5
 #define MAX_NEBULAS 4
 
 #define STAR_TYPE_COUNT 6
@@ -165,6 +170,30 @@ struct Leader {
 	void load(ReadStream &stream);
 };
 
+struct ShipWeapon {
+	uint8_t type;	// FIXME: uint16_t?
+	uint8_t maxCount, workingCount;
+	uint8_t arc, beamMods, missileMods, ammo;
+
+	void load(ReadStream &stream);
+};
+
+struct ShipDesign {
+	char name[SHIP_NAME_SIZE];
+	uint8_t size, type;
+	uint8_t shield, drive, speed, computer, armor;
+	uint8_t specials[(MAX_SHIP_SPECIALS + 7) / 8];
+	ShipWeapon weapons[MAX_SHIP_WEAPONS];
+	uint8_t picture, builder;
+	uint16_t cost;
+	uint8_t combatSpeed;
+	uint16_t buildDate;
+
+	ShipDesign(void);
+
+	void load(ReadStream &stream);
+};
+
 struct RacePicks {
 	uint8_t government;
 	int8_t population;
@@ -245,6 +274,7 @@ struct Player {
 	int32_t totalMaintenance;
 	ResearchArea researchArea;
 	uint16_t researchItem;
+	ShipDesign blueprints[MAX_PLAYER_BLUEPRINTS], selectedBlueprint;
 	RacePicks racePicks;
 
 	Player(void);

@@ -151,6 +151,60 @@ void Leader::load(ReadStream &stream) {
 	playerIndex = stream.readUint8();
 }
 
+void ShipWeapon::load(ReadStream &stream) {
+	type = stream.readUint8();
+	stream.readUint8(); // FIXME: unknown data (weapon type is uint16_t?)
+	maxCount = stream.readUint8();
+	workingCount = stream.readUint8();
+	arc = stream.readUint8();
+	beamMods = stream.readUint8();
+	missileMods = stream.readUint8();
+	ammo = stream.readUint8();
+}
+
+ShipDesign::ShipDesign(void) {
+	memset(name, 0, SHIP_NAME_SIZE);
+	size = 0;
+	type = 0;
+	shield = 0;
+	drive = 0;
+	speed = 0;
+	computer = 0;
+	armor = 0;
+	memset(specials, 0, (MAX_SHIP_SPECIALS + 7) / 8);
+	memset(weapons, 0, MAX_SHIP_WEAPONS * sizeof(ShipWeapon));
+	picture = 0;
+	builder = 0;
+	cost = 0;
+	combatSpeed = 0;
+	buildDate = 0;
+}
+
+void ShipDesign::load(ReadStream &stream) {
+	int i;
+
+	stream.read(name, SHIP_NAME_SIZE);
+	name[SHIP_NAME_SIZE - 1] = '\0';
+	size = stream.readUint8();
+	type = stream.readUint8();
+	shield = stream.readUint8();
+	drive = stream.readUint8();
+	speed = stream.readUint8();
+	computer = stream.readUint8();
+	armor = stream.readUint8();
+	stream.read(specials, (MAX_SHIP_SPECIALS + 7) / 8);
+
+	for (i = 0; i < MAX_SHIP_WEAPONS; i++) {
+		weapons[i].load(stream);
+	}
+
+	picture = stream.readUint8();
+	builder = stream.readUint8();
+	cost = stream.readUint16LE();
+	combatSpeed = stream.readUint8();
+	buildDate = stream.readUint16LE();
+}
+
 void RacePicks::load(ReadStream &stream) {
 	government = stream.readUint8();
 	population = stream.readSint8();
@@ -278,7 +332,16 @@ void Player::load(SeekableReadStream &stream) {
 	researchArea = ResearchArea(stream.readUint8());
 	researchItem = stream.readUint8();
 
-	stream.seek(0x57c, SEEK_CUR);
+	stream.readUint8();	// FIXME: Unknown data
+	stream.readUint8();	// FIXME: Unknown data
+	stream.readUint8();	// FIXME: Unknown data
+
+	for (i = 0; i < MAX_PLAYER_BLUEPRINTS; i++) {
+		blueprints[i].load(stream);
+	}
+
+	selectedBlueprint.load(stream);
+	stream.seek(0x327, SEEK_CUR);
 	racePicks.load(stream);
 	stream.seek(0x5eb, SEEK_CUR);
 }
