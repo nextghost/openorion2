@@ -335,6 +335,7 @@ struct GameState  {
 	uint8_t _starSystemCount;
 	Star _starSystems[MAX_STARS];
 	struct Leader _leaders[LEADER_COUNT];
+	uint16_t _playerCount;
 	struct Player _players[PLAYER_COUNT];
 
 	void load(SeekableReadStream &stream);

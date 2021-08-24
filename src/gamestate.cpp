@@ -22,12 +22,7 @@
 #include "gamestate.h"
 
 const int LEADERS_DATA_OFFSET 		= 0x019a9b;
-const int LEADER_TYPE_OFFSET		= 0x24;
-
 const int STARS_COUNT_DATA_OFFSET 	= 0x017ad1;
-const int STARS_DATA_OFFSET 		= 0x017ad3;
-
-const int PLAYERS_DATA_OFFSET 		= 0x01aa0f;
 
 GameConfig::GameConfig(void) {
 	version = 0;
@@ -239,6 +234,7 @@ Player::Player(void) {
 void Player::load(SeekableReadStream &stream) {
 	int i;
 
+	stream.readUint8();	// FIXME: unknown data
 	stream.read(name, PLAYER_NAME_SIZE);
 	name[PLAYER_NAME_SIZE - 1] = '\0';
 	stream.read(race, PLAYER_RACE_SIZE);
@@ -284,7 +280,7 @@ void Player::load(SeekableReadStream &stream) {
 
 	stream.seek(0x57c, SEEK_CUR);
 	racePicks.load(stream);
-	stream.seek(0x5ec, SEEK_CUR);
+	stream.seek(0x5eb, SEEK_CUR);
 }
 
 Star::Star(void) {
@@ -445,7 +441,7 @@ void GameState::load(SeekableReadStream &stream) {
 		_leaders[i].load(stream);
 	}
 
-	stream.seek(PLAYERS_DATA_OFFSET, SEEK_SET);
+	_playerCount = stream.readUint16LE();
 
 	for (i = 0; i < PLAYER_COUNT; i++) {
 		_players[i].load(stream);
