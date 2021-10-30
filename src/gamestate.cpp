@@ -465,8 +465,66 @@ void Star::load(ReadStream &stream) {
 	artifactsGaveApp = stream.readUint8();
 }
 
+Ship::Ship(void) {
+	owner = 0;
+	status = 0;
+	star = 0;
+	x = 0;
+	y = 0;
+	groupHasNavigator = 0;
+	warpSpeed = 0;
+	eta = 0;
+	shieldDamage = 0;
+	driveDamage = 0;
+	computerDamage = 0;
+	crewLevel = 0;
+	crewExp = 0;
+	officer = 0;
+	memset(damagedSpecials, 0, (MAX_SHIP_SPECIALS + 7) / 8);
+	armorDamage = 0;
+	structureDamage = 0;
+	mission = 0;
+	justBuilt = 0;
+}
+
+void Ship::load(ReadStream &stream) {
+	design.load(stream);
+	owner = stream.readUint8();
+	status = stream.readUint8();
+	star = stream.readSint16LE();
+	x = stream.readUint16LE();
+	y = stream.readUint16LE();
+	groupHasNavigator = stream.readUint8();
+	warpSpeed = stream.readUint8();
+	eta = stream.readUint8();
+	shieldDamage = stream.readUint8();
+	driveDamage = stream.readUint8();
+	computerDamage = stream.readUint8();
+	crewLevel = stream.readUint8();
+	crewExp = stream.readUint16LE();
+	officer = stream.readSint16LE();
+	stream.read(damagedSpecials, (MAX_SHIP_SPECIALS + 7) / 8);
+	armorDamage = stream.readUint16LE();
+	structureDamage = stream.readUint16LE();
+	mission = stream.readUint8();
+	justBuilt = stream.readUint8();
+}
+
+unsigned Ship::getStarID(void) const {
+	return star - (status <= ShipState::LeavingOrbit ? 500 * status : 0);
+}
+
+int Ship::isActive(void) const {
+	return status <= ShipState::LeavingOrbit;
+}
+
+int Ship::exists(void) const {
+	return status <= ShipState::UnderConstruction &&
+		status != ShipState::Unknown && status != ShipState::Destroyed;
+}
+
 void GameState::load(SeekableReadStream &stream) {
-	int i;
+	int i, tmp;
 
 	// FIXME: get rid of seeks
 	_gameConfig.load(stream);
@@ -508,6 +566,41 @@ void GameState::load(SeekableReadStream &stream) {
 
 	for (i = 0; i < PLAYER_COUNT; i++) {
 		_players[i].load(stream);
+	}
+
+	_shipCount = stream.readUint16LE();
+
+	for (i = 0; i < MAX_SHIPS; i++) {
+		_ships[i].load(stream);
+	}
+
+	for (i = 0; i < _shipCount; i++) {
+		Ship *ptr = _ships + i;
+
+		if (ptr->status == ShipState::Destroyed) {
+			continue;
+		}
+
+		if (ptr->status > ShipState::UnderConstruction) {
+			throw std::out_of_range("Invalid ship status");
+		}
+
+		if (ptr->x >= _galaxy.width || ptr->y >= _galaxy.height) {
+			throw std::out_of_range("Ship outside galaxy area");
+		}
+
+		tmp = ptr->getStarID();
+
+		if (tmp >= _starSystemCount &&
+			(ptr->status != ShipState::LeavingOrbit ||
+			tmp != _starSystemCount)) {
+
+			throw std::out_of_range("Ship has invalid star ID");
+		}
+
+		if (ptr->officer >= LEADER_COUNT) {
+			throw std::out_of_range("Ship has invalid officer");
+		}
 	}
 }
 

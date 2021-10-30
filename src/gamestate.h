@@ -48,6 +48,7 @@ const int MAX_SETTLERS				= 25;
 #define MAX_SHIP_WEAPONS 8
 #define MAX_PLAYER_BLUEPRINTS 5
 #define MAX_NEBULAS 4
+#define MAX_SHIPS 500
 
 #define STAR_TYPE_COUNT 6
 #define NEBULA_TYPE_COUNT 12
@@ -98,6 +99,16 @@ enum class ResearchArea: uint8_t {
     Computers 		= 0x1c,
     Power 			= 0x37,
     Physics			= 0x39
+};
+
+enum ShipState {
+	InOrbit = 0,
+	InTransit,
+	LeavingOrbit,
+	Unknown,	// FIXME
+	InRefit,
+	Destroyed,
+	UnderConstruction
 };
 
 struct GameConfig {
@@ -359,6 +370,31 @@ struct Star {
 	void load(ReadStream &stream);
 };
 
+struct Ship {
+	ShipDesign design;
+	uint8_t owner, status;
+	uint16_t star, x, y;
+	uint8_t groupHasNavigator;
+	uint8_t warpSpeed, eta;
+	uint8_t shieldDamage, driveDamage;	// percent
+	uint8_t computerDamage, crewLevel;
+	uint16_t crewExp;
+	int16_t officer;
+	uint8_t damagedSpecials[(MAX_SHIP_SPECIALS + 7) / 8];
+	uint16_t armorDamage, structureDamage;
+	uint8_t mission;	// AI field
+	uint8_t justBuilt;
+
+	Ship(void);
+
+	void load(ReadStream &stream);
+
+	// _starSystemCount is the special ID of Antaran homeworld
+	unsigned getStarID(void) const;
+	int isActive(void) const;
+	int exists(void) const;
+};
+
 struct GameState  {
 	struct GameConfig _gameConfig;
 	struct Galaxy _galaxy;
@@ -367,6 +403,8 @@ struct GameState  {
 	struct Leader _leaders[LEADER_COUNT];
 	uint16_t _playerCount;
 	struct Player _players[PLAYER_COUNT];
+	uint16_t _shipCount;
+	Ship _ships[MAX_SHIPS];
 
 	void load(SeekableReadStream &stream);
 	void load(const char *filename);
