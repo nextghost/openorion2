@@ -94,13 +94,18 @@ public:
 	void insert_after(BilistNode *node);
 	void unlink(void);
 
+	void insert(C *ptr);
+	void append(C *ptr);
+
 	// Unlink this node from parent list, then put it in the garbage
 	// collector but keep references to _next and _prev in case another
 	// thread is still using this object.
 	void discard(void);
 
 	BilistNode *prev(void);
+	const BilistNode *prev(void) const;
 	BilistNode *next(void);
+	const BilistNode *next(void) const;
 };
 
 char *copystr(const char *str);
@@ -171,6 +176,22 @@ void BilistNode<C>::unlink(void) {
 }
 
 template <class C>
+void BilistNode<C>::insert(C *ptr) {
+	BilistNode<C> *node = new BilistNode<C>;
+
+	node->data = ptr;
+	node->insert_before(this);
+}
+
+template <class C>
+void BilistNode<C>::append(C *ptr) {
+	BilistNode<C> *node = new BilistNode<C>;
+
+	node->data = ptr;
+	node->insert_after(this);
+}
+
+template <class C>
 void BilistNode<C>::discard(void) {
 	_discarded = 1;
 
@@ -191,7 +212,17 @@ BilistNode<C> *BilistNode<C>::prev(void) {
 }
 
 template <class C>
+const BilistNode<C> *BilistNode<C>::prev(void) const {
+	return _prev;
+}
+
+template <class C>
 BilistNode<C> *BilistNode<C>::next(void) {
+	return _next;
+}
+
+template <class C>
+const BilistNode<C> *BilistNode<C>::next(void) const {
 	return _next;
 }
 

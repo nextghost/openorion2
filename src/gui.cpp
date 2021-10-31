@@ -573,10 +573,7 @@ GuiView::~GuiView(void) {
 }
 
 void GuiView::addWindow(GuiWindow *window) {
-	BilistNode<GuiWindow> *node = new BilistNode<GuiWindow>;
-
-	node->data = window;
-	node->insert_after(&_firstWindow);
+	_firstWindow.append(window);
 }
 
 void GuiView::removeWindow(GuiWindow *window) {
@@ -593,16 +590,12 @@ void GuiView::removeWindow(GuiWindow *window) {
 }
 
 void GuiView::focusWindow(BilistNode<GuiWindow> *node) {
-	BilistNode<GuiWindow> *newnode;
-
 	if (node == _firstWindow.next() || !node->data) {
 		return;
 	}
 
-	newnode = new BilistNode<GuiWindow>;
-	newnode->data = node->data;
+	_firstWindow.append(node->data);
 	node->discard();
-	newnode->insert_after(&_firstWindow);
 }
 
 BilistNode<GuiWindow> *GuiView::findWindowAt(int x, int y, int ignore_modal) {
