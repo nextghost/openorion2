@@ -387,6 +387,32 @@ Star::Star(void) {
 
 	inNebula = 0;
 	artifactsGaveApp = 0;
+
+	// Initialize fleet lists
+	_firstOrbitingFleet.insert_before(&_lastOrbitingFleet);
+	_firstLeavingFleet.insert_before(&_lastLeavingFleet);
+}
+
+Star::~Star(void) {
+	BilistNode<Fleet> *ptr, *next;
+
+	ptr = _firstOrbitingFleet.next();
+	_firstOrbitingFleet.unlink();
+
+	for (; ptr && ptr != &_lastOrbitingFleet; ptr = next) {
+		next = ptr->next();
+		delete ptr->data;
+		delete ptr;
+	}
+
+	ptr = _firstLeavingFleet.next();
+	_firstLeavingFleet.unlink();
+
+	for (; ptr && ptr != &_lastLeavingFleet; ptr = next) {
+		next = ptr->next();
+		delete ptr->data;
+		delete ptr;
+	}
 }
 
 void Star::load(ReadStream &stream) {
@@ -465,6 +491,36 @@ void Star::load(ReadStream &stream) {
 	artifactsGaveApp = stream.readUint8();
 }
 
+void Star::addFleet(Fleet *f) {
+	unsigned status = f->getStatus();
+
+	if (status != ShipState::InOrbit && status != ShipState::LeavingOrbit) {
+		throw std::invalid_argument("Cannot add moving fleet to star");
+	}
+
+	if (status == ShipState::InOrbit) {
+		_lastOrbitingFleet.insert(f);
+	} else {
+		_lastLeavingFleet.insert(f);
+	}
+}
+
+BilistNode<Fleet> *Star::getOrbitingFleets(void) {
+	return _firstOrbitingFleet.next();
+}
+
+BilistNode<Fleet> *Star::getLeavingFleets(void) {
+	return _firstLeavingFleet.next();
+}
+
+const BilistNode<Fleet> *Star::getOrbitingFleets(void) const {
+	return _firstOrbitingFleet.next();
+}
+
+const BilistNode<Fleet> *Star::getLeavingFleets(void) const {
+	return _firstLeavingFleet.next();
+}
+
 Ship::Ship(void) {
 	owner = 0;
 	status = 0;
@@ -521,6 +577,121 @@ int Ship::isActive(void) const {
 int Ship::exists(void) const {
 	return status <= ShipState::UnderConstruction &&
 		status != ShipState::Unknown && status != ShipState::Destroyed;
+}
+
+GameState::GameState(void) {
+	_firstMovingFleet.insert_before(&_lastMovingFleet);
+}
+
+GameState::~GameState(void) {
+	BilistNode<Fleet> *next, *ptr = _firstMovingFleet.next();
+
+	// prevent array scans in removeFleet() called by fleet destructor
+	_firstMovingFleet.unlink();
+
+	for (; ptr && ptr != &_lastMovingFleet; ptr = next) {
+		next = ptr->next();
+		delete ptr->data;
+		delete ptr;
+	}
+}
+
+Fleet *GameState::findFleet(unsigned owner, unsigned status, unsigned x,
+	unsigned y, unsigned star_id) {
+
+	BilistNode<Fleet> *node;
+	Fleet *f;
+	Star *dest;
+	unsigned old_star;
+
+	if (star_id > _starSystemCount) {
+		throw std::out_of_range("Invalid star ID");
+	}
+
+	switch (status) {
+	case ShipState::InOrbit:
+		node = _starSystems[star_id].getOrbitingFleets();
+		dest = NULL;
+		break;
+
+	case ShipState::InTransit:
+		node = _firstMovingFleet.next();
+		dest = _starSystems + star_id;
+		break;
+
+	case ShipState::LeavingOrbit:
+		old_star = findStar(x, y);
+		node = _starSystems[old_star].getLeavingFleets();
+		dest = _starSystems + star_id;
+		break;
+
+	default:
+		return NULL;
+	}
+
+	for (; node; node = node->next()) {
+		if (!node->data) {
+			continue;
+		}
+
+		f = node->data;
+
+		if (owner == f->getOwner() && x == f->getX() &&
+			y == f->getY() && dest == f->getDestStar()) {
+			return f;
+		}
+	}
+
+	return NULL;
+}
+
+void GameState::createFleets(void) {
+	unsigned i;
+	Ship *ptr;
+	Fleet *flt;
+
+	for (i = 0, ptr = _ships; i < _shipCount; i++, ptr++) {
+		if (!ptr->isActive()) {
+			continue;
+		}
+
+		flt = findFleet(ptr->owner, ptr->status, ptr->x, ptr->y,
+			ptr->getStarID());
+
+		if (flt) {
+			flt->addShip(i);
+			continue;
+		}
+
+		flt = new Fleet(this, i);
+
+		try {
+			addFleet(flt);
+		} catch (...) {
+			delete flt;
+			throw;
+		}
+	}
+}
+
+void GameState::addFleet(Fleet *flt) {
+	if (flt->getStatus() != ShipState::InTransit) {
+		flt->getOrbitedStar()->addFleet(flt);
+		return;
+	}
+
+	_lastMovingFleet.insert(flt);
+}
+
+void GameState::removeFleet(Fleet *flt) {
+	BilistNode<Fleet> *ptr = _firstMovingFleet.next();
+
+	for (; ptr && ptr != &_lastMovingFleet; ptr = ptr->next()) {
+		if (ptr->data && ptr->data == flt) {
+			ptr->discard();
+			return;
+		}
+	}
 }
 
 void GameState::load(SeekableReadStream &stream) {
@@ -602,6 +773,8 @@ void GameState::load(SeekableReadStream &stream) {
 			throw std::out_of_range("Ship has invalid officer");
 		}
 	}
+
+	createFleets();
 }
 
 void GameState::load(const char *filename) {
@@ -612,6 +785,26 @@ void GameState::load(const char *filename) {
 	}
 
 	load(fr);
+}
+
+unsigned GameState::findStar(int x, int y) const {
+	unsigned i;
+
+	for (i = 0; i < _starSystemCount; i++) {
+		if (_starSystems[i].x == x && _starSystems[i].y == y) {
+			return i;
+		}
+	}
+
+	throw std::runtime_error("No star at given coordinates");
+}
+
+BilistNode<Fleet> *GameState::getMovingFleets(void) {
+	return _firstMovingFleet.next();
+}
+
+const BilistNode<Fleet> *GameState::getMovingFleets(void) const {
+	return _firstMovingFleet.next();
 }
 
 void GameState::dump(void) const {
@@ -709,4 +902,164 @@ void GameState::dump(void) const {
 		fprintf(stdout, "Position:\t%d,%d\tPrimary owner:\t%d\n", star.x, star.y, star.owner);
 		fprintf(stdout, "Special:\t%d\t\tWormhole:\t%d\n", (int)star.special, star.wormhole);
 	}
+}
+
+Fleet::Fleet(GameState *parent, unsigned flagship) : _parent(parent),
+	_shipCount(0), _maxShips(8), _orbitedStar(-1), _destStar(-1) {
+
+	Ship *fs;
+
+	if (flagship >= _parent->_shipCount ||
+		!_parent->_ships[flagship].isActive()) {
+		throw std::invalid_argument("Invalid fleet flagship");
+	}
+
+	fs = _parent->_ships + flagship;
+
+	switch (fs->status) {
+	case ShipState::InOrbit:
+		_orbitedStar = fs->getStarID();
+		break;
+
+	case ShipState::LeavingOrbit:
+		_orbitedStar = _parent->findStar(fs->x, fs->y);
+		// fall through
+
+	case ShipState::InTransit:
+		_destStar = fs->getStarID();
+		break;
+
+	default:
+		throw std::logic_error("Fleet flagship has disallowed state");
+	}
+
+	_owner = fs->owner;
+	_status = fs->status;
+	_x = fs->x;
+	_y = fs->y;
+	// FIXME: recalculate properly and update ships
+	_hasNavigator = fs->groupHasNavigator;
+	_warpSpeed = fs->warpSpeed;
+	_eta = fs->eta;
+
+	_ships = new unsigned[_maxShips];
+	_ships[_shipCount++] = flagship;
+}
+
+Fleet::Fleet(const Fleet &other) : _parent(other._parent), _ships(NULL),
+	_shipCount(other._shipCount), _orbitedStar(other._orbitedStar),
+	_destStar(other._destStar), _owner(other._owner),
+	_status(other._status), _x(other._x), _y(other._y),
+	_hasNavigator(other._hasNavigator), _warpSpeed(other._warpSpeed),
+	_eta(other._eta) {
+
+	_maxShips = _shipCount > 8 ? _shipCount : 8;
+	_ships = new unsigned[_maxShips];
+	memcpy(_ships, other._ships, _shipCount * sizeof(unsigned));
+}
+
+Fleet::~Fleet(void) {
+	delete[] _ships;
+}
+
+void Fleet::addShip(unsigned ship_id) {
+	Ship *s;
+	int dest;
+
+	if (ship_id >= _parent->_shipCount) {
+		throw std::out_of_range("Invalid ship ID");
+	}
+
+	s = _parent->_ships + ship_id;
+
+	if (s->getStarID() > _parent->_starSystemCount) {
+		throw std::out_of_range("Ship has invalid star ID");
+	}
+
+	dest = s->status == ShipState::InOrbit ? -1 : s->getStarID();
+
+	if (s->owner != _owner || s->status != _status || dest != _destStar ||
+		s->x != _x || s->y != _y) {
+		throw std::runtime_error("Ship state does not match fleet");
+	}
+
+	if (_shipCount >= _maxShips) {
+		unsigned *tmp;
+		size_t size = 2 * _maxShips;
+
+		tmp = new unsigned[size];
+		memcpy(tmp, _ships, _shipCount * sizeof(unsigned));
+		delete[] _ships;
+		_ships = tmp;
+		_maxShips = size;
+	}
+
+	_ships[_shipCount++] = ship_id;
+	// FIXME: update _hasNavigator, recalculate speed, eta and update ships
+}
+
+void Fleet::removeShip(size_t pos) {
+	size_t i;
+
+	if (pos >= _shipCount) {
+		throw std::out_of_range("Invalid ship index");
+	}
+
+	for (i = pos; i < _shipCount - 1; i++) {
+		_ships[i] = _ships[i + 1];
+	}
+
+	_shipCount--;
+}
+
+Ship *Fleet::getShip(size_t pos) {
+	if (pos >= _shipCount) {
+		throw std::out_of_range("Invalid ship index");
+	}
+
+	return _parent->_ships + _ships[pos];
+}
+
+const Ship *Fleet::getShip(size_t pos) const {
+	if (pos >= _shipCount) {
+		throw std::out_of_range("Invalid ship index");
+	}
+
+	return _parent->_ships + _ships[pos];
+}
+
+Star *Fleet::getOrbitedStar(void) {
+	return _orbitedStar >= 0 ? _parent->_starSystems + _orbitedStar : NULL;
+}
+
+const Star *Fleet::getOrbitedStar(void) const {
+	return _orbitedStar >= 0 ? _parent->_starSystems + _orbitedStar : NULL;
+}
+
+Star *Fleet::getDestStar(void) {
+	return _destStar >= 0 ? _parent->_starSystems + _destStar : NULL;
+}
+
+const Star *Fleet::getDestStar(void) const {
+	return _destStar >= 0 ? _parent->_starSystems + _destStar : NULL;
+}
+
+size_t Fleet::shipCount(void) const {
+	return _shipCount;
+}
+
+uint8_t Fleet::getOwner(void) const {
+	return _owner;
+}
+
+uint8_t Fleet::getStatus(void) const {
+	return _status;
+}
+
+uint16_t Fleet::getX(void) const {
+	return _x;
+}
+
+uint16_t Fleet::getY(void) const {
+	return _y;
 }

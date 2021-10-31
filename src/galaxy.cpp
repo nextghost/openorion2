@@ -28,6 +28,7 @@
 #define ASSET_GALAXY_GAME_BUTTON 1
 #define ASSET_GALAXY_STAR_IMAGES 148
 #define ASSET_GALAXY_BHOLE_IMAGES 184
+#define ASSET_GALAXY_FLEET_IMAGES 205
 
 #define STARBG_ARCHIVE "starbg.lbx"
 #define ASSET_STARBG 3
@@ -80,6 +81,21 @@ GalaxyView::GalaxyView(GameState *game) : _game(game), _zoom(0), _zoomX(0),
 			ASSET_GALAXY_BHOLE_IMAGES + i, tpal);
 	}
 
+	// Player and Antaran fleet zoom order is reversed
+	for (i = 0, k = 0; i < MAX_PLAYERS + 1; i++) {
+		for (j = GALAXY_ZOOM_LEVELS - 1; j >= 0; j--, k++) {
+			_fleetimg[i][j] = gameAssets->getImage(GALAXY_ARCHIVE,
+				ASSET_GALAXY_FLEET_IMAGES + k, tpal);
+		}
+	}
+
+	for (; i < MAX_FLEET_OWNERS; i++) {
+		for (j = 0; j < GALAXY_ZOOM_LEVELS; j++, k++) {
+			_fleetimg[i][j] = gameAssets->getImage(GALAXY_ARCHIVE,
+				ASSET_GALAXY_FLEET_IMAGES + k, tpal);
+		}
+	}
+
 	_bg = gameAssets->getImage(STARBG_ARCHIVE, ASSET_STARBG, pal);
 
 	for (i = 0, k = 0; i < NEBULA_TYPE_COUNT; i++) {
@@ -115,6 +131,63 @@ int GalaxyView::transformY(int y) const {
 	return 21 + 10 * (y - _zoomY) / galaxySizeFactors[_zoom];
 }
 
+int GalaxyView::transformFleetX(const Fleet *f) const {
+	const Image *img;
+	unsigned size;
+	int x;
+
+	switch (f->getStatus()) {
+	case ShipState::InOrbit:
+		img = getFleetSprite(f);
+		size = f->getOrbitedStar()->size;
+		x = _zoom ? 16 - 2 * _zoom : 18 - size;
+		return transformX(f->getX()) + x - size - img->width() / 2;
+
+	case ShipState::LeavingOrbit:
+		img = getFleetSprite(f);
+		size = f->getOrbitedStar()->size;
+		x = _zoom ? 13 - 2 * _zoom : 15 - size;
+		return transformX(f->getX()) - x + size - img->width() / 2;
+
+	case ShipState::InTransit:
+		return transformX(f->getX()) - 5 - (_zoom + 1) / 2;
+	}
+
+	throw std::runtime_error("Invalid fleet state");
+}
+
+int GalaxyView::transformFleetY(const Fleet *f) const {
+	unsigned size;
+	int y;
+
+	switch (f->getStatus()) {
+	case ShipState::InOrbit:
+		size = f->getOrbitedStar()->size;
+		y = _zoom ? 0 : size - 2;
+		return transformY(f->getY()) + y - 14 + size;
+
+	case ShipState::LeavingOrbit:
+		size = f->getOrbitedStar()->size;
+		y = _zoom ? 0 : size - 2;
+		return transformY(f->getY()) + y - 15 + size;
+
+	case ShipState::InTransit:
+		return transformY(f->getY()) - 5;
+	}
+
+	throw std::runtime_error("Invalid fleet state");
+}
+
+const Image *GalaxyView::getFleetSprite(const Fleet *f) const {
+	unsigned cls = f->getOwner();
+
+	if (cls < MAX_PLAYERS) {
+		cls = _game->_players[cls].color;
+	}
+
+	return (const Image*)_fleetimg[cls][_zoom];
+}
+
 void GalaxyView::open(void) {
 	_startTick = 0;
 }
@@ -122,8 +195,9 @@ void GalaxyView::open(void) {
 void GalaxyView::redraw(unsigned curtick) {
 	unsigned i, cls, frame, bhshift = 0;
 	int x, y;
-	Image *img;
+	const Image *img;
 	Font *fnt;
+	BilistNode<Fleet> *fnode;
 	unsigned font_sizes[] = {3, 2, 2, 1};
 	uint8_t palette[] = {0, 0, 0, 0, 255, 0, 12, 0, 255, 108, 108, 116,
 		255, 0, 12, 0};
@@ -185,6 +259,33 @@ void GalaxyView::redraw(unsigned curtick) {
 			img->draw(x - img->width() / 2, y - img->height() / 2,
 				frame);
 		}
+
+		// TODO: Draw up to 3 fleets from both groups
+		fnode = ptr->getOrbitingFleets();
+
+		if (fnode && fnode->data) {
+			img = getFleetSprite(fnode->data);
+			img->draw(transformFleetX(fnode->data),
+				transformFleetY(fnode->data));
+		}
+
+		fnode = ptr->getLeavingFleets();
+
+		if (fnode && fnode->data) {
+			img = getFleetSprite(fnode->data);
+			img->draw(transformFleetX(fnode->data),
+				transformFleetY(fnode->data));
+		}
+	}
+
+	for (fnode = _game->getMovingFleets(); fnode; fnode = fnode->next()) {
+		if (!fnode->data) {
+			continue;
+		}
+
+		img = getFleetSprite(fnode->data);
+		img->draw(transformFleetX(fnode->data),
+			transformFleetY(fnode->data));
 	}
 
 	_gui->draw(0, 0);

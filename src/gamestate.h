@@ -20,6 +20,7 @@
 #ifndef GAMESTATE_H_
 #define GAMESTATE_H_
 
+#include "utils.h"
 #include "stream.h"
 #include <vector>
 
@@ -52,6 +53,7 @@ const int MAX_SETTLERS				= 25;
 
 #define STAR_TYPE_COUNT 6
 #define NEBULA_TYPE_COUNT 12
+#define MAX_FLEET_OWNERS 15
 
 enum MultiplayerType {
 	Single = 0,
@@ -110,6 +112,8 @@ enum ShipState {
 	Destroyed,
 	UnderConstruction
 };
+
+class Fleet;
 
 struct GameConfig {
 	uint32_t version;
@@ -293,7 +297,16 @@ struct Player {
 	void load(SeekableReadStream &stream);
 };
 
-struct Star {
+class Star {
+private:
+	BilistNode<Fleet> _firstOrbitingFleet, _lastOrbitingFleet;
+	BilistNode<Fleet> _firstLeavingFleet, _lastLeavingFleet;
+
+	// Do NOT implement
+	Star(const Star &other);
+	const Star &operator=(const Star &other);
+
+public:
 	char name[STARS_NAME_SIZE];
 	uint16_t x;
 	uint16_t y;
@@ -366,8 +379,15 @@ struct Star {
 	uint8_t artifactsGaveApp;
 
 	Star(void);
+	~Star(void);
 
 	void load(ReadStream &stream);
+
+	void addFleet(Fleet *f);
+	BilistNode<Fleet> *getOrbitingFleets(void);
+	BilistNode<Fleet> *getLeavingFleets(void);
+	const BilistNode<Fleet> *getOrbitingFleets(void) const;
+	const BilistNode<Fleet> *getLeavingFleets(void) const;
 };
 
 struct Ship {
@@ -395,7 +415,23 @@ struct Ship {
 	int exists(void) const;
 };
 
-struct GameState  {
+class GameState {
+private:
+	BilistNode<Fleet> _firstMovingFleet, _lastMovingFleet;
+
+	// Do NOT implement
+	GameState(const GameState &other);
+	const GameState &operator=(const GameState &other);
+
+protected:
+	Fleet *findFleet(unsigned owner, unsigned status, unsigned x,
+		unsigned y, unsigned star);
+	void createFleets(void);
+
+	void addFleet(Fleet *flt);
+	void removeFleet(Fleet *flt);
+
+public:
 	struct GameConfig _gameConfig;
 	struct Galaxy _galaxy;
 	uint8_t _starSystemCount;
@@ -406,9 +442,55 @@ struct GameState  {
 	uint16_t _shipCount;
 	Ship _ships[MAX_SHIPS];
 
+	GameState(void);
+	~GameState(void);
+
 	void load(SeekableReadStream &stream);
 	void load(const char *filename);
 	void dump(void) const;
+
+	unsigned findStar(int x, int y) const;
+	BilistNode<Fleet> *getMovingFleets(void);
+	const BilistNode<Fleet> *getMovingFleets(void) const;
+};
+
+class Fleet : public Recyclable {
+private:
+	GameState *_parent;
+	unsigned *_ships;
+	size_t _shipCount, _maxShips;
+	int _orbitedStar, _destStar;
+	uint8_t _owner, _status;
+	uint16_t _x, _y;
+	uint8_t _hasNavigator;
+	uint8_t _warpSpeed, _eta;
+
+	// Do NOT implement
+	const Fleet &operator=(const Fleet &other);
+
+public:
+	Fleet(GameState *parent, unsigned flagship);
+	Fleet(const Fleet &other);
+	~Fleet(void);
+
+	// Adding ships is allowed only during fleet creation. If you need
+	// to add more ships to existing fleet, copy and discard it instead.
+	// Removing ships is allowed at any time.
+	void addShip(unsigned ship_id);
+	void removeShip(size_t pos);
+
+	Ship *getShip(size_t pos);
+	const Ship *getShip(size_t pos) const;
+	Star *getOrbitedStar(void);
+	const Star *getOrbitedStar(void) const;
+	Star *getDestStar(void);
+	const Star *getDestStar(void) const;
+
+	size_t shipCount(void) const;
+	uint8_t getOwner(void) const;
+	uint8_t getStatus(void) const;
+	uint16_t getX(void) const;
+	uint16_t getY(void) const;
 };
 
 #endif

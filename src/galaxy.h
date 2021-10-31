@@ -31,6 +31,7 @@ private:
 	ImageAsset _bg, _gui, _starimg[STAR_TYPE_COUNT][GALAXY_STAR_SIZES];
 	ImageAsset _nebulaimg[NEBULA_TYPE_COUNT][GALAXY_ZOOM_LEVELS];
 	ImageAsset _bholeimg[GALAXY_ZOOM_LEVELS];
+	ImageAsset _fleetimg[MAX_FLEET_OWNERS][GALAXY_ZOOM_LEVELS];
 	GameState *_game;
 	unsigned _zoom, _zoomX, _zoomY, _startTick;
 
@@ -38,6 +39,9 @@ protected:
 	// galaxy coordinates to screen coordinates conversion
 	int transformX(int x) const;
 	int transformY(int y) const;
+	int transformFleetX(const Fleet *f) const;
+	int transformFleetY(const Fleet *f) const;
+	const Image *getFleetSprite(const Fleet *f) const;
 
 public:
 	// Gamestate must be dynamically allocated and GalaxyView takes

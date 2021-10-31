@@ -72,6 +72,7 @@ public:
 	// gameAssets->takeAsset(img) and the just-loaded asset will be freed
 	// with it.
 	explicit operator C*(void);
+	explicit operator const C*(void) const;
 
 	friend class AssetManager;
 };
@@ -185,6 +186,11 @@ C *AssetPointer<C>::operator->(void) {
 
 template <class C>
 AssetPointer<C>::operator C*(void) {
+	return _asset;
+}
+
+template <class C>
+AssetPointer<C>::operator const C*(void) const {
 	return _asset;
 }
 
