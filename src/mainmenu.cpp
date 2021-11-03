@@ -144,7 +144,22 @@ void loadGame(const char *filename) {
 }
 
 MainMenuView::MainMenuView(void) : _background() {
-	Widget *w = NULL;
+	_background = gameAssets->getImage(MENU_ARCHIVE, ASSET_MENU_BACKGROUND);
+
+	try {
+		initWidgets();
+	} catch (...) {
+		clearWidgets();
+		throw;
+	}
+}
+
+MainMenuView::~MainMenuView(void) {
+
+}
+
+void MainMenuView::initWidgets(void) {
+	Widget *w;
 	SaveGameInfo *saveFiles = NULL;
 	const uint8_t *pal;
 	int savecount = 0, autosave = 0;
@@ -163,76 +178,56 @@ MainMenuView::MainMenuView(void) : _background() {
 	}
 
 	delete[] saveFiles;
-	_background = gameAssets->getImage(MENU_ARCHIVE, ASSET_MENU_BACKGROUND);
 	pal = _background->palette();
 
-	try {
-		w = new Widget(415, 172, 153, 23);
+	// Continue button
+	w = createWidget(415, 172, 153, 23);
 
-		if (autosave) {
-			w->setMouseUpCallback(MBUTTON_LEFT,
-				GuiMethod(*this, &MainMenuView::clickContinue));
-			w->setMouseOverSprite(MENU_ARCHIVE,
-				ASSET_MENU_CONTINUE_ON, pal, 0);
-		} else {
-			w->setIdleSprite(MENU_ARCHIVE, ASSET_MENU_CONTINUE_OFF,
-				pal, 0);
-		}
-
-		addWidget(w);
-		w = NULL;
-
-		w = new Widget(415, 195, 153, 22);
-
-		if (savecount) {
-			w->setMouseUpCallback(MBUTTON_LEFT,
-				GuiMethod(*this, &MainMenuView::clickLoad));
-			w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_LOAD_ON,
-				pal, 0);
-		} else {
-			w->setIdleSprite(MENU_ARCHIVE, ASSET_MENU_LOAD_OFF,
-				pal, 0);
-		}
-
-		addWidget(w);
-		w = NULL;
-
-		w = new Widget(415, 217, 153, 23);
+	if (autosave) {
 		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod(*this, &MainMenuView::clickNew));
-		w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_NEWGAME, pal, 0);
-		addWidget(w);
-		w = NULL;
-
-		w = new Widget(415, 240, 153, 22);
-		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod(*this, &MainMenuView::clickMultiplayer));
-		w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_MULTIPLAYER,
+			GuiMethod(*this, &MainMenuView::clickContinue));
+		w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_CONTINUE_ON,
 			pal, 0);
-		addWidget(w);
-		w = NULL;
-
-		w = new Widget(415, 262, 153, 23);
-		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod(*this, &MainMenuView::clickScoreboard));
-		w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_SCORES, pal, 0);
-		addWidget(w);
-		w = NULL;
-
-		w = new Widget(415, 285, 153, 22);
-		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod(*this, &MainMenuView::clickQuit));
-		w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_QUIT, pal, 0);
-		addWidget(w);
-	} catch (...) {
-		delete w;
-		clearWidgets();
-		throw;
+	} else {
+		w->setIdleSprite(MENU_ARCHIVE, ASSET_MENU_CONTINUE_OFF, pal,
+			0);
 	}
-}
 
-MainMenuView::~MainMenuView(void) {
+	// Load Game button
+	w = createWidget(415, 195, 153, 22);
 
+	if (savecount) {
+		w->setMouseUpCallback(MBUTTON_LEFT,
+			GuiMethod(*this, &MainMenuView::clickLoad));
+		w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_LOAD_ON, pal,
+			0);
+	} else {
+		w->setIdleSprite(MENU_ARCHIVE, ASSET_MENU_LOAD_OFF, pal, 0);
+	}
+
+	// New Game button
+	w = createWidget(415, 217, 153, 23);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &MainMenuView::clickNew));
+	w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_NEWGAME, pal, 0);
+
+	// Multiplayer button
+	w = createWidget(415, 240, 153, 22);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &MainMenuView::clickMultiplayer));
+	w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_MULTIPLAYER, pal, 0);
+
+	// Hall of Fame button
+	w = createWidget(415, 262, 153, 23);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &MainMenuView::clickScoreboard));
+	w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_SCORES, pal, 0);
+
+	// Quit Game button
+	w = createWidget(415, 285, 153, 22);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &MainMenuView::clickQuit));
+	w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_QUIT, pal, 0);
 }
 
 void MainMenuView::redraw(unsigned curtick) {
@@ -305,7 +300,6 @@ LoadGameWindow::LoadGameWindow(GuiView *parent, int quickload) :
 	GuiWindow(parent, WINDOW_MODAL), _quickload(quickload), _selected(-1),
 	_saveFiles(NULL) {
 
-	Widget *w = NULL;
 	ImageAsset tmp;
 	const uint8_t *pal;
 
@@ -330,33 +324,9 @@ LoadGameWindow::LoadGameWindow(GuiView *parent, int quickload) :
 	_saveFiles = findSavedGames();
 
 	try {
-		w = new Widget(37, 337, 68, 22);
-		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod(*this, &LoadGameWindow::handleLoad));
-		w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
-			ASSET_LOAD_LOADBUTTON, pal, 1);
-		addWidget(w);
-		w = NULL;
-
-		w = new Widget(171, 338, 68, 22);
-		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod<GuiWindow>(*this, &LoadGameWindow::close));
-		w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
-			ASSET_LOAD_CANCEL, pal, 1);
-		addWidget(w);
-		w = NULL;
-
-		for (int i = 0; i < SAVEGAME_SLOTS; i++) {
-			w = new Widget(22, 22 + 31 * i, 232, 27);
-			w->setMouseUpCallback(MBUTTON_LEFT,
-				GuiMethod(*this, &LoadGameWindow::selectSlot,
-				i));
-			addWidget(w);
-			w = NULL;
-		}
+		initWidgets(pal);
 	} catch (...) {
 		delete[] _saveFiles;
-		delete w;
 		clearWidgets();
 		throw;
 	}
@@ -364,6 +334,31 @@ LoadGameWindow::LoadGameWindow(GuiView *parent, int quickload) :
 
 LoadGameWindow::~LoadGameWindow(void) {
 	delete[] _saveFiles;
+}
+
+void LoadGameWindow::initWidgets(const uint8_t *pal) {
+	Widget *w;
+
+	// Load button
+	w = createWidget(37, 337, 68, 22);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &LoadGameWindow::handleLoad));
+	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
+		ASSET_LOAD_LOADBUTTON, pal, 1);
+
+	// Cancel button
+	w = createWidget(171, 338, 68, 22);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod<GuiWindow>(*this, &LoadGameWindow::close));
+	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE, ASSET_LOAD_CANCEL,
+		pal, 1);
+
+	// Savegame slots
+	for (int i = 0; i < SAVEGAME_SLOTS; i++) {
+		w = createWidget(22, 22 + 31 * i, 232, 27);
+		w->setMouseUpCallback(MBUTTON_LEFT,
+			GuiMethod(*this, &LoadGameWindow::selectSlot, i));
+	}
 }
 
 void LoadGameWindow::drawSlot(unsigned slot, Font *fnt, Font *smallfnt) {

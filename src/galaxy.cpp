@@ -50,7 +50,6 @@ GalaxyView::GalaxyView(GameState *game) : _game(game), _zoom(0), _zoomX(0),
 	uint8_t tpal[PALSIZE];
 	const uint8_t *pal;
 	int i, j, k;
-	Widget *w;
 
 	for (i = 0; galaxySizeFactors[i]; i++) {
 		if (galaxySizeFactors[i] == game->_galaxy.sizeFactor) {
@@ -106,21 +105,26 @@ GalaxyView::GalaxyView(GameState *game) : _game(game), _zoom(0), _zoomX(0),
 	}
 
 	try {
-		w = new Widget(249, 5, 59, 17);
-		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod(*this, &GalaxyView::clickGameMenu));
-		w->setClickSprite(MBUTTON_LEFT, GALAXY_ARCHIVE,
-			ASSET_GALAXY_GAME_BUTTON, pal, 1);
-		addWidget(w);
-		w = NULL;
+		initWidgets();
 	} catch (...) {
-		delete w;
+		clearWidgets();
 		throw;
 	}
 }
 
 GalaxyView::~GalaxyView(void) {
 	delete _game;
+}
+
+void GalaxyView::initWidgets(void) {
+	Widget *w;
+	const uint8_t *pal = _gui->palette();
+
+	w = createWidget(249, 5, 59, 17);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &GalaxyView::clickGameMenu));
+	w->setClickSprite(MBUTTON_LEFT, GALAXY_ARCHIVE,
+		ASSET_GALAXY_GAME_BUTTON, pal, 1);
 }
 
 int GalaxyView::transformX(int x) const {
@@ -302,7 +306,6 @@ MainMenuWindow::MainMenuWindow(GuiView *parent, GameState *game) :
 
 	ImageAsset img;
 	const uint8_t *pal;
-	Widget *w;
 
 	img = gameAssets->getImage(GALAXY_ARCHIVE, ASSET_GALAXY_GUI);
 	pal = img->palette();
@@ -314,69 +317,61 @@ MainMenuWindow::MainMenuWindow(GuiView *parent, GameState *game) :
 	_height = _bg->height();
 
 	try {
-		w = new Widget(40, 43, 91, 28);
-		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod(*this, &MainMenuWindow::clickSave));
-		w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
-			ASSET_GAMEMENU_SAVE, pal, 1);
-		addWidget(w);
-		w = NULL;
-
-		w = new Widget(40, 43, 91, 28);
-		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod(*this, &MainMenuWindow::clickSave));
-		w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
-			ASSET_GAMEMENU_SAVE, pal, 1);
-		addWidget(w);
-		w = NULL;
-
-		w = new Widget(147, 43, 91, 28);
-		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod(*this, &MainMenuWindow::clickLoad));
-		w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
-			ASSET_GAMEMENU_LOAD, pal, 1);
-		addWidget(w);
-		w = NULL;
-
-		w = new Widget(40, 88, 91, 28);
-		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod(*this, &MainMenuWindow::clickNew));
-		w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
-			ASSET_GAMEMENU_NEW, pal, 1);
-		addWidget(w);
-		w = NULL;
-
-		w = new Widget(147, 88, 91, 28);
-		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod(*this, &MainMenuWindow::clickQuit));
-		w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
-			ASSET_GAMEMENU_QUIT, pal, 1);
-		addWidget(w);
-		w = NULL;
-
-		w = new Widget(40, 307, 91, 27);
-		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod(*this, &MainMenuWindow::clickSettings));
-		w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
-			ASSET_GAMEMENU_SETTINGS, pal, 1);
-		addWidget(w);
-		w = NULL;
-
-		w = new Widget(151, 307, 91, 27);
-		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod<GuiWindow>(*this, &MainMenuWindow::close));
-		w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
-			ASSET_GAMEMENU_RETURN, pal, 1);
-		addWidget(w);
-		w = NULL;
+		initWidgets(pal);
 	} catch (...) {
-		delete w;
+		clearWidgets();
 		throw;
 	}
 }
 
 MainMenuWindow::~MainMenuWindow(void) {
 
+}
+
+void MainMenuWindow::initWidgets(const uint8_t *pal) {
+	Widget *w;
+
+	// Save Game button
+	w = createWidget(40, 43, 91, 28);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &MainMenuWindow::clickSave));
+	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_SAVE,
+		pal, 1);
+
+	// Load Game button
+	w = createWidget(147, 43, 91, 28);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &MainMenuWindow::clickLoad));
+	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_LOAD,
+		pal, 1);
+
+	// New Game button
+	w = createWidget(40, 88, 91, 28);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &MainMenuWindow::clickNew));
+	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_NEW,
+		pal, 1);
+
+	// Quit Game button
+	w = createWidget(147, 88, 91, 28);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &MainMenuWindow::clickQuit));
+	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_QUIT,
+		pal, 1);
+
+	// Settings button
+	w = createWidget(40, 307, 91, 27);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &MainMenuWindow::clickSettings));
+	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
+		ASSET_GAMEMENU_SETTINGS, pal, 1);
+
+	// Return button
+	w = createWidget(151, 307, 91, 27);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod<GuiWindow>(*this, &MainMenuWindow::close));
+	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
+		ASSET_GAMEMENU_RETURN, pal, 1);
 }
 
 void MainMenuWindow::redraw(unsigned curtick) {

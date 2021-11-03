@@ -31,6 +31,8 @@ class MainMenuView : public GuiView {
 private:
 	ImageAsset _background;
 
+	void initWidgets(void);
+
 public:
 	MainMenuView(void);
 	~MainMenuView(void);
@@ -59,6 +61,8 @@ private:
 	ImageAsset _bg, _singleIcon, _hotseatIcon, _networkIcon, _modemIcon;
 	int _quickload, _selected;
 	SaveGameInfo *_saveFiles;
+
+	void initWidgets(const uint8_t *palette);
 
 protected:
 	void drawSlot(unsigned slot, Font *fnt, Font *smallfnt);

@@ -35,6 +35,8 @@ private:
 	GameState *_game;
 	unsigned _zoom, _zoomX, _zoomY, _startTick;
 
+	void initWidgets(void);
+
 protected:
 	// galaxy coordinates to screen coordinates conversion
 	int transformX(int x) const;
@@ -60,6 +62,8 @@ class MainMenuWindow : public GuiWindow {
 private:
 	ImageAsset _bg;
 	GameState *_game;
+
+	void initWidgets(const uint8_t *palette);
 
 public:
 	// MainMenuWindow does not take ownership of the gamestate

@@ -156,6 +156,8 @@ private:
 protected:
 	Widget *_currentWidget;
 
+	Widget *createWidget(unsigned x, unsigned y, unsigned width,
+		unsigned height);
 	void addWidget(Widget *w);
 	Widget *findWidget(int x, int y);
 	void redrawWidgets(int x, int y, unsigned curtick);

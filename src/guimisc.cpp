@@ -48,15 +48,13 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text) :
 	_text = copystr(text);
 
 	try {
-		w = new Widget(158, _height - 27, 64, 19);
+		w = createWidget(158, _height - 27, 64, 19);
 		w->setClickSprite(MBUTTON_LEFT, TEXTBOX_ARCHIVE,
 			ASSET_TEXTBOX_BUTTON, _header->palette(), 1);
 		w->setMouseUpCallback(MBUTTON_LEFT,
 			GuiMethod<GuiWindow>(*this, &MessageBoxWindow::close));
-		addWidget(w);
 	} catch (...) {
 		delete _text;
-		delete w;
 		clearWidgets();
 		throw;
 	}

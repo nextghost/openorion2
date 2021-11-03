@@ -392,6 +392,22 @@ WidgetContainer::~WidgetContainer(void) {
 	clearWidgets();
 }
 
+Widget *WidgetContainer::createWidget(unsigned x, unsigned y, unsigned width,
+	unsigned height) {
+
+	Widget *w = NULL;
+
+	try {
+		w = new Widget(x, y, width, height);
+		addWidget(w);
+	} catch (...) {
+		delete w;
+		throw;
+	}
+
+	return w;
+}
+
 void WidgetContainer::addWidget(Widget *w) {
 	if (_widgetCount >= _widgetMax) {
 		size_t size = _widgetMax ? 2 * _widgetMax : 32;
