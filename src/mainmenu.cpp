@@ -275,21 +275,15 @@ void MainMenuView::clickLoad(int x, int y, int arg) {
 }
 
 void MainMenuView::clickNew(int x, int y, int arg) {
-	MessageBoxWindow *w;
-
-	w = new MessageBoxWindow(this, "New Game not implemented yet");
+	new MessageBoxWindow(this, "New Game not implemented yet");
 }
 
 void MainMenuView::clickMultiplayer(int x, int y, int arg) {
-	MessageBoxWindow *w;
-
-	w = new MessageBoxWindow(this, "Multiplayer not implemented yet");
+	new MessageBoxWindow(this, "Multiplayer not implemented yet");
 }
 
 void MainMenuView::clickScoreboard(int x, int y, int arg) {
-	MessageBoxWindow *w;
-
-	w = new MessageBoxWindow(this, "Hall of Fame not implemented yet");
+	new MessageBoxWindow(this, "Hall of Fame not implemented yet");
 }
 
 void MainMenuView::clickQuit(int x, int y, int arg) {

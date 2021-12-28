@@ -35,7 +35,7 @@ void shutdownScreen(void);
 // must maintain an internal translation table.
 unsigned registerTexture(unsigned width, unsigned height, const uint32_t *data);
 unsigned registerTexture(unsigned width, unsigned height, const uint8_t *data,
-	uint8_t *palette, unsigned firstcolor, unsigned colors);
+	const uint8_t *palette, unsigned firstcolor, unsigned colors);
 void setTexturePalette(unsigned id, const uint8_t *palette,
 	unsigned firstcolor, unsigned colors);
 void freeTexture(unsigned id);

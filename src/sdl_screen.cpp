@@ -134,7 +134,7 @@ unsigned registerTexture(unsigned width, unsigned height, const uint32_t *data) 
 }
 
 unsigned registerTexture(unsigned width, unsigned height, const uint8_t *data,
-	uint8_t *palette, unsigned firstcolor, unsigned colors) {
+	const uint8_t *palette, unsigned firstcolor, unsigned colors) {
 
 	SDL_Surface *surf;
 	uint8_t *pixptr;
@@ -277,7 +277,7 @@ void drawTextureTile(unsigned id, int x, int y, int offsx, int offsy,
 }
 
 void drawLine(int x1, int y1, int x2, int y2, uint8_t r, uint8_t g, uint8_t b) {
-	int x, y, dx, dy;
+	int x, y, dx = 1, dy = 1;
 	unsigned xlen, ylen, steps, len, cur, i = 0;
 	uint32_t color = SDL_MapRGB(wsurface->format, r, g, b);
 	SDL_Rect rect = {x1, y1, 1, 1};

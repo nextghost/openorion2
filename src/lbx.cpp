@@ -288,7 +288,6 @@ void AssetManager::freeAsset(const Image *img) {
 
 MemoryReadStream *AssetManager::rawData(const char *filename, unsigned id) {
 	FileCache *entry;
-	MemoryReadStream *stream;
 
 	entry = getCache(filename);
 	openArchive(entry);

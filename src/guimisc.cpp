@@ -66,7 +66,7 @@ MessageBoxWindow::~MessageBoxWindow(void) {
 
 void MessageBoxWindow::redraw(unsigned curtick) {
 	Font *fnt;
-	int y, by = _header->height(), fh = _footer->height();
+	unsigned y, by = _header->height(), fh = _footer->height();
 	uint8_t palette[] = {0, 0, 0, 0, 255, 48, 40, 4, 255, 32, 156, 28,
 		255, 24, 120, 20};
 

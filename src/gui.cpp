@@ -383,8 +383,8 @@ void Widget::redraw(int x, int y, unsigned curtick) {
 	}
 }
 
-WidgetContainer::WidgetContainer(void) : _widgets(NULL), _currentWidget(NULL),
-	_widgetCount(0), _widgetMax(32) {
+WidgetContainer::WidgetContainer(void) : _widgets(NULL), _widgetCount(0),
+	_widgetMax(32), _currentWidget(NULL) {
 	_widgets = new Widget*[_widgetMax];
 }
 

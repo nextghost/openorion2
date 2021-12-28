@@ -100,7 +100,7 @@ Image::Image(SeekableReadStream &stream, const uint8_t *base_palette) :
 	memset(buffer, 0, _width * _height * sizeof(uint32_t));
 
 	for (i = 0; i < _frames; i++) {
-		MemoryReadStream *substream;
+		MemoryReadStream *substream = NULL;
 
 		stream.seek(offsets[i], SEEK_SET);
 
