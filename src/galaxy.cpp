@@ -202,16 +202,14 @@ void GalaxyView::redraw(unsigned curtick) {
 	const Image *img;
 	Font *fnt;
 	BilistNode<Fleet> *fnode;
-	unsigned font_sizes[] = {3, 2, 2, 1};
-	uint8_t palette[] = {0, 0, 0, 0, 255, 0, 12, 0, 255, 108, 108, 116,
-		255, 0, 12, 0};
+	unsigned font_sizes[] = {FONTSIZE_MEDIUM, FONTSIZE_SMALL,
+		FONTSIZE_SMALL, FONTSIZE_SMALLER};
 
 	if (!_startTick) {
 		_startTick = curtick;
 	}
 
 	fnt = gameFonts.getFont(font_sizes[_zoom]);
-	fnt->setPalette(palette, 4);
 
 	clearScreen();
 	_bg->draw(0, 0);
@@ -253,7 +251,7 @@ void GalaxyView::redraw(unsigned curtick) {
 			img->draw(x - img->width() / 2, y);
 			x -= fnt->textWidth(ptr->name) / 2;
 			y += img->height();
-			fnt->renderText(x, y, ptr->name);
+			fnt->renderText(x, y, FONT_COLOR_NEUTRAL, ptr->name);
 		} else if (ptr->spectralClass == SpectralClass::BlackHole) {
 			img = (Image*)_bholeimg[_zoom];
 			// Draw different frame for each black hole

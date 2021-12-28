@@ -29,6 +29,30 @@
 #define FLAG_FILLBG	0x0400
 #define FLAG_NOCOMPRESS	0x0100
 
+#define TITLE_PALSIZE 9
+#define FONT_PALSIZE 4
+
+#define RGB(x) 0xff, (((x) >> 16) & 0xff), (((x) >> 8) & 0xff), ((x) & 0xff)
+#define RGBA(x, a) ((a) & 0xff), (((x) >> 16) & 0xff), (((x) >> 8) & 0xff), ((x) & 0xff)
+#define TRANSPARENT 0, 0, 0, 0
+
+static uint8_t title_palettes[TITLE_COLOR_MAX][TITLE_PALSIZE * 4] = {
+	{TRANSPARENT, RGB(0), RGB(0x302804), RGB(0x187814), RGB(0x187814),
+		RGB(0x187814), RGB(0x209c1c), RGB(0x209c1c), RGB(0x209c1c)},
+	{TRANSPARENT, RGB(0), RGB(0x043804), RGB(0x087008), RGB(0x087008),
+		RGB(0x087008), RGB(0x489038), RGB(0x489038), RGB(0x489038)}
+};
+
+static uint8_t font_palettes[FONT_COLOR_MAX][FONT_PALSIZE * 4] = {
+	{TRANSPARENT, RGB(0x302804), RGB(0x209c1c), RGB(0x187814)},
+	{TRANSPARENT, RGB(0x043804), RGB(0x489038), RGB(0x087008)},
+	{TRANSPARENT, RGB(0x580c08), RGB(0xcc1814), RGB(0x90141c)},
+	{TRANSPARENT, RGB(0x3c1804), RGB(0xfc8800)},
+	{TRANSPARENT, RGB(0x4c2800), RGB(0xc86408)},
+	{TRANSPARENT, RGB(0x984c0c), RGB(0xfc8800)},
+	{TRANSPARENT, RGB(0x000c00), RGB(0x6c6c74)},
+};
+
 Image::Image(SeekableReadStream &stream, const uint8_t *base_palette) :
 	_width(0), _height(0), _frames(0), _textureIDs(NULL), _palette(NULL) {
 
@@ -233,15 +257,26 @@ void Image::draw(int x, int y, unsigned frame) const {
 	drawTexture(textureID(frame), x, y);
 }
 
-Font::Font(unsigned height) : _height(height), _glyphCount(0), _textureID(0),
-	_glyphs(NULL) {
+Font::Font(unsigned height) : _width(0), _height(height), _title(0),
+	_glyphCount(0), _glyphs(NULL), _bitmap(NULL) {
 
+	size_t i;
+
+	for (i = 0; i < FONT_COLOR_MAX; i++) {
+		_textureIDs[i] = -1;
+	}
 }
 
 Font::~Font(void) {
-	if (_glyphs) {
-		freeTexture(_textureID);
-		delete[] _glyphs;
+	size_t i;
+
+	delete[] _glyphs;
+	delete[] _bitmap;
+
+	for (i = 0; i < FONT_COLOR_MAX; i++) {
+		if (_textureIDs[i] >= 0) {
+			freeTexture(_textureIDs[i]);
+		}
 	}
 }
 
@@ -273,25 +308,31 @@ unsigned Font::textWidth(const char *str) const {
 	return ret ? ret - 1 : 0;
 }
 
-void Font::setPalette(const uint8_t *palette, unsigned colors) {
-	setTexturePalette(_textureID, palette, 0, colors);
-}
-
-int Font::renderChar(int x, int y, char ch) {
+int Font::renderChar(int x, int y, unsigned color, char ch) {
 	unsigned idx = (unsigned char)ch;
 
 	if (idx >= _glyphCount) {
 		return x;
 	}
 
-	drawTextureTile(_textureID, x, y, _glyphs[idx].offset, 0,
+	if (color >= (_title ? TITLE_COLOR_MAX : FONT_COLOR_MAX)) {
+		throw std::invalid_argument("Invalid font color");
+	} else if (_textureIDs[color] < 0) {
+		const uint8_t *pal;
+
+		pal = _title ? title_palettes[color] : font_palettes[color];
+		_textureIDs[color] = registerTexture(_width, _height, _bitmap,
+			pal, 0, _title ? TITLE_PALSIZE : FONT_PALSIZE);
+	}
+
+	drawTextureTile(_textureIDs[color], x, y, _glyphs[idx].offset, 0,
 		_glyphs[idx].width, _height);
 	return x + _glyphs[idx].width + 1;
 }
 
-int Font::renderText(int x, int y, const char *str) {
+int Font::renderText(int x, int y, unsigned color, const char *str) {
 	for (; *str; str++) {
-		x = renderChar(x, y, *str);
+		x = renderChar(x, y, color, *str);
 	}
 
 	return x;
@@ -342,9 +383,7 @@ void FontManager::loadFonts(SeekableReadStream &stream) {
 	Font *ptr = NULL;
 	Font::Glyph *glyphs = NULL, *gptr = NULL;
 	uint8_t *bitmap = NULL;
-	uint8_t palette[PALSIZE] = {0};
 
-	memset(palette + 4, 0xff, PALSIZE - 4);
 	stream.seek(0, SEEK_SET);
 
 	for (i = 0; i < 4; i++) {
@@ -441,11 +480,11 @@ void FontManager::loadFonts(SeekableReadStream &stream) {
 					stream);
 			}
 
-			ptr->_textureID = registerTexture(size, ptr->height(),
-				bitmap, palette, 0, 256);
+			ptr->_bitmap = bitmap;
+			ptr->_width = size;
+			ptr->_title = (i == FONTSIZE_TITLE);
 			ptr->_glyphs = glyphs;
 			ptr->_glyphCount = glyphCount;
-			delete[] bitmap;
 		}
 	} catch (...) {
 		fontCount -= i;

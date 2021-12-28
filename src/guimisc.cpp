@@ -34,7 +34,7 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text) :
 	GuiWindow(parent) {
 
 	Widget *w = NULL;
-	Font *fnt = gameFonts.getFont(3);
+	Font *fnt = gameFonts.getFont(FONTSIZE_MEDIUM);
 
 	_header = gameAssets->getImage(TEXTBOX_ARCHIVE, ASSET_TEXTBOX_HEADER);
 	_body = gameAssets->getImage(TEXTBOX_ARCHIVE, ASSET_TEXTBOX_BODY,
@@ -67,8 +67,6 @@ MessageBoxWindow::~MessageBoxWindow(void) {
 void MessageBoxWindow::redraw(unsigned curtick) {
 	Font *fnt;
 	unsigned y, by = _header->height(), fh = _footer->height();
-	uint8_t palette[] = {0, 0, 0, 0, 255, 48, 40, 4, 255, 32, 156, 28,
-		255, 24, 120, 20};
 
 	fillRect(_x + 9, _y + 9, _width - 18, _height - 40, 16, 16, 24);
 
@@ -80,9 +78,8 @@ void MessageBoxWindow::redraw(unsigned curtick) {
 	drawTextureTile(_body->textureID(0), _x, _y + by, 0, 0, _width,
 		_height - by - fh);
 	_footer->draw(_x, _y + _height - fh);
-	fnt = gameFonts.getFont(3);
-	fnt->setPalette(palette, 4);
-	fnt->renderText(_x + 20, _y + 30, _text);
+	fnt = gameFonts.getFont(FONTSIZE_MEDIUM);
+	fnt->renderText(_x + 20, _y + 30, FONT_COLOR_DEFAULT, _text);
 	redrawWidgets(_x, _y, curtick);
 }
 
@@ -106,15 +103,12 @@ void ErrorWindow::redraw(unsigned curtick) {
 	unsigned frame, fcount;
 	Font *fnt;
 	int x, y;
-	uint8_t palette[] = {0, 0, 0, 0, 255, 88, 12, 8, 255, 204, 24, 20,
-		255, 144, 20, 28};
 
 	if (!_animStart) {
 		_animStart = curtick;
 	}
 
-	fnt = gameFonts.getFont(4);
-	fnt->setPalette(palette, 4);
+	fnt = gameFonts.getFont(FONTSIZE_BIG);
 	fcount = _bg->frameCount();
 	// FIXME: calculate frame time from image header
 	// Original game plays 14 frames in ~1.3 seconds
@@ -123,7 +117,7 @@ void ErrorWindow::redraw(unsigned curtick) {
 	_bg->draw(_x, _y, frame >= fcount ? 2 * fcount - frame - 1: frame);
 	x = _x + (_width - fnt->textWidth(_text)) / 2;
 	y = _y + (_height - fnt->height()) / 2;
-	fnt->renderText(x, y, _text);
+	fnt->renderText(x, y, FONT_COLOR_ERROR, _text);
 }
 
 void ErrorWindow::handleMouseUp(int x, int y, unsigned button) {

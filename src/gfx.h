@@ -24,6 +24,26 @@
 
 #define PALSIZE 1024
 
+#define FONTSIZE_TINY 0
+#define FONTSIZE_SMALLER 1
+#define FONTSIZE_SMALL 2
+#define FONTSIZE_MEDIUM 3
+#define FONTSIZE_BIG 4
+#define FONTSIZE_TITLE 5
+
+#define TITLE_COLOR_DEFAULT 0
+#define TITLE_COLOR_HELP 1
+#define TITLE_COLOR_MAX 2
+
+#define FONT_COLOR_DEFAULT 0
+#define FONT_COLOR_HELP 1
+#define FONT_COLOR_ERROR 2
+#define FONT_COLOR_SETTINGS 3
+#define FONT_COLOR_SAVEGAME 4
+#define FONT_COLOR_SAVEGAME_SEL 5
+#define FONT_COLOR_NEUTRAL 6
+#define FONT_COLOR_MAX 7
+
 class Image {
 private:
 	unsigned _width, _height, _frames, _frametime, _flags;
@@ -67,8 +87,10 @@ protected:
 		unsigned offset, width;
 	};
 
-	unsigned _height, _glyphCount, _textureID;
+	unsigned _width, _height, _title, _glyphCount;
 	Glyph *_glyphs;
+	uint8_t *_bitmap;
+	int _textureIDs[FONT_COLOR_MAX];
 
 	explicit Font(unsigned height);
 
@@ -79,13 +101,11 @@ public:
 	unsigned charWidth(char ch) const;
 	unsigned textWidth(const char *str) const;
 
-	void setPalette(const uint8_t *palette, unsigned colors);
-
 	// Draw single character or entire string. X,Y are coordinates of
-	// upper left corner of the text. Both functions return X coordinate
-	// for drawing more text.
-	int renderChar(int x, int y, char ch);
-	int renderText(int x, int y, const char *str);
+	// upper left corner of the text. Color is predefined font palette ID.
+	// Both functions return X coordinate for drawing more text.
+	int renderChar(int x, int y, unsigned color, char ch);
+	int renderText(int x, int y, unsigned color, const char *str);
 
 	friend class FontManager;
 };

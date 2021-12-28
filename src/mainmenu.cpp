@@ -357,29 +357,33 @@ void LoadGameWindow::initWidgets(const uint8_t *pal) {
 
 void LoadGameWindow::drawSlot(unsigned slot, Font *fnt, Font *smallfnt) {
 	int y = _y + 24 + 31 * slot;
-	unsigned stardate;
+	unsigned stardate, color = FONT_COLOR_SAVEGAME;
 	struct tm *ltime;
 	char buf[64];
 
+	if (int(slot) == _selected) {
+		color = FONT_COLOR_SAVEGAME_SEL;
+	}
+
 	if (!_saveFiles[slot].filename) {
 		// FIXME: Use strings from game data
-		fnt->renderText(_x + 32, y, "... empty slot ...");
+		fnt->renderText(_x + 32, y, color, "... empty slot ...");
 		return;
 	}
 
 	if (slot == SAVEGAME_SLOTS - 1) {
-		fnt->renderText(_x + 32, y, "(Auto Save)");
+		fnt->renderText(_x + 32, y, color, "(Auto Save)");
 	} else {
-		fnt->renderText(_x + 32, y,
+		fnt->renderText(_x + 32, y, color,
 			_saveFiles[slot].header.saveGameName);
 	}
 
 	stardate = _saveFiles[slot].header.stardate;
 	sprintf(buf, "Stardate: %u.%u", stardate / 10, stardate % 10);
-	smallfnt->renderText(_x + 32, y + 14, buf);
+	smallfnt->renderText(_x + 32, y + 14, color, buf);
 	ltime = localtime(&_saveFiles[slot].mtime);
 	strftime(buf, 64, "%x   %H:%M", ltime);
-	smallfnt->renderText(_x + 122, y + 14, buf);
+	smallfnt->renderText(_x + 122, y + 14, color, buf);
 
 	switch (_saveFiles[slot].header.multiplayer) {
 	case MultiplayerType::Single:
@@ -399,30 +403,15 @@ void LoadGameWindow::drawSlot(unsigned slot, Font *fnt, Font *smallfnt) {
 void LoadGameWindow::redraw(unsigned curtick) {
 	Font *fnt, *smallfnt;
 	int i;
-	char buf[64];
-	uint8_t palette[] = {0, 0, 0, 0, 255, 76, 40, 0, 255, 200, 100, 8};
-	uint8_t palette2[] = {0, 0, 0, 0, 255, 152, 76, 12, 255, 252, 136, 0};
 
-	fnt = gameFonts.getFont(2);
-	fnt->setPalette(palette, 3);
-	smallfnt = gameFonts.getFont(1);
-	smallfnt->setPalette(palette, 3);
+	fnt = gameFonts.getFont(FONTSIZE_SMALL);
+	smallfnt = gameFonts.getFont(FONTSIZE_SMALLER);
 
 	_bg->draw(_x, _y);
 	redrawWidgets(_x, _y, curtick);
 
 	for (i = 0; i < SAVEGAME_SLOTS; i++) {
-		if (i == _selected) {
-			continue;
-		}
-
 		drawSlot(i, fnt, smallfnt);
-	}
-
-	if (_selected >= 0) {
-		fnt->setPalette(palette2, 3);
-		smallfnt->setPalette(palette2, 3);
-		drawSlot(_selected, fnt, smallfnt);
 	}
 }
 
