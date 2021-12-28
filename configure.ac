@@ -1,7 +1,7 @@
-AC_PREREQ(2.52)
+AC_PREREQ([2.71])
 AC_INIT([openorion2], [0.1], [next_ghost@quick.cz])
 AC_CONFIG_SRCDIR([config.h.in])
-AC_CANONICAL_SYSTEM
+AC_CANONICAL_TARGET
 
 # cross-compiling support: we're cross compiling if the build system is
 # different from the target one (assume host and target be always the same)
@@ -59,10 +59,11 @@ AC_SUBST(LIBS)
 AC_SUBST(LDFLAGS)
 AC_SUBST(CXXFLAGS)
 
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
          Makefile
          src/Makefile
          ])
+AC_OUTPUT
 
