@@ -66,6 +66,9 @@ void main_loop(void) {
 
 			view->open();
 			prev_view = view;
+
+			// view->open() may sometimes open another view
+			continue;
 		}
 
 		GarbageCollector::flush();
