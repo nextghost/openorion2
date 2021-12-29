@@ -251,7 +251,8 @@ void GalaxyView::redraw(unsigned curtick) {
 			img->draw(x - img->width() / 2, y);
 			x -= fnt->textWidth(ptr->name) / 2;
 			y += img->height();
-			fnt->renderText(x, y, FONT_COLOR_NEUTRAL, ptr->name);
+			fnt->renderText(x, y, FONT_COLOR_STAR_NEUTRAL2,
+				ptr->name);
 		} else if (ptr->spectralClass == SpectralClass::BlackHole) {
 			img = (Image*)_bholeimg[_zoom];
 			// Draw different frame for each black hole
