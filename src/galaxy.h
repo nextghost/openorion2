@@ -34,6 +34,7 @@ private:
 	ImageAsset _fleetimg[MAX_FLEET_OWNERS][GALAXY_ZOOM_LEVELS];
 	GameState *_game;
 	unsigned _zoom, _zoomX, _zoomY, _startTick;
+	int _activePlayer;
 
 	void initWidgets(void);
 
@@ -44,6 +45,9 @@ protected:
 	int transformFleetX(const Fleet *f) const;
 	int transformFleetY(const Fleet *f) const;
 	const Image *getFleetSprite(const Fleet *f) const;
+
+	void selectPlayer(void);
+	void setPlayer(int player, int a, int b);
 
 public:
 	// Gamestate must be dynamically allocated and GalaxyView takes
@@ -56,6 +60,26 @@ public:
 	void redraw(unsigned curtick);
 
 	void clickGameMenu(int x, int y, int arg);
+};
+
+class SelectPlayerView : public GuiView {
+private:
+	const GameState *_game;
+	GuiCallback _callback;
+	ImageAsset _playerFlags[PLAYER_COUNT];
+	ImageAsset _bg, _header, _row, _footer;
+	unsigned _humans[PLAYER_COUNT], _playerCount, _animStart;
+	int _currentPlayer;
+
+	void initWidgets(void);
+
+public:
+	SelectPlayerView(const GameState *game, const GuiCallback &callback);
+
+	void redraw(unsigned curtick);
+
+	void highlightPlayer(int x, int y, int arg);
+	void clickPlayer(int x, int y, int arg);
 };
 
 class MainMenuWindow : public GuiWindow {

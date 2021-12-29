@@ -43,10 +43,21 @@
 #define ASSET_GAMEMENU_SETTINGS 5
 #define ASSET_GAMEMENU_RETURN 6
 
+#define MULTIPLAYER_ARCHIVE "multigm.lbx"
+#define ASSET_PSELECT_BG 0
+#define ASSET_PSELECT_HEADER 19
+#define ASSET_PSELECT_ROW 20
+#define ASSET_PSELECT_FOOTER 21
+#define ASSET_PSELECT_FLAGS 46
+
+#define PSELECT_BUFSIZE 128
+#define PSELECT_ANIM_LENGTH 8
+#define PSELECT_YPOS 36
+
 const unsigned galaxySizeFactors[] = {10, 15, 20, 30, 0};
 
 GalaxyView::GalaxyView(GameState *game) : _game(game), _zoom(0), _zoomX(0),
-	_zoomY(0) {
+	_zoomY(0), _startTick(0), _activePlayer(-1) {
 	uint8_t tpal[PALSIZE];
 	const uint8_t *pal;
 	int i, j, k;
@@ -192,8 +203,55 @@ const Image *GalaxyView::getFleetSprite(const Fleet *f) const {
 	return (const Image*)_fleetimg[cls][_zoom];
 }
 
+void GalaxyView::selectPlayer(void) {
+	unsigned i, humans;
+	int last_human = -1;
+	const Player *ptr;
+	GuiView *view = NULL;
+
+	for (i = 0, humans = 0; i < _game->_playerCount; i++) {
+		ptr = _game->_players + i;
+
+		if (ptr->objective == OBJECTIVE_HUMAN &&
+			ptr->networkPlayerId == 0) {
+			humans++;
+			last_human = i;
+		}
+	}
+
+	if (humans > 1) {
+		try {
+			view = new SelectPlayerView(_game,
+				GuiMethod(*this,
+				&GalaxyView::setPlayer));
+			gui_stack->push(view);
+		} catch (...) {
+			delete view;
+			throw;
+		}
+
+		return;
+	} else if (humans == 1) {
+		setPlayer(last_human, 0, 0);
+	} else {
+		throw std::runtime_error("No human players in game");
+	}
+}
+
+void GalaxyView::setPlayer(int player, int a, int b) {
+	if (player < 0 || player >= _game->_playerCount) {
+		throw std::out_of_range("Invalid player ID");
+	}
+
+	_activePlayer = player;
+}
+
 void GalaxyView::open(void) {
 	_startTick = 0;
+
+	if (_activePlayer < 0) {
+		selectPlayer();
+	}
 }
 
 void GalaxyView::redraw(unsigned curtick) {
@@ -298,6 +356,160 @@ void GalaxyView::redraw(unsigned curtick) {
 
 void GalaxyView::clickGameMenu(int x, int y, int arg) {
 	new MainMenuWindow(this, _game);
+}
+
+SelectPlayerView::SelectPlayerView(const GameState *game,
+	const GuiCallback &callback) : _game(game), _callback(callback),
+	_playerCount(0), _currentPlayer(-1) {
+
+	const uint8_t *pal;
+	unsigned i, flag_id;
+	const Player *ptr;
+
+	_bg = gameAssets->getImage(MULTIPLAYER_ARCHIVE, ASSET_PSELECT_BG);
+	pal = _bg->palette();
+	_header = gameAssets->getImage(MULTIPLAYER_ARCHIVE,
+		ASSET_PSELECT_HEADER, pal);
+	_row = gameAssets->getImage(MULTIPLAYER_ARCHIVE, ASSET_PSELECT_ROW,
+		pal);
+	_footer = gameAssets->getImage(MULTIPLAYER_ARCHIVE,
+		ASSET_PSELECT_FOOTER, pal);
+
+	for (i = 0; i < _game->_playerCount; i++) {
+		ptr = _game->_players + i;
+
+		if (ptr->objective != OBJECTIVE_HUMAN ||
+			ptr->networkPlayerId != 0) {
+			continue;
+		}
+
+		if (ptr->picture >= RACE_COUNT) {
+			throw std::out_of_range("Player has invalid race ID");
+		}
+
+		if (ptr->color >= PLAYER_COUNT) {
+			throw std::out_of_range("Player has invalid color ID");
+		}
+
+		_humans[_playerCount++] = i;
+		flag_id = ptr->picture * PLAYER_COUNT + ptr->color;
+		_playerFlags[i] = gameAssets->getImage(MULTIPLAYER_ARCHIVE,
+			ASSET_PSELECT_FLAGS + flag_id, pal);
+	}
+
+	try {
+		initWidgets();
+	} catch (...) {
+		clearWidgets();
+		throw;
+	}
+}
+
+void SelectPlayerView::initWidgets(void) {
+	Widget *w;
+	unsigned i, x, y, h;
+
+	h = _row->height();
+	x = (SCREEN_WIDTH - _header->width()) / 2;
+	y = PSELECT_YPOS;
+
+	for (i = 0; i < _playerCount; i++) {
+		if (_game->_players[_humans[i]].playerDoneFlags) {
+			continue;
+		}
+
+		// Player flag
+		w = createWidget(x + 37, y + 63 + i * h, 34, 36);
+		w->setMouseUpCallback(MBUTTON_LEFT,
+			GuiMethod(*this, &SelectPlayerView::clickPlayer,
+			_humans[i]));
+		w->setMouseOverCallback(
+			GuiMethod(*this, &SelectPlayerView::highlightPlayer,
+			i));
+		w->setMouseOutCallback(
+			GuiMethod(*this, &SelectPlayerView::highlightPlayer,
+			-1));
+
+		// Player name
+		w = createWidget(x + 104, y + 66 + i * h, 335, 30);
+		w->setMouseUpCallback(MBUTTON_LEFT,
+			GuiMethod(*this, &SelectPlayerView::clickPlayer,
+			_humans[i]));
+		w->setMouseOverCallback(
+			GuiMethod(*this, &SelectPlayerView::highlightPlayer,
+			i));
+		w->setMouseOutCallback(
+			GuiMethod(*this, &SelectPlayerView::highlightPlayer,
+			-1));
+	}
+}
+
+void SelectPlayerView::redraw(unsigned curtick) {
+	unsigned i, x, y, h, color;
+	const Player *ptr;
+	Font *fnt;
+	char buf[PSELECT_BUFSIZE];
+	unsigned fontanim[PSELECT_ANIM_LENGTH] = {3, 4, 3, 2, 1, 0, 1, 2};
+	unsigned color_list[] = {
+		FONT_COLOR_PLAYER_RED1, FONT_COLOR_PLAYER_YELLOW1,
+		FONT_COLOR_PLAYER_GREEN1, FONT_COLOR_PLAYER_SILVER1,
+		FONT_COLOR_PLAYER_BLUE1, FONT_COLOR_PLAYER_BROWN1,
+		FONT_COLOR_PLAYER_PURPLE1, FONT_COLOR_PLAYER_ORANGE1
+	};
+
+	if (!_animStart) {
+		_animStart = curtick;
+	}
+
+	fnt = gameFonts.getFont(FONTSIZE_BIG);
+	h = _row->height();
+	x = (SCREEN_WIDTH - _header->width()) / 2;
+	y = PSELECT_YPOS;
+
+	_bg->draw(0, 0);
+	_header->draw(x, y);
+	y += _header->height();
+
+	for (i = 0; i < _playerCount - 1; i++) {
+		_row->draw(x, y + i * h);
+	}
+
+	_footer->draw(x, y + i * h);
+
+	for (i = 0; i < _playerCount; i++) {
+		ptr = _game->_players + _humans[i];
+		// FIXME: Use strings from game data
+		// FIXME: Find and use real player score
+		snprintf(buf, PSELECT_BUFSIZE, "%s, %s, Score %d",
+			ptr->name, ptr->race, 0);
+		buf[PSELECT_BUFSIZE - 1] = '\0';
+
+		if (_game->_players[_humans[i]].playerDoneFlags) {
+			color = 1;
+		} else if (int(i) == _currentPlayer) {
+			color = (curtick - _animStart) / 30;
+			color = fontanim[color % PSELECT_ANIM_LENGTH];
+		} else {
+			color = 3;
+		}
+
+		color += color_list[ptr->color];
+		fnt->renderText(x + 116, y + i * h - 9, color, buf);
+
+		if (!_game->_players[_humans[i]].playerDoneFlags) {
+			_playerFlags[i]->draw(x + 40, y + i * h - 16);
+		}
+	}
+}
+
+void SelectPlayerView::highlightPlayer(int x, int y, int arg) {
+	_currentPlayer = arg;
+	_animStart = 0;
+}
+
+void SelectPlayerView::clickPlayer(int x, int y, int arg) {
+	_callback(arg, 0);
+	exitView();
 }
 
 MainMenuWindow::MainMenuWindow(GuiView *parent, GameState *game) :

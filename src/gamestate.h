@@ -36,6 +36,9 @@ const int STARS_NAME_SIZE           = 15;
 const int PLAYER_COUNT 				= 0x08;
 const int PLAYER_NAME_SIZE 			= 0x14;
 const int PLAYER_RACE_SIZE 			= 0x10;
+#define RACE_COUNT 13
+
+#define OBJECTIVE_HUMAN 100
 
 #define SHIP_NAME_SIZE 16
 
