@@ -400,6 +400,10 @@ int Font::renderText(int x, int y, unsigned color, const char *str) {
 	return x;
 }
 
+int Font::centerText(int x, int y, unsigned color, const char *str) {
+	return renderText(x - textWidth(str) / 2, y, color, str);
+}
+
 FontManager::FontManager(void) : _fonts(NULL), _fontCount(0), _size(0) {
 
 }

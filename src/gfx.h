@@ -151,6 +151,7 @@ public:
 	// Both functions return X coordinate for drawing more text.
 	int renderChar(int x, int y, unsigned color, char ch);
 	int renderText(int x, int y, unsigned color, const char *str);
+	int centerText(int x, int y, unsigned color, const char *str);
 
 	friend class FontManager;
 };

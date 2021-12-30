@@ -307,9 +307,8 @@ void GalaxyView::redraw(unsigned curtick) {
 			img = (Image*)_starimg[cls][_zoom + ptr->size];
 			y -= img->height() / 2;
 			img->draw(x - img->width() / 2, y);
-			x -= fnt->textWidth(ptr->name) / 2;
 			y += img->height();
-			fnt->renderText(x, y, FONT_COLOR_STAR_NEUTRAL2,
+			fnt->centerText(x, y, FONT_COLOR_STAR_NEUTRAL2,
 				ptr->name);
 		} else if (ptr->spectralClass == SpectralClass::BlackHole) {
 			img = (Image*)_bholeimg[_zoom];
