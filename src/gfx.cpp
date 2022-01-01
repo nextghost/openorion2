@@ -320,7 +320,8 @@ void Image::draw(int x, int y, unsigned frame) const {
 }
 
 Font::Font(unsigned height) : _width(0), _height(height), _title(0),
-	_glyphCount(0), _glyphs(NULL), _bitmap(NULL) {
+	_glyphCount(0), _glyphs(NULL), _bitmap(NULL), _shadowID(-1),
+	_outlineID(-1) {
 
 	size_t i;
 
@@ -332,6 +333,14 @@ Font::Font(unsigned height) : _width(0), _height(height), _title(0),
 Font::~Font(void) {
 	size_t i;
 
+	if (_outlineID >= 0) {
+		freeTexture(_outlineID);
+	}
+
+	if (_shadowID >= 0) {
+		freeTexture(_shadowID);
+	}
+
 	delete[] _glyphs;
 	delete[] _bitmap;
 
@@ -340,6 +349,64 @@ Font::~Font(void) {
 			freeTexture(_textureIDs[i]);
 		}
 	}
+}
+
+void Font::createOutline(void) {
+	unsigned i, j, x, y, width, height;
+	const uint8_t *src;
+	uint8_t *buf, *dst;
+	uint8_t shadowpal[3*4] = {TRANSPARENT, TRANSPARENT, RGB(0x101018)};
+	uint8_t outlinepal[3*4] = {TRANSPARENT, RGB(0x101018), RGB(0x101018)};
+
+	// Each glyph outline is 2 pixels wider and taller than the glyph
+	width = _width + 2 * _glyphCount;
+	height = _height + 2;
+	buf = new uint8_t[width * height];
+	memset(buf, 0, width * height * sizeof(uint8_t));
+
+	for (i = 0; i < _glyphCount; i++) {
+		src = _bitmap + _glyphs[i].offset;
+		dst = buf + _glyphs[i].offset + 2 * i;
+
+		for (y = 0; y < _height; y++) {
+			for (x = 0; x < _glyphs[i].width; x++) {
+				// Start from bottom right corner, otherwise
+				// the shadow texture will miss a lot of pixels
+				j = (_height - y - 1) * _width;
+				j += _glyphs[i].width - x - 1;
+
+				if (!src[j]) {
+					continue;
+				}
+
+				// Outline for each non-blank pixel:
+				// 111
+				// 122
+				// 122
+				j = (_height - y - 1) * width;
+				j += _glyphs[i].width - x - 1;
+				dst[j] = dst[j+1] = dst[j+2] = 1;
+				j += width;
+				dst[j] = 1;
+				dst[j+1] = dst[j+2] = 2;
+				j += width;
+				dst[j] = 1;
+				dst[j+1] = dst[j+2] = 2;
+			}
+		}
+	}
+
+	try {
+		_shadowID = registerTexture(width, height, buf, shadowpal, 0,
+			3);
+		_outlineID = registerTexture(width, height, buf, outlinepal, 0,
+			3);
+	} catch (...) {
+		delete[] buf;
+		throw;
+	}
+
+	delete[] buf;
 }
 
 unsigned Font::height(void) const {
@@ -370,7 +437,7 @@ unsigned Font::textWidth(const char *str) const {
 	return ret ? ret - 1 : 0;
 }
 
-int Font::renderChar(int x, int y, unsigned color, char ch) {
+int Font::renderChar(int x, int y, unsigned color, char ch, unsigned outline) {
 	unsigned idx = (unsigned char)ch;
 
 	if (idx >= _glyphCount) {
@@ -387,21 +454,38 @@ int Font::renderChar(int x, int y, unsigned color, char ch) {
 			pal, 0, _title ? TITLE_PALSIZE : FONT_PALSIZE);
 	}
 
+	if (outline != OUTLINE_NONE) {
+		unsigned tex;
+
+		if (outline == OUTLINE_SHADOW) {
+			tex = _shadowID;
+		} else if (outline == OUTLINE_FULL) {
+			tex = _outlineID;
+		} else {
+			throw std::runtime_error("Invalid outline type");
+		}
+
+		drawTextureTile(tex, x-1, y-1, _glyphs[idx].offset + 2*idx, 0,
+			_glyphs[idx].width + 2, _height + 2);
+	}
+
 	drawTextureTile(_textureIDs[color], x, y, _glyphs[idx].offset, 0,
 		_glyphs[idx].width, _height);
 	return x + _glyphs[idx].width + 1;
 }
 
-int Font::renderText(int x, int y, unsigned color, const char *str) {
+int Font::renderText(int x, int y, unsigned color, const char *str,
+	unsigned outline) {
 	for (; *str; str++) {
-		x = renderChar(x, y, color, *str);
+		x = renderChar(x, y, color, *str, outline);
 	}
 
 	return x;
 }
 
-int Font::centerText(int x, int y, unsigned color, const char *str) {
-	return renderText(x - textWidth(str) / 2, y, color, str);
+int Font::centerText(int x, int y, unsigned color, const char *str,
+	unsigned outline) {
+	return renderText(x - textWidth(str) / 2, y, color, str, outline);
 }
 
 FontManager::FontManager(void) : _fonts(NULL), _fontCount(0), _size(0) {
@@ -551,6 +635,9 @@ void FontManager::loadFonts(SeekableReadStream &stream) {
 			ptr->_title = (i == FONTSIZE_TITLE);
 			ptr->_glyphs = glyphs;
 			ptr->_glyphCount = glyphCount;
+			glyphs = NULL;
+			bitmap = NULL;
+			ptr->createOutline();
 		}
 	} catch (...) {
 		fontCount -= i;

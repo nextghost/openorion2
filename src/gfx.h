@@ -31,6 +31,10 @@
 #define FONTSIZE_BIG 4
 #define FONTSIZE_TITLE 5
 
+#define OUTLINE_NONE 0
+#define OUTLINE_SHADOW 1
+#define OUTLINE_FULL 2
+
 #define TITLE_COLOR_DEFAULT 0
 #define TITLE_COLOR_HELP 1
 #define TITLE_COLOR_MAX 2
@@ -135,9 +139,11 @@ protected:
 	unsigned _width, _height, _title, _glyphCount;
 	Glyph *_glyphs;
 	uint8_t *_bitmap;
-	int _textureIDs[FONT_COLOR_MAX];
+	int _textureIDs[FONT_COLOR_MAX], _shadowID, _outlineID;
 
 	explicit Font(unsigned height);
+
+	void createOutline(void);
 
 public:
 	~Font(void);
@@ -149,9 +155,12 @@ public:
 	// Draw single character or entire string. X,Y are coordinates of
 	// upper left corner of the text. Color is predefined font palette ID.
 	// Both functions return X coordinate for drawing more text.
-	int renderChar(int x, int y, unsigned color, char ch);
-	int renderText(int x, int y, unsigned color, const char *str);
-	int centerText(int x, int y, unsigned color, const char *str);
+	int renderChar(int x, int y, unsigned color, char ch,
+		unsigned outline = OUTLINE_NONE);
+	int renderText(int x, int y, unsigned color, const char *str,
+		unsigned outline = OUTLINE_NONE);
+	int centerText(int x, int y, unsigned color, const char *str,
+		unsigned outline = OUTLINE_NONE);
 
 	friend class FontManager;
 };
