@@ -169,9 +169,9 @@ struct Leader {
 	uint8_t type;
 	uint16_t experience;
 	// Bitmask for general skills
-	uint64_t commonSkills;
+	uint32_t commonSkills;
 	// Bitmask for including ship or colony skills
-	uint64_t specialSkills;
+	uint32_t specialSkills;
 	uint8_t techs[MAX_LEADER_TECH_SKILLS];
 	uint8_t picture;
 	uint16_t skillValue;
@@ -272,9 +272,9 @@ struct Player {
 	uint8_t playerDoneFlags;
 	uint8_t researchBreakthrough;
 	uint8_t taxRate;
-	uint64_t BC;
+	int32_t BC;
 	uint16_t totalFreighters;
-	uint16_t surplusFreighters;
+	int16_t surplusFreighters;
 	uint16_t commandPoints;
 	int16_t usedCommandPoints;
 	// Sum of the following 3 should be <= totalFreighters * FREIGHTER_CAPACITY

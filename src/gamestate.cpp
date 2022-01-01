@@ -305,9 +305,9 @@ void Player::load(SeekableReadStream &stream) {
 	stream.readUint16LE(); // Dead field
 	researchBreakthrough = stream.readUint8();
 	taxRate = stream.readUint8();
-	BC = stream.readUint32LE();
+	BC = stream.readSint32LE();
 	totalFreighters = stream.readUint16LE();
-	surplusFreighters = stream.readUint16LE();
+	surplusFreighters = stream.readSint16LE();
 	commandPoints = stream.readUint16LE();
 	usedCommandPoints = stream.readSint16LE();
 	foodFreighted = stream.readUint16LE();
