@@ -220,7 +220,7 @@ void GalaxyView::selectPlayer(void) {
 		ptr = _game->_players + i;
 
 		if (ptr->objective == OBJECTIVE_HUMAN &&
-			ptr->networkPlayerId == 0) {
+			ptr->networkPlayerId == 0 && !ptr->eliminated) {
 			humans++;
 			last_human = i;
 		}
@@ -462,7 +462,7 @@ SelectPlayerView::SelectPlayerView(const GameState *game,
 		ptr = _game->_players + i;
 
 		if (ptr->objective != OBJECTIVE_HUMAN ||
-			ptr->networkPlayerId != 0) {
+			ptr->networkPlayerId != 0 || ptr->eliminated) {
 			continue;
 		}
 

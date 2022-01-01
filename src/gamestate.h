@@ -35,7 +35,7 @@ const int STARS_NAME_SIZE           = 15;
 
 const int PLAYER_COUNT 				= 0x08;
 const int PLAYER_NAME_SIZE 			= 0x14;
-const int PLAYER_RACE_SIZE 			= 0x10;
+#define PLAYER_RACE_SIZE 15
 #define RACE_COUNT 13
 
 #define OBJECTIVE_HUMAN 100
@@ -263,6 +263,7 @@ struct SettlerInfo {
 struct Player {
 	char name[PLAYER_NAME_SIZE];
 	char race[PLAYER_RACE_SIZE];
+	uint8_t eliminated;
 	uint8_t picture;
 	uint8_t color;
 	uint8_t personality;

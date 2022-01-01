@@ -293,6 +293,7 @@ void Player::load(SeekableReadStream &stream) {
 	name[PLAYER_NAME_SIZE - 1] = '\0';
 	stream.read(race, PLAYER_RACE_SIZE);
 	race[PLAYER_RACE_SIZE - 1] = '\0';
+	eliminated = stream.readUint8();
 	picture = stream.readUint8();
 	color = stream.readUint8();
 	// 100 = Human player
