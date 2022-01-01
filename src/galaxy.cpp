@@ -474,10 +474,11 @@ SelectPlayerView::SelectPlayerView(const GameState *game,
 			throw std::out_of_range("Player has invalid color ID");
 		}
 
-		_humans[_playerCount++] = i;
 		flag_id = ptr->picture * PLAYER_COUNT + ptr->color;
-		_playerFlags[i] = gameAssets->getImage(MULTIPLAYER_ARCHIVE,
-			ASSET_PSELECT_FLAGS + flag_id, pal);
+		_playerFlags[_playerCount] = gameAssets->getImage(
+			MULTIPLAYER_ARCHIVE, ASSET_PSELECT_FLAGS + flag_id,
+			pal);
+		_humans[_playerCount++] = i;
 	}
 
 	try {
