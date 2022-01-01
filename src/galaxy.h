@@ -49,6 +49,8 @@ protected:
 	void selectPlayer(void);
 	void setPlayer(int player, int a, int b);
 
+	void redrawSidebar(unsigned curtick);
+
 public:
 	// Gamestate must be dynamically allocated and GalaxyView takes
 	// ownership of the instance

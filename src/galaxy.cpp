@@ -50,11 +50,18 @@
 #define ASSET_PSELECT_FOOTER 21
 #define ASSET_PSELECT_FLAGS 46
 
+#define GALAXY_ANIM_LENGTH 8
+#define GALAXY_ANIM_SPEED 120
+#define GALAXY_SIDEBAR_X 579
+
 #define PSELECT_BUFSIZE 128
 #define PSELECT_ANIM_LENGTH 8
 #define PSELECT_YPOS 36
 
 const unsigned galaxySizeFactors[] = {10, 15, 20, 30, 0};
+static const unsigned galaxy_fontanim[GALAXY_ANIM_LENGTH] = {
+	1, 2, 3, 4, 3, 2, 1, 0
+};
 
 GalaxyView::GalaxyView(GameState *game) : _game(game), _zoom(0), _zoomX(0),
 	_zoomY(0), _startTick(0), _activePlayer(-1) {
@@ -246,6 +253,82 @@ void GalaxyView::setPlayer(int player, int a, int b) {
 	_activePlayer = player;
 }
 
+void GalaxyView::redrawSidebar(unsigned curtick) {
+	unsigned stardate, color, negcolor, x;
+	Font *fnt;
+	const Player *ptr;
+	char buf[32], *str;
+
+	if (_activePlayer < 0) {
+		return;
+	}
+
+	// FIXME: Use strings from game data
+	ptr = _game->_players + _activePlayer;
+	fnt = gameFonts.getFont(FONTSIZE_SMALL);
+	negcolor = (curtick - _startTick) / GALAXY_ANIM_SPEED;
+	negcolor = galaxy_fontanim[negcolor % GALAXY_ANIM_LENGTH];
+	negcolor += FONT_COLOR_DEFICIT1;
+	stardate = _game->_gameConfig.stardate;
+	sprintf(buf, "%d.%d", stardate / 10, stardate % 10);
+	fnt->centerText(GALAXY_SIDEBAR_X, 29, FONT_COLOR_GALAXY_GUI, buf,
+		OUTLINE_FULL);
+
+	// Treasury and income
+	sprintf(buf, "%'d BC", ptr->BC);
+	color = ptr->BC < 0 ? negcolor : FONT_COLOR_GALAXY_GUI;
+	fnt->centerText(GALAXY_SIDEBAR_X, 96, color, buf, OUTLINE_FULL);
+	sprintf(buf, "%+'d BC", ptr->surplusBC);
+	color = ptr->surplusBC < 0 ? negcolor : FONT_COLOR_GALAXY_GUI;
+	fnt->centerText(GALAXY_SIDEBAR_X, 108, color, buf, OUTLINE_FULL);
+
+	// Fleet command points
+	sprintf(buf, "%+'d (%'u)", ptr->commandPoints - ptr->usedCommandPoints,
+		ptr->commandPoints);
+	x = GALAXY_SIDEBAR_X - fnt->textWidth(buf) / 2;
+	str = strchr(buf, ' ');
+	*str = '\0';
+	color = FONT_COLOR_GALAXY_GUI;
+
+	if (ptr->usedCommandPoints > (int)ptr->commandPoints) {
+		color = negcolor;
+	}
+
+	x = fnt->renderText(x, 181, color, buf, OUTLINE_FULL);
+	*str = ' ';
+	fnt->renderText(x, 181, FONT_COLOR_GALAXY_GUI, str, OUTLINE_FULL);
+
+	// Food surplus
+	sprintf(buf, "%+'d", ptr->surplusFood);
+	color = ptr->surplusFood < 0 ? negcolor : FONT_COLOR_GALAXY_GUI;
+	fnt->centerText(GALAXY_SIDEBAR_X, 255, color, buf, OUTLINE_FULL);
+
+	// Freighters status
+	sprintf(buf, "%+'d (%'u)", ptr->surplusFreighters,
+		ptr->totalFreighters);
+	x = GALAXY_SIDEBAR_X - fnt->textWidth(buf) / 2;
+	str = strchr(buf, ' ');
+	*str = '\0';
+	color = (ptr->surplusFreighters < 0) ? negcolor : FONT_COLOR_GALAXY_GUI;
+	x = fnt->renderText(x, 330, color, buf, OUTLINE_FULL);
+	*str = ' ';
+	fnt->renderText(x, 330, FONT_COLOR_GALAXY_GUI, str, OUTLINE_FULL);
+
+	// Research progress
+	if (ptr->researchItem) {
+		// FIXME: draw expected time to completion
+		//sprintf(buf, "~%d turns", turns_remaining);
+		//fnt->centerText(GALAXY_SIDEBAR_X, 391, FONT_COLOR_GALAXY_GUI,
+		//	buf, OUTLINE_FULL);
+		sprintf(buf, "%+'d RP", ptr->researchProduced);
+		fnt->centerText(GALAXY_SIDEBAR_X, 403, FONT_COLOR_GALAXY_GUI,
+			buf, OUTLINE_FULL);
+	} else {
+		fnt->centerText(GALAXY_SIDEBAR_X, 403, FONT_COLOR_GALAXY_GUI,
+			"none", OUTLINE_FULL);
+	}
+}
+
 void GalaxyView::open(void) {
 	_startTick = 0;
 
@@ -349,6 +432,7 @@ void GalaxyView::redraw(unsigned curtick) {
 	}
 
 	_gui->draw(0, 0);
+	redrawSidebar(curtick);
 	redrawWidgets(0, 0, curtick);
 	redrawWindows(curtick);
 }
