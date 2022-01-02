@@ -58,6 +58,12 @@ const int MAX_SETTLERS				= 25;
 #define NEBULA_TYPE_COUNT 12
 #define MAX_FLEET_OWNERS 15
 
+#define MAX_SPIES 0x3f
+#define SPY_MISSION_MASK 0xc0
+#define SPY_MISSION_STEAL 0
+#define SPY_MISSION_SABOTAGE 0x40
+#define SPY_MISSION_HIDE 0x80
+
 enum MultiplayerType {
 	Single = 0,
 	Hotseat = 1,
@@ -291,10 +297,12 @@ struct Player {
 	int16_t surplusFood;
 	int16_t surplusBC;
 	int32_t totalMaintenance;
+	uint32_t researchProgress;
 	ResearchArea researchArea;
 	uint16_t researchItem;
 	ShipDesign blueprints[MAX_PLAYER_BLUEPRINTS], selectedBlueprint;
 	RacePicks racePicks;
+	uint8_t spies[MAX_PLAYERS];
 
 	Player(void);
 

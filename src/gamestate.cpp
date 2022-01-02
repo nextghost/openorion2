@@ -281,8 +281,11 @@ Player::Player(void) {
 	surplusBC = 0;
 
 	totalMaintenance = 0;
+	researchProgress = 0;
 	researchArea = ResearchArea::None;
 	researchItem = 0;
+
+	memset(spies, 0, MAX_PLAYERS * sizeof(uint8_t));
 }
 
 void Player::load(SeekableReadStream &stream) {
@@ -329,7 +332,9 @@ void Player::load(SeekableReadStream &stream) {
 
 	// FIXME: check maintenance offset in save file
 	totalMaintenance = stream.readSint32LE();
-	stream.seek(0x269, SEEK_CUR);
+	stream.seek(307, SEEK_CUR);
+	researchProgress = stream.readUint32LE();
+	stream.seek(0x132, SEEK_CUR);
 	researchArea = ResearchArea(stream.readUint8());
 	researchItem = stream.readUint8();
 
@@ -344,7 +349,13 @@ void Player::load(SeekableReadStream &stream) {
 	selectedBlueprint.load(stream);
 	stream.seek(0x327, SEEK_CUR);
 	racePicks.load(stream);
-	stream.seek(0x5eb, SEEK_CUR);
+	stream.seek(0x599, SEEK_CUR);
+
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		spies[i] = stream.readUint8();
+	}
+
+	stream.seek(74, SEEK_CUR);
 }
 
 Star::Star(void) {
@@ -696,7 +707,7 @@ void GameState::removeFleet(Fleet *flt) {
 }
 
 void GameState::load(SeekableReadStream &stream) {
-	int i, tmp;
+	int i, j, tmp;
 
 	// FIXME: get rid of seeks
 	_gameConfig.load(stream);
@@ -744,6 +755,18 @@ void GameState::load(SeekableReadStream &stream) {
 
 	for (i = 0; i < MAX_SHIPS; i++) {
 		_ships[i].load(stream);
+	}
+
+	for (i = 0; i < _playerCount; i++) {
+		for (j = 0; j < MAX_PLAYERS; j++) {
+			if ((j < _playerCount && !_players[i].eliminated) ||
+				!(_players[i].spies[j] & ~SPY_MISSION_MASK)) {
+				continue;
+			}
+
+			fprintf(stderr, "%s spying on invalid player %d\n",
+				_players[i].name, j);
+		}
 	}
 
 	for (i = 0; i < _shipCount; i++) {
@@ -865,8 +888,8 @@ void GameState::dump(void) const {
 			_players[i].totalFreighters, _players[i].surplusFreighters, _players[i].commandPoints);
 		fprintf(stdout, "Total production:\t%d\tRP:\t\t\t%d\tFood:\t\t\t%d\n",
 			_players[i].industryProduced, _players[i].researchProduced, _players[i].surplusFood);
-		fprintf(stdout, "Yearly BC:\t\t%d\tResearch progress:\t%d\tResearch Area:\t\t%d\n",
-			_players[i].surplusBC, _players[i].researchProduced, (int)_players[i].researchArea);
+		fprintf(stdout, "Yearly BC:\t\t%d\tResearch progress:\t%u\tResearch Area:\t\t%d\n",
+			_players[i].surplusBC, _players[i].researchProgress, (int)_players[i].researchArea);
 		fprintf(stdout, "Research Item:\t\t%d\n",
 			_players[i].researchItem);
 
