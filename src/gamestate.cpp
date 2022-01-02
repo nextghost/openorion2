@@ -869,8 +869,8 @@ void GameState::dump(void) const {
 		fprintf(stdout, "Title: %s\n", _leaders[i].title);
 		fprintf(stdout, "Type: %d\n", _leaders[i].type);
 		fprintf(stdout, "Experience: %d\n", _leaders[i].experience);
-		fprintf(stdout, "Common skills: %lu\n", _leaders[i].commonSkills);
-		fprintf(stdout, "Special skills: %lu\n", _leaders[i].specialSkills);
+		fprintf(stdout, "Common skills: %u\n", _leaders[i].commonSkills);
+		fprintf(stdout, "Special skills: %u\n", _leaders[i].specialSkills);
 		for (int j = 0; j < MAX_LEADER_TECH_SKILLS; j++) {
 			fprintf(stdout, "Tech: %d\n", _leaders[i].techs[j]);
 		}
