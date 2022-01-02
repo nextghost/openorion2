@@ -853,13 +853,13 @@ void GameState::dump(void) const {
 		fprintf(stdout, "Player: %d\n", _leaders[i].playerIndex);
 	}
 
-	fprintf(stdout, "\n=== Player ===\n");
-	for (int i = 0; i < PLAYER_COUNT; i++) {
+	fprintf(stdout, "\n=== Players (%d) ===\n", _playerCount);
+	for (int i = 0; i < _playerCount; i++) {
 		fprintf(stdout, "Name:\t%s\tRace:\t%s\n",
 			_players[i].name, _players[i].race);
 		fprintf(stdout, "Picture:\t\t%d\tColor:\t\t\t%d\tPersonality:\t\t%d\n",
 			_players[i].picture, _players[i].color, _players[i].personality);
-		fprintf(stdout, "Objective:\t\t%d\tTax rate:\t\t%d\tBC:\t\t\t%lu\n",
+		fprintf(stdout, "Objective:\t\t%d\tTax rate:\t\t%d\tBC:\t\t\t%d\n",
 			_players[i].objective, _players[i].taxRate, _players[i].BC);
 		fprintf(stdout, "Total freighters:\t%d\tUsed freighters:\t%d\tCommand points:\t\t%d\n",
 			_players[i].totalFreighters, _players[i].surplusFreighters, _players[i].commandPoints);
@@ -892,7 +892,7 @@ void GameState::dump(void) const {
 		fprintf(stdout, "Telepathic:\t\t%d\tLucky:\t\t\t%d\tOmniscience:\t\t%d\tStealthy ships:\t\t%d\n",
 			_players[i].racePicks.telepathic, _players[i].racePicks.lucky,
 			_players[i].racePicks.omniscience, _players[i].racePicks.stealthyShips);
-		fprintf(stdout, "Transdimensional:\t%d\tWarlord:\t\t%d\n",
+		fprintf(stdout, "Transdimensional:\t%d\tWarlord:\t\t%d\n\n",
 			_players[i].racePicks.transDimensional, _players[i].racePicks.warlord);
 	}
 
