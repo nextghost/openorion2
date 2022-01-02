@@ -928,9 +928,10 @@ void GameState::dump(void) const {
 	}
 
 	fprintf(stdout, "Number of stars: %d\n", _starSystemCount);
-	for (auto star : _starSystems) {
-		fprintf(stdout, "\nName:\t%s\n", star.name);
-		fprintf(stdout, "Class:\t\t%x\t\tSize:\t\t%x\n", (unsigned)star.spectralClass, (unsigned)star.size);
+	for (int i = 0; i < _starSystemCount; i++) {
+		const Star &star = _starSystems[i];
+		fprintf(stdout, "\nName:\t%s (%d)\n", star.name, i);
+		fprintf(stdout, "Class:\t\t%x\t\tSize:\t\t%x\t\tPicture:\t%x\n", (unsigned)star.spectralClass, (unsigned)star.size, star.pictureType);
 		fprintf(stdout, "Position:\t%d,%d\tPrimary owner:\t%d\n", star.x, star.y, star.owner);
 		fprintf(stdout, "Special:\t%d\t\tWormhole:\t%d\n", (int)star.special, star.wormhole);
 	}
