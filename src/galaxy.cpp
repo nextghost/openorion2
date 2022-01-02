@@ -466,14 +466,6 @@ SelectPlayerView::SelectPlayerView(const GameState *game,
 			continue;
 		}
 
-		if (ptr->picture >= RACE_COUNT) {
-			throw std::out_of_range("Player has invalid race ID");
-		}
-
-		if (ptr->color >= PLAYER_COUNT) {
-			throw std::out_of_range("Player has invalid color ID");
-		}
-
 		flag_id = ptr->picture * PLAYER_COUNT + ptr->color;
 		_playerFlags[_playerCount] = gameAssets->getImage(
 			MULTIPLAYER_ARCHIVE, ASSET_PSELECT_FLAGS + flag_id,

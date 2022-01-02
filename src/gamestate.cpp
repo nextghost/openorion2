@@ -303,6 +303,14 @@ void Player::load(SeekableReadStream &stream) {
 	personality = stream.readUint8();
 	objective = stream.readUint8();
 
+	if (picture >= RACE_COUNT) {
+		throw std::out_of_range("Player has invalid race ID");
+	}
+
+	if (color >= PLAYER_COUNT) {
+		throw std::out_of_range("Player has invalid color ID");
+	}
+
 	homePlayerId = stream.readUint16LE();
 	networkPlayerId = stream.readUint16LE();
 	playerDoneFlags = stream.readUint8();
