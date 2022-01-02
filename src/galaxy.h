@@ -32,6 +32,7 @@ private:
 	ImageAsset _nebulaimg[NEBULA_TYPE_COUNT][GALAXY_ZOOM_LEVELS];
 	ImageAsset _bholeimg[GALAXY_ZOOM_LEVELS];
 	ImageAsset _fleetimg[MAX_FLEET_OWNERS][GALAXY_ZOOM_LEVELS];
+	ImageAsset _turnDoneLights[MAX_PLAYERS];
 	GameState *_game;
 	unsigned _zoom, _zoomX, _zoomY, _startTick;
 	int _activePlayer;

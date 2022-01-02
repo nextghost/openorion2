@@ -29,6 +29,7 @@
 #define ASSET_GALAXY_STAR_IMAGES 148
 #define ASSET_GALAXY_BHOLE_IMAGES 184
 #define ASSET_GALAXY_FLEET_IMAGES 205
+#define ASSET_GALAXY_TURN_DONE 265
 
 #define STARBG_ARCHIVE "starbg.lbx"
 #define ASSET_STARBG 3
@@ -67,6 +68,7 @@ GalaxyView::GalaxyView(GameState *game) : _game(game), _zoom(0), _zoomX(0),
 	_zoomY(0), _startTick(0), _activePlayer(-1) {
 	uint8_t tpal[PALSIZE];
 	const uint8_t *pal;
+	const Player *plr;
 	int i, j, k;
 
 	for (i = 0; galaxySizeFactors[i]; i++) {
@@ -111,6 +113,18 @@ GalaxyView::GalaxyView(GameState *game) : _game(game), _zoom(0), _zoomX(0),
 			_fleetimg[i][j] = gameAssets->getImage(GALAXY_ARCHIVE,
 				ASSET_GALAXY_FLEET_IMAGES + k, tpal);
 		}
+	}
+
+	for (i = 0; i < _game->_playerCount; i++) {
+		plr = _game->_players + i;
+
+		// Network players intentionally included
+		if (plr->objective != OBJECTIVE_HUMAN || plr->eliminated) {
+			continue;
+		}
+
+		_turnDoneLights[i] = gameAssets->getImage(GALAXY_ARCHIVE,
+			ASSET_GALAXY_TURN_DONE + plr->color, pal);
 	}
 
 	_bg = gameAssets->getImage(STARBG_ARCHIVE, ASSET_STARBG, pal);
@@ -342,6 +356,7 @@ void GalaxyView::redraw(unsigned curtick) {
 	int x, y;
 	const Image *img;
 	Font *fnt;
+	const Player *plr;
 	BilistNode<Fleet> *fnode;
 	unsigned font_sizes[] = {FONTSIZE_MEDIUM, FONTSIZE_SMALL,
 		FONTSIZE_SMALL, FONTSIZE_SMALLER};
@@ -432,6 +447,23 @@ void GalaxyView::redraw(unsigned curtick) {
 	}
 
 	_gui->draw(0, 0);
+	x = 73;
+
+	for (i = 0; i < _game->_playerCount; i++) {
+		plr = _game->_players + i;
+
+		if (plr->objective != OBJECTIVE_HUMAN || plr->eliminated ||
+			!plr->playerDoneFlags) {
+			continue;
+		}
+
+		img = (Image*)_turnDoneLights[i];
+		frame = (curtick - _startTick) / GALAXY_ANIM_SPEED;
+		frame %= img->frameCount();
+		img->draw(x, 5, frame);
+		x += img->width();
+	}
+
 	redrawSidebar(curtick);
 	redrawWidgets(0, 0, curtick);
 	redrawWindows(curtick);
