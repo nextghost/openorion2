@@ -303,14 +303,6 @@ void Player::load(SeekableReadStream &stream) {
 	personality = stream.readUint8();
 	objective = stream.readUint8();
 
-	if (picture >= RACE_COUNT) {
-		throw std::out_of_range("Player has invalid race ID");
-	}
-
-	if (color >= PLAYER_COUNT) {
-		throw std::out_of_range("Player has invalid color ID");
-	}
-
 	homePlayerId = stream.readUint16LE();
 	networkPlayerId = stream.readUint16LE();
 	playerDoneFlags = stream.readUint8();
@@ -446,14 +438,6 @@ void Star::load(ReadStream &stream) {
 	owner = stream.readUint8();
 	pictureType = stream.readUint8();
 	spectralClass = stream.readUint8();
-
-	if (size > StarSize::Small) {
-		throw std::out_of_range("Invalid star size");
-	}
-
-	if (spectralClass > SpectralClass::BlackHole) {
-		throw std::out_of_range("Invalid star spectral class");
-	}
 
 	for (i = 0; i < MAX_PLAYERS; i++) {
 		lastPlanetSelected[i] = stream.readUint8();
@@ -733,6 +717,14 @@ void GameState::load(SeekableReadStream &stream) {
 	for (i = 0; i < _starSystemCount; i++) {
 		Star *ptr = _starSystems + i;
 
+		if (ptr->size > StarSize::Small) {
+			throw std::out_of_range("Invalid star size");
+		}
+
+		if (ptr->spectralClass > SpectralClass::BlackHole) {
+			throw std::out_of_range("Invalid star spectral class");
+		}
+
 		if (ptr->x >= _galaxy.width || ptr->y >= _galaxy.height) {
 			throw std::out_of_range("Star outside galaxy area");
 		}
@@ -766,6 +758,14 @@ void GameState::load(SeekableReadStream &stream) {
 	}
 
 	for (i = 0; i < _playerCount; i++) {
+		if (_players[i].picture >= RACE_COUNT) {
+			throw std::out_of_range("Player has invalid race ID");
+		}
+
+		if (_players[i].color >= PLAYER_COUNT) {
+			throw std::out_of_range("Player has invalid color ID");
+		}
+
 		for (j = 0; j < MAX_PLAYERS; j++) {
 			if ((j < _playerCount && !_players[i].eliminated) ||
 				!(_players[i].spies[j] & ~SPY_MISSION_MASK)) {
