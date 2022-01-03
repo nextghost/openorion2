@@ -706,15 +706,11 @@ void GameState::load(SeekableReadStream &stream) {
 	stream.seek(0x31be4, SEEK_SET);
 	_galaxy.load(stream);
 	stream.seek(STARS_COUNT_DATA_OFFSET, SEEK_SET);
-	// FIXME: Uint16LE?
-	_starSystemCount = stream.readUint8();
-	stream.readUint8();
+	_starSystemCount = stream.readUint16LE();
 
-	for (i = 0; i < _starSystemCount; i++) {
+	for (i = 0; i < MAX_STARS; i++) {
 		_starSystems[i].load(stream);
 	}
-
-	stream.seek(LEADERS_DATA_OFFSET, SEEK_SET);
 
 	for (i = 0; i < LEADER_COUNT; i++) {
 		_leaders[i].load(stream);
