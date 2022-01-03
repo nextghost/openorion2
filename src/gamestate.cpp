@@ -699,7 +699,7 @@ void GameState::removeFleet(Fleet *flt) {
 }
 
 void GameState::load(SeekableReadStream &stream) {
-	int i, j, tmp;
+	int i;
 
 	// FIXME: get rid of seeks
 	_gameConfig.load(stream);
@@ -714,8 +714,44 @@ void GameState::load(SeekableReadStream &stream) {
 		_starSystems[i].load(stream);
 	}
 
+	stream.seek(LEADERS_DATA_OFFSET, SEEK_SET);
+
+	for (i = 0; i < LEADER_COUNT; i++) {
+		_leaders[i].load(stream);
+	}
+
+	_playerCount = stream.readUint16LE();
+
+	for (i = 0; i < PLAYER_COUNT; i++) {
+		_players[i].load(stream);
+	}
+
+	_shipCount = stream.readUint16LE();
+
+	for (i = 0; i < MAX_SHIPS; i++) {
+		_ships[i].load(stream);
+	}
+
+	validate();
+	createFleets();
+}
+
+void GameState::load(const char *filename) {
+	File fr;
+
+	if (!fr.open(filename)) {
+		throw std::runtime_error("Cannot open savegame file");
+	}
+
+	load(fr);
+}
+
+void GameState::validate(void) const {
+	int i, j, tmp;
+
+	// Validate star systems
 	for (i = 0; i < _starSystemCount; i++) {
-		Star *ptr = _starSystems + i;
+		const Star *ptr = _starSystems + i;
 
 		if (ptr->size > StarSize::Small) {
 			throw std::out_of_range("Invalid star size");
@@ -739,24 +775,7 @@ void GameState::load(SeekableReadStream &stream) {
 		}
 	}
 
-	stream.seek(LEADERS_DATA_OFFSET, SEEK_SET);
-
-	for (i = 0; i < LEADER_COUNT; i++) {
-		_leaders[i].load(stream);
-	}
-
-	_playerCount = stream.readUint16LE();
-
-	for (i = 0; i < PLAYER_COUNT; i++) {
-		_players[i].load(stream);
-	}
-
-	_shipCount = stream.readUint16LE();
-
-	for (i = 0; i < MAX_SHIPS; i++) {
-		_ships[i].load(stream);
-	}
-
+	// Validate players
 	for (i = 0; i < _playerCount; i++) {
 		if (_players[i].picture >= RACE_COUNT) {
 			throw std::out_of_range("Player has invalid race ID");
@@ -777,8 +796,9 @@ void GameState::load(SeekableReadStream &stream) {
 		}
 	}
 
+	// Validate ships
 	for (i = 0; i < _shipCount; i++) {
-		Ship *ptr = _ships + i;
+		const Ship *ptr = _ships + i;
 
 		if (ptr->status == ShipState::Destroyed) {
 			continue;
@@ -805,18 +825,6 @@ void GameState::load(SeekableReadStream &stream) {
 			throw std::out_of_range("Ship has invalid officer");
 		}
 	}
-
-	createFleets();
-}
-
-void GameState::load(const char *filename) {
-	File fr;
-
-	if (!fr.open(filename)) {
-		throw std::runtime_error("Cannot open savegame file");
-	}
-
-	load(fr);
 }
 
 unsigned GameState::findStar(int x, int y) const {

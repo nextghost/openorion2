@@ -459,6 +459,7 @@ public:
 
 	void load(SeekableReadStream &stream);
 	void load(const char *filename);
+	void validate(void) const;
 	void dump(void) const;
 
 	unsigned findStar(int x, int y) const;
