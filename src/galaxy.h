@@ -71,7 +71,7 @@ private:
 	GuiCallback _callback;
 	ImageAsset _playerFlags[PLAYER_COUNT];
 	ImageAsset _bg, _header, _row, _footer;
-	unsigned _humans[PLAYER_COUNT], _playerCount, _animStart;
+	unsigned _humans[PLAYER_COUNT], _playerCount, _animStart, _y;
 	int _currentPlayer;
 
 	void initWidgets(void);

@@ -57,7 +57,6 @@
 
 #define PSELECT_BUFSIZE 128
 #define PSELECT_ANIM_LENGTH 8
-#define PSELECT_YPOS 36
 
 const unsigned galaxySizeFactors[] = {10, 15, 20, 30, 0};
 static const unsigned galaxy_fontanim[GALAXY_ANIM_LENGTH] = {
@@ -505,6 +504,10 @@ SelectPlayerView::SelectPlayerView(const GameState *game,
 		_humans[_playerCount++] = i;
 	}
 
+	// Row count is intentionally off by one
+	_y = SCREEN_HEIGHT - _header->height() - _footer->height();
+	_y = (_y - _playerCount * _row->height()) / 2;
+
 	try {
 		initWidgets();
 	} catch (...) {
@@ -515,11 +518,10 @@ SelectPlayerView::SelectPlayerView(const GameState *game,
 
 void SelectPlayerView::initWidgets(void) {
 	Widget *w;
-	unsigned i, x, y, h;
+	unsigned i, x, h;
 
 	h = _row->height();
 	x = (SCREEN_WIDTH - _header->width()) / 2;
-	y = PSELECT_YPOS;
 
 	for (i = 0; i < _playerCount; i++) {
 		if (_game->_players[_humans[i]].playerDoneFlags) {
@@ -527,7 +529,7 @@ void SelectPlayerView::initWidgets(void) {
 		}
 
 		// Player flag
-		w = createWidget(x + 37, y + 63 + i * h, 34, 36);
+		w = createWidget(x + 37, _y + 63 + i * h, 34, 36);
 		w->setMouseUpCallback(MBUTTON_LEFT,
 			GuiMethod(*this, &SelectPlayerView::clickPlayer,
 			_humans[i]));
@@ -539,7 +541,7 @@ void SelectPlayerView::initWidgets(void) {
 			-1));
 
 		// Player name
-		w = createWidget(x + 104, y + 66 + i * h, 335, 30);
+		w = createWidget(x + 104, _y + 66 + i * h, 335, 30);
 		w->setMouseUpCallback(MBUTTON_LEFT,
 			GuiMethod(*this, &SelectPlayerView::clickPlayer,
 			_humans[i]));
@@ -572,7 +574,7 @@ void SelectPlayerView::redraw(unsigned curtick) {
 	fnt = gameFonts.getFont(FONTSIZE_BIG);
 	h = _row->height();
 	x = (SCREEN_WIDTH - _header->width()) / 2;
-	y = PSELECT_YPOS;
+	y = _y;
 
 	_bg->draw(0, 0);
 	_header->draw(x, y);
