@@ -745,6 +745,18 @@ void GameState::load(const char *filename) {
 void GameState::validate(void) const {
 	int i, j, tmp;
 
+	if (_starSystemCount > MAX_STARS) {
+		throw std::out_of_range("Invalid star system count");
+	}
+
+	if (_playerCount > MAX_PLAYERS) {
+		throw std::out_of_range("Invalid player count");
+	}
+
+	if (_shipCount > MAX_SHIPS) {
+		throw std::out_of_range("Invalid star system count");
+	}
+
 	// Validate star systems
 	for (i = 0; i < _starSystemCount; i++) {
 		const Star *ptr = _starSystems + i;
