@@ -475,7 +475,7 @@ void Star::load(ReadStream &stream) {
 		officerIndex[i] = stream.readUint8();
 	}
 
-	for (i = 0; i < MAX_PLANETS_PER_SYSTEM; i++) {
+	for (i = 0; i < MAX_ORBITS; i++) {
 		planetIndex[i] = stream.readUint16LE();
 	}
 

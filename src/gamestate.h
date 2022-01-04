@@ -43,11 +43,11 @@ const int PLAYER_NAME_SIZE 			= 0x14;
 #define SHIP_NAME_SIZE 16
 
 const int MAX_LEADER_TECH_SKILLS	= 3;
-const int MAX_PLANETS_PER_SYSTEM	= 5;
 const int MAX_PLAYERS				= 8;
 const int MAX_TECHNOLOGIES 			= 0xcb;
-const int MAX_STARS					= 72;
 const int MAX_SETTLERS				= 25;
+#define MAX_STARS 72
+#define MAX_ORBITS 5
 #define MAX_SHIP_SPECIALS 39
 #define MAX_SHIP_WEAPONS 8
 #define MAX_PLAYER_BLUEPRINTS 5
@@ -380,7 +380,7 @@ public:
 	uint8_t isStagepoint;
 	// Bitmask that tells whether an officer is in the system roster
 	uint8_t officerIndex[MAX_PLAYERS];
-	uint16_t planetIndex[MAX_PLANETS_PER_SYSTEM];
+	uint16_t planetIndex[MAX_ORBITS];
 	// Star index all the ships will be relocated TO
 	uint16_t relocateShipTo[MAX_PLAYERS];
 	// Usually this is -1, else the player to give the colonies to
@@ -446,7 +446,7 @@ protected:
 public:
 	struct GameConfig _gameConfig;
 	struct Galaxy _galaxy;
-	uint8_t _starSystemCount;
+	uint16_t _starSystemCount;
 	Star _starSystems[MAX_STARS];
 	struct Leader _leaders[LEADER_COUNT];
 	uint16_t _playerCount;
