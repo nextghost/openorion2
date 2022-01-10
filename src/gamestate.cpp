@@ -827,7 +827,7 @@ void GameState::validate(void) const {
 
 		if (ptr->wormhole >= 0 &&
 			_starSystems[ptr->wormhole].wormhole != i) {
-			std::logic_error("One-way wormholes not allowed");
+			throw std::logic_error("One-way wormholes not allowed");
 		}
 
 		for (j = 0; j < MAX_ORBITS; j++) {
