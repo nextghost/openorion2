@@ -48,6 +48,7 @@ const int MAX_TECHNOLOGIES 			= 0xcb;
 const int MAX_SETTLERS				= 25;
 #define MAX_STARS 72
 #define MAX_ORBITS 5
+#define MAX_PLANETS (MAX_STARS * MAX_ORBITS)
 #define MAX_SHIP_SPECIALS 39
 #define MAX_SHIP_WEAPONS 8
 #define MAX_PLAYER_BLUEPRINTS 5
@@ -64,10 +65,68 @@ const int MAX_SETTLERS				= 25;
 #define SPY_MISSION_SABOTAGE 0x40
 #define SPY_MISSION_HIDE 0x80
 
+#define MAX_PLANET_BGS 3
+
 enum MultiplayerType {
 	Single = 0,
 	Hotseat = 1,
 	Network = 2,
+};
+
+enum PlanetType {
+	ASTEROIDS = 1,
+	GAS_GIANT = 2,
+	HABITABLE = 3
+};
+
+enum PlanetSize {
+	TINY_PLANET = 0,
+	SMALL_PLANET = 1,
+	MEDIUM_PLANET = 2,
+	LARGE_PLANET = 3,
+	HUGE_PLANET = 4
+};
+
+enum PlanetGravity {
+	LOW_G = 0,
+	NORMAL_G = 1,
+	HEAVY_G = 2
+};
+
+enum PlanetClimate {
+	TOXIC = 0,
+	RADIATED = 1,
+	BARREN = 2,
+	DESERT = 3,
+	TUNDRA = 4,
+	OCEAN = 5,
+	SWAMP = 6,
+	ARID = 7,
+	TERRAN = 8,
+	GAIA = 9
+};
+
+enum PlanetMinerals {
+	ULTRA_POOR = 0,
+	POOR = 1,
+	ABUNDANT = 2,
+	RICH = 3,
+	ULTRA_RICH = 4
+};
+
+enum PlanetSpecial {
+	NO_SPECIAL = 0,
+	BAD_SPECIAL1 = 1,
+	SPACE_DEBRIS = 2,
+	PIRATE_CACHE = 3,
+	GOLD_DEPOSITS = 4,
+	GEM_DEPOSITS = 5,
+	NATIVES = 6,
+	SPLINTER_COLONY = 7,
+	LOST_HERO = 8,
+	BAD_SPECIAL2 = 9,
+	ANCIENT_ARTIFACTS = 10,
+	ORION_SPECIAL = 11
 };
 
 enum StarSize {
@@ -165,6 +224,29 @@ struct Galaxy {
 	uint8_t nebulaCount;
 
 	Galaxy(void);
+
+	void load(ReadStream &stream);
+};
+
+struct Planet {
+	int16_t colony;
+	uint8_t star;
+	uint8_t orbit;
+	uint8_t type;
+	uint8_t size;
+	uint8_t gravity;
+	uint8_t unknown1;
+	uint8_t climate;
+	uint8_t bg;
+	uint8_t minerals;
+	uint8_t foodbase;
+	uint8_t terraforms;
+	uint8_t unknown2;
+	uint8_t max_pop;
+	uint8_t special;
+	uint8_t flags;
+
+	Planet(void);
 
 	void load(ReadStream &stream);
 };
@@ -380,7 +462,7 @@ public:
 	uint8_t isStagepoint;
 	// Bitmask that tells whether an officer is in the system roster
 	uint8_t officerIndex[MAX_PLAYERS];
-	uint16_t planetIndex[MAX_ORBITS];
+	int16_t planetIndex[MAX_ORBITS];
 	// Star index all the ships will be relocated TO
 	uint16_t relocateShipTo[MAX_PLAYERS];
 	// Usually this is -1, else the player to give the colonies to
@@ -448,6 +530,8 @@ public:
 	struct Galaxy _galaxy;
 	uint16_t _starSystemCount;
 	Star _starSystems[MAX_STARS];
+	uint16_t _planetCount;
+	Planet _planets[MAX_PLANETS];
 	struct Leader _leaders[LEADER_COUNT];
 	uint16_t _playerCount;
 	struct Player _players[PLAYER_COUNT];

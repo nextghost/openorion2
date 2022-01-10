@@ -21,8 +21,7 @@
 #include <stdexcept>
 #include "gamestate.h"
 
-const int LEADERS_DATA_OFFSET 		= 0x019a9b;
-const int STARS_COUNT_DATA_OFFSET 	= 0x017ad1;
+#define PLANET_COUNT_OFFSET 0x162e7
 
 GameConfig::GameConfig(void) {
 	version = 0;
@@ -99,6 +98,44 @@ void Galaxy::load(ReadStream &stream) {
 	if (nebulaCount > MAX_NEBULAS) {
 		throw std::runtime_error("Invalid nebula count");
 	}
+}
+
+Planet::Planet(void) {
+	colony = -1;
+	star = 0;
+	orbit = 0;
+	type = 0;
+	size = 0;
+	gravity = 0;
+	unknown1 = 0;
+	climate = 0;
+	bg = 0;
+	minerals = 0;
+	foodbase = 0;
+	terraforms = 0;
+	unknown2 = 0;
+	max_pop = 0;
+	special = 0;
+	flags = 0;
+}
+
+void Planet::load(ReadStream &stream) {
+	colony = stream.readSint16LE();
+	star = stream.readUint8();
+	orbit = stream.readUint8();
+	type = stream.readUint8();
+	size = stream.readUint8();
+	gravity = stream.readUint8();
+	unknown1 = stream.readUint8();
+	climate = stream.readUint8();
+	bg = stream.readUint8();
+	minerals = stream.readUint8();
+	foodbase = stream.readUint8();
+	terraforms = stream.readUint8();
+	unknown2 = stream.readUint8();
+	max_pop = stream.readUint8();
+	special = stream.readUint8();
+	flags = stream.readUint8();
 }
 
 Leader::Leader(void) {
@@ -359,6 +396,8 @@ void Player::load(SeekableReadStream &stream) {
 }
 
 Star::Star(void) {
+	size_t i;
+
 	memset(name, 0, STARS_NAME_SIZE);
 	x = 0;
 	y = 0;
@@ -392,8 +431,11 @@ Star::Star(void) {
 	hasDimensionalPortal = 0;
 	isStagepoint = 0;
 
+	for (i = 0; i < MAX_ORBITS; i++) {
+		planetIndex[i] = -1;
+	}
+
 	memset(officerIndex, 0, sizeof(officerIndex));
-	memset(planetIndex, 0, sizeof(planetIndex));
 	memset(relocateShipTo, 0, sizeof(relocateShipTo));
 	memset(surrenderTo, 0, sizeof(surrenderTo));
 
@@ -476,7 +518,7 @@ void Star::load(ReadStream &stream) {
 	}
 
 	for (i = 0; i < MAX_ORBITS; i++) {
-		planetIndex[i] = stream.readUint16LE();
+		planetIndex[i] = stream.readSint16LE();
 	}
 
 	for (i = 0; i < MAX_PLAYERS; i++) {
@@ -705,7 +747,13 @@ void GameState::load(SeekableReadStream &stream) {
 	_gameConfig.load(stream);
 	stream.seek(0x31be4, SEEK_SET);
 	_galaxy.load(stream);
-	stream.seek(STARS_COUNT_DATA_OFFSET, SEEK_SET);
+	stream.seek(PLANET_COUNT_OFFSET, SEEK_SET);
+	_planetCount = stream.readUint16LE();
+
+	for (i = 0; i < MAX_PLANETS; i++) {
+		_planets[i].load(stream);
+	}
+
 	_starSystemCount = stream.readUint16LE();
 
 	for (i = 0; i < MAX_STARS; i++) {
@@ -781,6 +829,26 @@ void GameState::validate(void) const {
 			_starSystems[ptr->wormhole].wormhole != i) {
 			std::logic_error("One-way wormholes not allowed");
 		}
+
+		for (j = 0; j < MAX_ORBITS; j++) {
+			const Planet *planet;
+
+			if (ptr->planetIndex[j] < 0) {
+				continue;
+			} else if (ptr->planetIndex[j] >= MAX_PLANETS) {
+				throw std::out_of_range("Star has invalid planet ID");
+			}
+
+			planet = _planets + ptr->planetIndex[j];
+
+			if (planet->star != i) {
+				throw std::logic_error("Planet referenced by wrong star");
+			}
+
+			if (planet->orbit != j) {
+				throw std::logic_error("Planet is on wrong orbit");
+			}
+		}
 	}
 
 	// Validate players
@@ -801,6 +869,54 @@ void GameState::validate(void) const {
 
 			fprintf(stderr, "%s spying on invalid player %d\n",
 				_players[i].name, j);
+		}
+	}
+
+	for (i = 0; i < _planetCount; i++) {
+		const Planet *ptr = _planets + i;
+
+		if (ptr->star >= _starSystemCount) {
+			throw std::out_of_range("Planet has invalid star ID");
+		}
+
+		if (ptr->orbit >= MAX_ORBITS) {
+			throw std::out_of_range("Planet has invalid orbit");
+		}
+
+		if (_starSystems[ptr->star].planetIndex[ptr->orbit] != i) {
+			// Yes, this can happen in the original game
+			fprintf(stderr, "Warning: Planet %d not referenced by parent star\n",
+				i);
+		}
+
+		if (ptr->type < ASTEROIDS || ptr->type > HABITABLE) {
+			throw std::out_of_range("Planet has invalid type");
+		}
+
+		if (ptr->size > HUGE_PLANET) {
+			throw std::out_of_range("Planet has invalid size");
+		}
+
+		if (ptr->gravity > HEAVY_G) {
+			throw std::out_of_range("Planet has invalid gravity value");
+		}
+
+		if (ptr->type == HABITABLE && ptr->climate > GAIA) {
+			throw std::out_of_range("Planet has invalid climate");
+		}
+
+		if (ptr->bg >= MAX_PLANET_BGS) {
+			throw std::out_of_range("Planet has invalid surface image");
+		}
+
+		if (ptr->minerals > ULTRA_RICH) {
+			throw std::out_of_range("Planet has invalid mineral value");
+		}
+
+		if (ptr->special == BAD_SPECIAL1 ||
+			ptr->special == BAD_SPECIAL2 ||
+			ptr->special > ORION_SPECIAL) {
+			throw std::out_of_range("Planet has invalid special treasure");
 		}
 	}
 
