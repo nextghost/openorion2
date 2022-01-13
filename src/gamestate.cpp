@@ -793,6 +793,10 @@ void GameState::load(const char *filename) {
 void GameState::validate(void) const {
 	int i, j, tmp;
 
+	if (_planetCount > MAX_PLANETS) {
+		throw std::out_of_range("Invalid planet count");
+	}
+
 	if (_starSystemCount > MAX_STARS) {
 		throw std::out_of_range("Invalid star system count");
 	}
