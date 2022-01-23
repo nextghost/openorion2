@@ -21,7 +21,7 @@
 #include <stdexcept>
 #include "gamestate.h"
 
-#define PLANET_COUNT_OFFSET 0x162e7
+#define COLONY_COUNT_OFFSET 0x25b
 
 GameConfig::GameConfig(void) {
 	version = 0;
@@ -98,6 +98,186 @@ void Galaxy::load(ReadStream &stream) {
 	if (nebulaCount > MAX_NEBULAS) {
 		throw std::runtime_error("Invalid nebula count");
 	}
+}
+
+Colonist::Colonist(void) {
+	race = 0;
+	loyalty = 0;
+	job = 0;
+	flags = 0;
+}
+
+void Colonist::load(ReadStream &stream) {
+	uint32_t raw_data = stream.readUint32LE();
+
+	race = raw_data & 0xf;
+	loyalty = (raw_data >> 4) & 0x7;
+	job = (raw_data >> 7) & 0x3;
+	flags = raw_data >> 9;
+}
+
+Colony::Colony(void) {
+	size_t i;
+
+	owner = -1;
+	unknown1 = -1;
+	planet = -1;
+	unknown2 = -1;
+	is_outpost = 0;
+	morale = 0;
+	pollution = 0;
+	population = 0;
+	colony_type = 0;
+
+	memset(race_population, 0, MAX_RACES * sizeof(uint16_t));
+	memset(pop_growth, 0, MAX_RACES * sizeof(int16_t));
+
+	age = 0;
+	food_per_farmer = 0;
+	industry_per_worker = 0;
+	research_per_scientist = 0;
+	max_farms = 0;
+	max_population = 0;
+	climate = 0;
+	ground_strength = 0;
+	space_strength = 0;
+	total_food = 0;
+	net_industry = 0;
+	total_research = 0;
+	total_revenue = 0;
+	food_consumption = 0;
+	industry_consumption = 0;
+	research_consumption = 0;
+	upkeep = 0;
+	food_imported = 0;
+	industry_consumed = 0;
+	research_imported = 0;
+	budget_deficit = 0;
+	recycled_industry = 0;
+	food_consumption_citizens = 0;
+	food_consumption_aliens = 0;
+	food_consumption_prisoners = 0;
+	food_consumption_natives = 0;
+	industry_consumption_citizens = 0;
+	industry_consumption_androids = 0;
+	industry_consumption_aliens = 0;
+	industry_consumption_prisoners = 0;
+
+	memset(food_consumption_races, 0, MAX_PLAYERS * sizeof(uint8_t));
+	memset(industry_consumption_races, 0, MAX_PLAYERS * sizeof(uint8_t));
+
+	replicated_food = 0;
+
+	for (i = 0; i < MAX_BUILD_QUEUE; i++) {
+		build_queue[i] = -1;
+	}
+
+	finished_production = -1;
+	build_progress = 0;
+	tax_revenue = 0;
+	autobuild = 0;
+	unknown3 = 0;
+	bought_progress = 0;
+	assimilation_progress = 0;
+	prisoner_policy = 0;
+	soldiers = 0;
+	tanks = 0;
+	tank_progress = 0;
+	soldier_progress = 0;
+
+	memset(buildings, 0, MAX_BUILDINGS * sizeof(uint8_t));
+
+	status = 0;
+}
+
+void Colony::load(ReadStream &stream) {
+	size_t i;
+
+	owner = stream.readUint8();
+	unknown1 = stream.readSint8();
+	planet = stream.readSint16LE();
+	unknown2 = stream.readSint16LE();
+	is_outpost = stream.readUint8();
+	morale = stream.readSint8();
+	pollution = stream.readUint16LE();
+	population = stream.readUint8();
+	colony_type = stream.readUint8();
+
+	for (i = 0; i < MAX_POPULATION; i++) {
+		colonists[i].load(stream);
+	}
+
+	for (i = 0; i < MAX_RACES; i++) {
+		race_population[i] = stream.readUint16LE();
+	}
+
+	for (i = 0; i < MAX_RACES; i++) {
+		pop_growth[i] = stream.readSint16LE();
+	}
+
+	age = stream.readUint8();
+	food_per_farmer = stream.readUint8();
+	industry_per_worker = stream.readUint8();
+	research_per_scientist = stream.readUint8();
+	max_farms = stream.readSint8();
+	max_population = stream.readUint8();
+	climate = stream.readUint8();
+	ground_strength = stream.readUint16LE();
+	space_strength = stream.readUint16LE();
+	total_food = stream.readUint16LE();
+	net_industry = stream.readUint16LE();
+	total_research = stream.readUint16LE();
+	total_revenue = stream.readUint16LE();
+	food_consumption = stream.readUint8();
+	industry_consumption = stream.readUint8();
+	research_consumption = stream.readUint8();
+	upkeep = stream.readUint8();
+	food_imported = stream.readSint16LE();
+	industry_consumed = stream.readUint16LE();
+	research_imported = stream.readSint16LE();
+	budget_deficit = stream.readSint16LE();
+	recycled_industry = stream.readUint8();
+	food_consumption_citizens = stream.readUint8();
+	food_consumption_aliens = stream.readUint8();
+	food_consumption_prisoners = stream.readUint8();
+	food_consumption_natives = stream.readUint8();
+	industry_consumption_citizens = stream.readUint8();
+	industry_consumption_androids = stream.readUint8();
+	industry_consumption_aliens = stream.readUint8();
+	industry_consumption_prisoners = stream.readUint8();
+
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		food_consumption_races[i] = stream.readUint8();
+	}
+
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		industry_consumption_races[i] = stream.readUint8();
+	}
+
+	replicated_food = stream.readUint8();
+
+	for (i = 0; i < MAX_BUILD_QUEUE; i++) {
+		build_queue[i] = stream.readSint16LE();
+	}
+
+	finished_production = stream.readSint16LE();
+	build_progress = stream.readUint16LE();
+	tax_revenue = stream.readUint16LE();
+	autobuild = stream.readUint8();
+	unknown3 = stream.readUint16LE();
+	bought_progress = stream.readUint16LE();
+	assimilation_progress = stream.readUint8();
+	prisoner_policy = stream.readUint8();
+	soldiers = stream.readUint16LE();
+	tanks = stream.readUint16LE();
+	tank_progress = stream.readUint8();
+	soldier_progress = stream.readUint8();
+
+	for (i = 0; i < MAX_BUILDINGS; i++) {
+		buildings[i] = stream.readUint8();
+	}
+
+	status = stream.readUint16LE();
 }
 
 Planet::Planet(void) {
@@ -747,7 +927,13 @@ void GameState::load(SeekableReadStream &stream) {
 	_gameConfig.load(stream);
 	stream.seek(0x31be4, SEEK_SET);
 	_galaxy.load(stream);
-	stream.seek(PLANET_COUNT_OFFSET, SEEK_SET);
+	stream.seek(COLONY_COUNT_OFFSET, SEEK_SET);
+	_colonyCount = stream.readUint16LE();
+
+	for (i = 0; i < MAX_COLONIES; i++) {
+		_colonies[i].load(stream);
+	}
+
 	_planetCount = stream.readUint16LE();
 
 	for (i = 0; i < MAX_PLANETS; i++) {
@@ -792,6 +978,10 @@ void GameState::load(const char *filename) {
 
 void GameState::validate(void) const {
 	int i, j, tmp;
+
+	if (_colonyCount > MAX_COLONIES) {
+		throw std::out_of_range("Invalid colony count");
+	}
 
 	if (_planetCount > MAX_PLANETS) {
 		throw std::out_of_range("Invalid planet count");
@@ -893,6 +1083,14 @@ void GameState::validate(void) const {
 				i);
 		}
 
+		if (ptr->colony >= _colonyCount) {
+			throw std::out_of_range("Planet has invalid colony ID");
+		}
+
+		if (ptr->colony >= 0 && _colonies[ptr->colony].planet != i) {
+			throw std::logic_error("Colony referenced by wrong planet");
+		}
+
 		if (ptr->type < ASTEROIDS || ptr->type > HABITABLE) {
 			throw std::out_of_range("Planet has invalid type");
 		}
@@ -921,6 +1119,59 @@ void GameState::validate(void) const {
 			ptr->special == BAD_SPECIAL2 ||
 			ptr->special > ORION_SPECIAL) {
 			throw std::out_of_range("Planet has invalid special treasure");
+		}
+	}
+
+	// Validate colonies
+	for (i = 0; i < _colonyCount; i++) {
+		const Colony *ptr = _colonies + i;
+
+		if (ptr->planet < 0) {
+			continue;	// Colony was destroyed, skip
+		}
+
+		if (ptr->owner < 0 || ptr->owner >= _playerCount ||
+			_players[ptr->owner].eliminated) {
+			throw std::logic_error("Colony owned by invalid player");
+		}
+
+		if (ptr->planet >= _planetCount) {
+			throw std::out_of_range("Colony is on invalid planet");
+		}
+
+		if (_planets[ptr->planet].colony != (int)i) {
+			throw std::logic_error("Colony not referenced by parent planet");
+		}
+
+		if (ptr->population > MAX_POPULATION) {
+			throw std::out_of_range("Colony population too high");
+		}
+
+		if (ptr->climate > GAIA) {
+			throw std::out_of_range("Colony has invalid climate");
+		}
+
+		if (ptr->climate != _planets[ptr->planet].climate &&
+			(_planets[ptr->planet].climate != RADIATED ||
+			ptr->climate != BARREN)) {
+			throw std::logic_error("Climate mismatch between planet and colony");
+		}
+
+		for (j = 0; j < ptr->population; j++) {
+			tmp = ptr->colonists[j].race;
+
+			if ((tmp >= _playerCount && tmp < MAX_PLAYERS) ||
+				tmp >= MAX_RACES) {
+				throw std::logic_error("Invalid colonist race");
+			}
+
+			if (ptr->colonists[j].loyalty >= _playerCount) {
+				throw std::out_of_range("Colonist loyal to invalid player");
+			}
+
+			if (ptr->colonists[j].job > SCIENTIST) {
+				throw std::out_of_range("Invalid colonist job");
+			}
 		}
 	}
 

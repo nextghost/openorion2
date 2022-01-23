@@ -48,6 +48,7 @@ const int MAX_TECHNOLOGIES 			= 0xcb;
 const int MAX_SETTLERS				= 25;
 #define MAX_STARS 72
 #define MAX_ORBITS 5
+#define MAX_COLONIES 250
 #define MAX_PLANETS (MAX_STARS * MAX_ORBITS)
 #define MAX_SHIP_SPECIALS 39
 #define MAX_SHIP_WEAPONS 8
@@ -55,6 +56,10 @@ const int MAX_SETTLERS				= 25;
 #define MAX_NEBULAS 4
 #define MAX_SHIPS 500
 
+#define MAX_POPULATION 42
+#define MAX_RACES (MAX_PLAYERS+2)	// player races + androids + natives
+#define MAX_BUILD_QUEUE 7
+#define MAX_BUILDINGS 49
 #define STAR_TYPE_COUNT 6
 #define NEBULA_TYPE_COUNT 12
 #define MAX_FLEET_OWNERS 15
@@ -127,6 +132,23 @@ enum PlanetSpecial {
 	BAD_SPECIAL2 = 9,
 	ANCIENT_ARTIFACTS = 10,
 	ORION_SPECIAL = 11
+};
+
+enum ColonistRace {
+	/* 0-7 = player race */
+	ANDROID = 8,
+	NATIVE = 9
+};
+
+enum ColonistFlags {
+	WORKING = 0x1,
+	PRISONER = 0x2
+};
+
+enum ColonistJob {
+	FARMER = 0,
+	WORKER = 1,
+	SCIENTIST = 2
 };
 
 enum StarSize {
@@ -224,6 +246,116 @@ struct Galaxy {
 	uint8_t nebulaCount;
 
 	Galaxy(void);
+
+	void load(ReadStream &stream);
+};
+
+struct Colonist {
+	uint8_t race;
+	/* Prisoners stay loyal to the previous player until assimilation */
+	uint8_t loyalty;
+	uint8_t job;
+	unsigned flags;
+
+	Colonist(void);
+
+	void load(ReadStream &stream);
+};
+
+struct Colony {
+	uint8_t owner;
+	int8_t unknown1;	// FIXME: analyze
+	int16_t planet;
+	int16_t unknown2;	// FIXME: analyze
+	uint8_t is_outpost;
+	int8_t morale;
+	uint16_t pollution;
+	uint8_t population;
+	uint8_t colony_type;
+	Colonist colonists[MAX_POPULATION];
+	uint16_t race_population[MAX_RACES];
+	int16_t pop_growth[MAX_RACES];
+
+	/* Number of turns since the last change of colony owner. If the value
+	 * grows to 255, it'll stay there until the next owner change or end
+	 * of the game.
+	 */
+	uint8_t age;
+	uint8_t food_per_farmer;	// in half-units
+	uint8_t industry_per_worker;
+	uint8_t research_per_scientist;
+	int8_t max_farms;
+	uint8_t max_population;
+
+	/* Same value as planet climate except on a radiated planet with
+	 * any of the planetary shields built. Planet climate stays radiated
+	 * but colony climate changes to barren.
+	 */
+	uint8_t climate;
+	uint16_t ground_strength;	// AI helper field
+	uint16_t space_strength;	// AI helper field
+	uint16_t total_food;
+	uint16_t net_industry;
+	uint16_t total_research;
+	uint16_t total_revenue;
+	uint8_t food_consumption;
+	uint8_t industry_consumption;
+	uint8_t research_consumption;
+	uint16_t upkeep;
+	int16_t food_imported;
+	uint16_t industry_consumed;
+	int16_t research_imported;
+	int16_t budget_deficit;
+	uint8_t recycled_industry;	// recyclotron
+
+	// food/industry consumption in half-units by citizenship status
+	uint8_t food_consumption_citizens;
+	uint8_t food_consumption_aliens;
+	uint8_t food_consumption_prisoners;
+	uint8_t food_consumption_natives;
+	uint8_t industry_consumption_citizens;
+	uint8_t industry_consumption_androids;
+	uint8_t industry_consumption_aliens;
+	uint8_t industry_consumption_prisoners;
+
+	// consumption in half-units per race (including prisoners)
+	uint8_t food_consumption_races[MAX_PLAYERS];
+	uint8_t industry_consumption_races[MAX_PLAYERS];
+
+	uint8_t replicated_food;
+	int16_t build_queue[MAX_BUILD_QUEUE];
+
+	/* Set to the last completed item in the build queue when the queue
+	 * becomes empty. The game will ask you to add new build orders when
+	 * you open the colony view and finished_production != 0xffff.
+	 * The value resets to 0xffff when that pop-up window shows up.
+	 */
+	int16_t finished_production;
+	uint16_t build_progress;
+	uint16_t tax_revenue;
+	uint8_t autobuild;
+	uint16_t unknown3;	// FIXME: analyze
+	uint16_t bought_progress;	// build progress bought with cash
+
+	/* Counter increases every turn if policy == assimilate, one prisoner
+	 * gets assimilated when the counter reaches 240. Rate of increase
+	 * depends on race traits and alien management center.
+	 */
+	uint8_t assimilation_progress;
+	uint8_t prisoner_policy;	// 3 = assimilate, 0 = kill
+	uint16_t soldiers;
+	uint16_t tanks;
+
+	/* Progress counters go up by 1 each turn when there's space for more
+	 * units in the barracks. Another unit gets added when the counter
+	 * reaches 5.
+	 */
+	uint8_t tank_progress;
+	uint8_t soldier_progress;
+	uint8_t buildings[MAX_BUILDINGS];
+	uint16_t status;	// FIXME: analyze
+
+	Colony(void);
 
 	void load(ReadStream &stream);
 };
@@ -530,6 +662,8 @@ public:
 	struct Galaxy _galaxy;
 	uint16_t _starSystemCount;
 	Star _starSystems[MAX_STARS];
+	uint16_t _colonyCount;
+	Colony _colonies[MAX_COLONIES];
 	uint16_t _planetCount;
 	Planet _planets[MAX_PLANETS];
 	struct Leader _leaders[LEADER_COUNT];
