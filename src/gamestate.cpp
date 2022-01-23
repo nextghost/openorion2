@@ -589,7 +589,7 @@ Star::Star(void) {
 	memset(lastPlanetSelected, 0, sizeof(lastPlanetSelected));
 	memset(blackHoleBlocks, 0, sizeof(blackHoleBlocks));
 
-	special = SpecialType::None;
+	special = NO_SPECIAL;
 	wormhole = 0;
 	blockaded = 0;
 
@@ -669,7 +669,7 @@ void Star::load(ReadStream &stream) {
 		blackHoleBlocks[i] = stream.readUint8();
 	}
 
-	special = SpecialType(stream.readUint8());
+	special = stream.readUint8();
 	wormhole = stream.readSint8();
 	blockaded = stream.readUint8();
 
@@ -1022,6 +1022,12 @@ void GameState::validate(void) const {
 		if (ptr->wormhole >= 0 &&
 			_starSystems[ptr->wormhole].wormhole != i) {
 			throw std::logic_error("One-way wormholes not allowed");
+		}
+
+		if (ptr->special == BAD_SPECIAL1 ||
+			ptr->special == BAD_SPECIAL2 ||
+			ptr->special > ORION_SPECIAL) {
+			throw std::out_of_range("Star has invalid special treasure");
 		}
 
 		for (j = 0; j < MAX_ORBITS; j++) {

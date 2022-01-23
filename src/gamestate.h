@@ -119,21 +119,6 @@ enum PlanetMinerals {
 	ULTRA_RICH = 4
 };
 
-enum PlanetSpecial {
-	NO_SPECIAL = 0,
-	BAD_SPECIAL1 = 1,
-	SPACE_DEBRIS = 2,
-	PIRATE_CACHE = 3,
-	GOLD_DEPOSITS = 4,
-	GEM_DEPOSITS = 5,
-	NATIVES = 6,
-	SPLINTER_COLONY = 7,
-	LOST_HERO = 8,
-	BAD_SPECIAL2 = 9,
-	ANCIENT_ARTIFACTS = 10,
-	ORION_SPECIAL = 11
-};
-
 enum ColonistRace {
 	/* 0-7 = player race */
 	ANDROID = 8,
@@ -168,17 +153,19 @@ enum SpectralClass {
     BlackHole	= 0x06
 };
 
-enum class SpecialType: uint8_t {
-    None			= 0x00,
-    SpecialDebris	= 0x02,
-    PirateCache		= 0x03,
-    GoldDeposites	= 0x04,
-    GemDeposits		= 0x05,
-    Natives			= 0x06,
-    SplinterColony	= 0x07,
-    Leader 			= 0x08,
-    ArtifactsWorld	= 0x0A,
-    Orion			= 0x0B
+enum SpecialType {
+	NO_SPECIAL = 0,
+	BAD_SPECIAL1 = 1,
+	SPACE_DEBRIS = 2,
+	PIRATE_CACHE = 3,
+	GOLD_DEPOSITS = 4,
+	GEM_DEPOSITS = 5,
+	NATIVES = 6,
+	SPLINTER_COLONY = 7,
+	LOST_HERO = 8,
+	BAD_SPECIAL2 = 9,
+	ANCIENT_ARTIFACTS = 10,
+	ORION_SPECIAL = 11
 };
 
 enum class ResearchArea: uint8_t {
@@ -548,7 +535,7 @@ public:
 	uint8_t lastPlanetSelected[MAX_PLAYERS];
 	// Precomputed bitfield that tells wether there is a black hole between two stars
 	uint8_t blackHoleBlocks[(MAX_STARS + 7) / 8];
-	SpecialType special;
+	uint8_t special;
 	// 0-7F = system, FF = no wormhole
 	int8_t wormhole;
 	// Bitmask that tells if a uses is blockaded
