@@ -129,6 +129,7 @@ private:
 	// billtext, jimtext, kentext
 	struct StringList _misctext[TXT_MISC_COUNT];
 	struct StringList _antarmsg;
+	struct StringList _councmsg;
 	struct StringList _maintext;
 	struct StringList _eventmsg;
 	struct StringList _rstring;
@@ -173,6 +174,7 @@ public:
 	~TextManager(void);
 
 	const char *antarmsg(unsigned str_id) const;
+	const char *councmsg(unsigned str_id) const;
 	const char *misctext(unsigned file, unsigned str_id) const;
 	const char *maintext(unsigned str_id) const;
 	const char *eventmsg(unsigned str_id) const;

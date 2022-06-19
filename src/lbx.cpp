@@ -34,6 +34,7 @@
 #define MSGENG_ENTRY_SIZE 1063
 
 #define ANTARMSG_ARCHIVE "antarmsg.lbx"
+#define COUNCMSG_ARCHIVE "councmsg.lbx"
 #define RACENAME_ARCHIVE "racename.lbx"
 #define SHIPNAME_ARCHIVE "shipname.lbx"
 #define STARNAME_ARCHIVE "starname.lbx"
@@ -557,6 +558,7 @@ void TextManager::load(unsigned lang_id) {
 	}
 
 	_antarmsg.loadFile(ANTARMSG_ARCHIVE, 0, 1, lang_id, LANG_GROUPS);
+	_councmsg.loadFile(COUNCMSG_ARCHIVE, 0, 1, lang_id, LANG_GROUPS);
 	_maintext.loadFile(maintext_archives[lang_id], 0, 1, 0, 1);
 	_eventmsg.loadFile(eventmsg_archives[lang_id], 0, 1, 0, 1);
 	_rstring.loadStrings(rstring_archives[lang_id], 0, 4);
@@ -589,6 +591,10 @@ void TextManager::load(unsigned lang_id) {
 
 const char *TextManager::antarmsg(unsigned str_id) const {
 	return _antarmsg[str_id];
+}
+
+const char *TextManager::councmsg(unsigned str_id) const {
+	return _councmsg[str_id];
 }
 
 const char *TextManager::misctext(unsigned file, unsigned str_id) const {
