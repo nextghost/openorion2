@@ -22,7 +22,53 @@
 
 #include <stdexcept>
 #include "stream.h"
+#include "utils.h"
 #include "gfx.h"
+
+#define LANG_ENGLISH 0
+#define LANG_GERMAN 1
+#define LANG_FRENCH 2
+#define LANG_SPANISH 3
+#define LANG_ITALIAN 4
+#define LANG_COUNT 5
+
+#define TXT_MISC_BILLTEXT 0
+#define TXT_MISC_BILLTEX2 1
+#define TXT_MISC_JIMTEXT 2
+#define TXT_MISC_JIMTEXT2 3
+#define TXT_MISC_KENTEXT 4
+#define TXT_MISC_KENTEXT1 5
+#define TXT_MISC_COUNT 6
+#define TXT_TECH_SPECIAL_NAME 0
+#define TXT_TECH_SPECIAL_DESC 1
+#define TXT_TECH_WEAPON_NAME 2
+#define TXT_TECH_WEAPON_DESC 3
+#define TXT_TECH_COUNT 4
+#define TXT_HELPSECTION_COUNT 16
+
+struct HelpText {
+	char *title, *text, *archive;
+	unsigned asset_id, frame;	// Image to display in help window
+	unsigned section;	// Help section (buildings/armor/weapons/...)
+	unsigned nextParagraph;	// !=0: Text continues in another entry
+
+	HelpText(void);
+	HelpText(const HelpText &other);
+	~HelpText(void);
+
+	const HelpText &operator=(HelpText other);
+};
+
+struct HelpLink {
+	char *title;
+	unsigned id;	// Reference to HelpText entry
+
+	HelpLink(void);
+	HelpLink(const HelpLink &other);
+	~HelpLink(void);
+
+	const HelpLink &operator=(HelpLink other);
+};
 
 class LBXArchive {
 private:
@@ -46,6 +92,108 @@ public:
 	unsigned assetCount(void) const;
 
 	MemoryReadStream *loadAsset(unsigned id);
+};
+
+class TextManager : public Recyclable {
+private:
+	struct StringList {
+	private:
+		// Do NOT implement
+		StringList(const StringList &other);
+		const StringList &operator=(const StringList &other);
+
+	protected:
+		void clear(void);
+
+	public:
+		char **data;
+		unsigned size;
+
+		StringList(void);
+		~StringList(void);
+
+		const char *operator[](unsigned id) const;
+
+		// Multiple assets, one string each
+		void loadFile(const char *filename, unsigned offset,
+			unsigned step, unsigned group_id, unsigned groups);
+
+		// Single asset, multiple string blocks
+		void loadAsset(const char *filename, unsigned asset_id);
+
+		// Single asset, single string block with multiple strings
+		void loadStrings(const char *filename, unsigned asset_id,
+			unsigned offset);
+	};
+
+	// billtext, jimtext, kentext
+	struct StringList _misctext[TXT_MISC_COUNT];
+	struct StringList _antarmsg;
+	struct StringList _maintext;
+	struct StringList _eventmsg;
+	struct StringList _rstring;
+	struct StringList _credits;
+	struct StringList _skillname;
+	struct StringList _skilldesc;
+	struct StringList _techdesc[TXT_TECH_COUNT];
+	struct StringList _racename;
+	struct StringList _shipname;
+	struct StringList _homeworlds;
+	struct StringList _starname;
+	struct StringList _estrings;
+	struct StringList _hstrings;
+	struct StringList _raceTraits;	// racestuf.lbx assets 0-5
+	struct StringList _raceInfo;	// racestuf.lbx assets 8-13
+	struct StringList _techname;
+
+	struct StringList *_diplomsg;
+	unsigned _diplomsgCount;
+
+	// help asset 0
+	struct HelpText *_help;
+	unsigned _helpCount;
+
+	// help assets 1-16
+	struct HelpLink *_helpIndex[TXT_HELPSECTION_COUNT];
+	unsigned _helpIndexCount[TXT_HELPSECTION_COUNT];
+
+	// Do NOT implement
+	TextManager(const TextManager &other);
+	const TextManager &operator=(const TextManager &other);
+
+protected:
+	void clear(void);
+
+	void loadDiplomsg(unsigned lang_id);
+	void loadHelp(unsigned lang_id);
+	void load(unsigned lang_id);
+
+public:
+	TextManager(unsigned lang_id);
+	~TextManager(void);
+
+	const char *antarmsg(unsigned str_id) const;
+	const char *misctext(unsigned file, unsigned str_id) const;
+	const char *maintext(unsigned str_id) const;
+	const char *eventmsg(unsigned str_id) const;
+	const char *rstring(unsigned str_id) const;
+	const char *credits(unsigned str_id) const;
+	const char *skillname(unsigned str_id) const;
+	const char *skilldesc(unsigned str_id) const;
+	const char *techdesc(unsigned asset_id, unsigned str_id) const;
+	const char *racename(unsigned str_id) const;
+	const char *shipname(unsigned str_id) const;
+	const char *homeworlds(unsigned str_id) const;
+	const char *starname(unsigned str_id) const;
+	const char *estrings(unsigned str_id) const;
+	const char *hstrings(unsigned str_id) const;
+	const char *raceTraits(unsigned str_id) const;
+	const char *raceInfo(unsigned str_id) const;
+	const char *techname(unsigned str_id) const;
+	const char *diplomsg(unsigned asset_id, unsigned str_id) const;
+	const struct HelpText *help(unsigned id) const;
+	const struct HelpLink *helpIndex(unsigned section_id,
+		unsigned entry_id) const;
 };
 
 class AssetManager;
@@ -195,6 +343,7 @@ AssetPointer<C>::operator const C*(void) const {
 }
 
 extern AssetManager *gameAssets;
+extern TextManager *gameLang;
 extern FontManager gameFonts;
 
 void load_fonts(const char *filename);

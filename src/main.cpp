@@ -27,6 +27,7 @@
 #include "system.h"
 
 AssetManager *gameAssets = NULL;
+TextManager *gameLang = NULL;
 FontManager gameFonts;
 
 void prepare_main_menu(void) {
@@ -55,6 +56,7 @@ void engine_shutdown(void) {
 	delete gui_stack;
 	GarbageCollector::flush();
 	gameFonts.clear();
+	delete gameLang;
 	delete gameAssets;
 	shutdownScreen();
 	cleanup_paths();
@@ -82,6 +84,8 @@ int main(int argc, char **argv) {
 	try {
 		init_paths(argv[0]);
 		gameAssets = new AssetManager;
+		// FIXME: Select language from game config
+		gameLang = new TextManager(LANG_ENGLISH);
 		gui_stack = new ViewStack;
 		initScreen();
 		// TODO: add multilingual support
