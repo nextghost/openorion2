@@ -21,6 +21,7 @@
 #define GFX_H_
 
 #include "stream.h"
+#include "utils.h"
 
 #define PALSIZE 1024
 
@@ -30,6 +31,7 @@
 #define FONTSIZE_MEDIUM 3
 #define FONTSIZE_BIG 4
 #define FONTSIZE_TITLE 5
+#define FONTSIZE_COUNT 6
 
 #define OUTLINE_NONE 0
 #define OUTLINE_SHADOW 1
@@ -172,10 +174,10 @@ public:
 	friend class FontManager;
 };
 
-class FontManager {
+class FontManager : public Recyclable {
 private:
-	Font **_fonts;
-	unsigned _fontCount, _size;
+	Font *_fonts[FONTSIZE_COUNT];
+	unsigned _fontCount;
 
 	// Do NOT implement
 	FontManager(const Font &other);
@@ -184,13 +186,13 @@ private:
 protected:
 	void decodeGlyph(uint8_t *buf, unsigned width, unsigned pitch,
 		unsigned height, ReadStream &stream);
-
-public:
-	FontManager(void);
-	~FontManager(void);
-
 	void loadFonts(SeekableReadStream &stream);
 	void clear(void);
+
+public:
+	FontManager(unsigned lang_id);
+	~FontManager(void);
+
 	Font *getFont(unsigned id);
 	unsigned fontCount(void) const;
 };

@@ -34,7 +34,7 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text) :
 	GuiWindow(parent) {
 
 	Widget *w = NULL;
-	Font *fnt = gameFonts.getFont(FONTSIZE_MEDIUM);
+	Font *fnt = gameFonts->getFont(FONTSIZE_MEDIUM);
 
 	_header = gameAssets->getImage(TEXTBOX_ARCHIVE, ASSET_TEXTBOX_HEADER);
 	_body = gameAssets->getImage(TEXTBOX_ARCHIVE, ASSET_TEXTBOX_BODY,
@@ -78,7 +78,7 @@ void MessageBoxWindow::redraw(unsigned curtick) {
 	drawTextureTile(_body->textureID(0), _x, _y + by, 0, 0, _width,
 		_height - by - fh);
 	_footer->draw(_x, _y + _height - fh);
-	fnt = gameFonts.getFont(FONTSIZE_MEDIUM);
+	fnt = gameFonts->getFont(FONTSIZE_MEDIUM);
 	fnt->renderText(_x + 20, _y + 30, FONT_COLOR_DEFAULT, _text);
 	redrawWidgets(_x, _y, curtick);
 }
@@ -108,7 +108,7 @@ void ErrorWindow::redraw(unsigned curtick) {
 		_animStart = curtick;
 	}
 
-	fnt = gameFonts.getFont(FONTSIZE_BIG);
+	fnt = gameFonts->getFont(FONTSIZE_BIG);
 	fcount = _bg->frameCount();
 	// FIXME: calculate frame time from image header
 	// Original game plays 14 frames in ~1.3 seconds

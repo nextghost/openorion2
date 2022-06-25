@@ -404,8 +404,8 @@ void LoadGameWindow::redraw(unsigned curtick) {
 	Font *fnt, *smallfnt;
 	int i;
 
-	fnt = gameFonts.getFont(FONTSIZE_SMALL);
-	smallfnt = gameFonts.getFont(FONTSIZE_SMALLER);
+	fnt = gameFonts->getFont(FONTSIZE_SMALL);
+	smallfnt = gameFonts->getFont(FONTSIZE_SMALLER);
 
 	_bg->draw(_x, _y);
 	redrawWidgets(_x, _y, curtick);

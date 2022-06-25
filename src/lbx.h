@@ -346,8 +346,8 @@ AssetPointer<C>::operator const C*(void) const {
 
 extern AssetManager *gameAssets;
 extern TextManager *gameLang;
-extern FontManager gameFonts;
+extern FontManager *gameFonts;
 
-void load_fonts(const char *filename);
+void selectLanguage(unsigned lang_id);
 
 #endif

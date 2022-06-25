@@ -922,18 +922,28 @@ MemoryReadStream *AssetManager::rawData(const char *filename, unsigned id) {
 	return _curfile->loadAsset(id);
 }
 
-void load_fonts(const char *filename) {
-	MemoryReadStream *stream;
-
-	stream = gameAssets->rawData(filename, 0);
+void selectLanguage(unsigned lang_id) {
+	TextManager *oldlang, *lang = NULL;
+	FontManager *oldfonts, *fonts = NULL;
 
 	try {
-		gameFonts.clear();
-		gameFonts.loadFonts(*stream);
+		lang = new TextManager(lang_id);
+		fonts = new FontManager(lang_id);
 	} catch (...) {
-		delete stream;
+		delete lang;
 		throw;
 	}
 
-	delete stream;
+	oldlang = gameLang;
+	oldfonts = gameFonts;
+	gameLang = lang;
+	gameFonts = fonts;
+
+	if (oldlang) {
+		oldlang->discard();
+	}
+
+	if (oldfonts) {
+		oldfonts->discard();
+	}
 }

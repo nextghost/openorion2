@@ -21,6 +21,7 @@
 #include <cstring>
 #include <stdexcept>
 #include "gfx.h"
+#include "lbx.h"
 #include "screen.h"
 
 #define FLAG_JUNCTION	0x2000
@@ -35,6 +36,9 @@
 #define RGB(x) 0xff, (((x) >> 16) & 0xff), (((x) >> 8) & 0xff), ((x) & 0xff)
 #define RGBA(x, a) ((a) & 0xff), (((x) >> 16) & 0xff), (((x) >> 8) & 0xff), ((x) & 0xff)
 #define TRANSPARENT 0, 0, 0, 0
+
+static const char *font_archives[LANG_COUNT] = {"fonts.lbx", "fontsg.lbx",
+	"fontsf.lbx", "fontss.lbx", "fontsi.lbx"};
 
 static uint8_t title_palettes[TITLE_COLOR_MAX][TITLE_PALSIZE * 4] = {
 	{TRANSPARENT, RGB(0), RGB(0x302804), RGB(0x187814), RGB(0x187814),
@@ -496,8 +500,20 @@ int Font::centerText(int x, int y, unsigned color, const char *str,
 	return renderText(x - textWidth(str) / 2, y, color, str, outline);
 }
 
-FontManager::FontManager(void) : _fonts(NULL), _fontCount(0), _size(0) {
+FontManager::FontManager(unsigned lang_id) : _fontCount(0) {
+	MemoryReadStream *stream;
 
+	memset(_fonts, 0, FONTSIZE_COUNT * sizeof(Font*));
+	stream = gameAssets->rawData(font_archives[lang_id], 0);
+
+	try {
+		loadFonts(*stream);
+	} catch (...) {
+		delete stream;
+		throw;
+	}
+
+	delete stream;
 }
 
 FontManager::~FontManager(void) {
@@ -536,7 +552,7 @@ void FontManager::decodeGlyph(uint8_t *buf, unsigned width, unsigned pitch,
 }
 
 void FontManager::loadFonts(SeekableReadStream &stream) {
-	unsigned i, j, x, size, glyphCount, fontCount = 6;
+	unsigned i, j, x, size, glyphCount, fontCount = FONTSIZE_COUNT;
 	unsigned offsets[256], magic[4] = {25, 50, 10, 0x404032};
 	Font *ptr = NULL;
 	Font::Glyph *glyphs = NULL, *gptr = NULL;
@@ -548,22 +564,6 @@ void FontManager::loadFonts(SeekableReadStream &stream) {
 		if (stream.readUint32LE() != magic[i]) {
 			throw std::runtime_error("Invalid font header");
 		}
-	}
-
-	// Create space for new fonts if needed
-	if (_size < _fontCount + fontCount) {
-		Font **tmp;
-
-		size = _size + (_size > fontCount ? _size : fontCount);
-		tmp = new Font*[size];
-
-		if (_fonts) {
-			memcpy(tmp, _fonts, _fontCount * sizeof(Font*));
-			delete[] _fonts;
-		}
-
-		_fonts = tmp;
-		_size = size;
 	}
 
 	// Load font sizes
@@ -581,7 +581,7 @@ void FontManager::loadFonts(SeekableReadStream &stream) {
 			break;
 		}
 
-		_fonts[_fontCount + i] = new Font(size);
+		_fonts[i] = new Font(size);
 	}
 
 	// Load font data
@@ -648,14 +648,9 @@ void FontManager::loadFonts(SeekableReadStream &stream) {
 			ptr->createOutline();
 		}
 	} catch (...) {
-		fontCount -= i;
-
-		for (i = 0; i < fontCount; i++) {
-			delete _fonts[_fontCount + i];
-		}
-
 		delete[] glyphs;
 		delete[] bitmap;
+		clear();
 		throw;
 	}
 }
@@ -667,10 +662,7 @@ void FontManager::clear(void) {
 		delete _fonts[i];
 	}
 
-	delete[] _fonts;
-	_fonts = NULL;
 	_fontCount = 0;
-	_size = 0;
 }
 
 Font *FontManager::getFont(unsigned id) {

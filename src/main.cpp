@@ -28,7 +28,7 @@
 
 AssetManager *gameAssets = NULL;
 TextManager *gameLang = NULL;
-FontManager gameFonts;
+FontManager *gameFonts = NULL;
 
 void prepare_main_menu(void) {
 	ImageAsset bg, anim;
@@ -55,7 +55,7 @@ void prepare_main_menu(void) {
 void engine_shutdown(void) {
 	delete gui_stack;
 	GarbageCollector::flush();
-	gameFonts.clear();
+	delete gameFonts;
 	delete gameLang;
 	delete gameAssets;
 	shutdownScreen();
@@ -84,12 +84,10 @@ int main(int argc, char **argv) {
 	try {
 		init_paths(argv[0]);
 		gameAssets = new AssetManager;
-		// FIXME: Select language from game config
-		gameLang = new TextManager(LANG_ENGLISH);
 		gui_stack = new ViewStack;
 		initScreen();
-		// TODO: add multilingual support
-		load_fonts("fonts.lbx");
+		// FIXME: Select language from game config
+		selectLanguage(LANG_ENGLISH);
 	} catch(std::exception &e) {
 		fprintf(stderr, "Error: %s\n", e.what());
 		engine_shutdown();

@@ -278,7 +278,7 @@ void GalaxyView::redrawSidebar(unsigned curtick) {
 
 	// FIXME: Use strings from game data
 	ptr = _game->_players + _activePlayer;
-	fnt = gameFonts.getFont(FONTSIZE_SMALL);
+	fnt = gameFonts->getFont(FONTSIZE_SMALL);
 	negcolor = (curtick - _startTick) / GALAXY_ANIM_SPEED;
 	negcolor = galaxy_fontanim[negcolor % GALAXY_ANIM_LENGTH];
 	negcolor += FONT_COLOR_DEFICIT1;
@@ -364,7 +364,7 @@ void GalaxyView::redraw(unsigned curtick) {
 		_startTick = curtick;
 	}
 
-	fnt = gameFonts.getFont(font_sizes[_zoom]);
+	fnt = gameFonts->getFont(font_sizes[_zoom]);
 
 	clearScreen();
 	_bg->draw(0, 0);
@@ -571,7 +571,7 @@ void SelectPlayerView::redraw(unsigned curtick) {
 		_animStart = curtick;
 	}
 
-	fnt = gameFonts.getFont(FONTSIZE_BIG);
+	fnt = gameFonts->getFont(FONTSIZE_BIG);
 	h = _row->height();
 	x = (SCREEN_WIDTH - _header->width()) / 2;
 	y = _y;
