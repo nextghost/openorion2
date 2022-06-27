@@ -76,8 +76,15 @@ private:
 	unsigned _x, _y, _width, _height, _startTick;
 	int _offsx, _offsy, _frame;
 
+protected:
+	void initImage(Image *img, unsigned width, unsigned height);
+
 public:
 	explicit GuiSprite(Image *img, int offsx = 0, int offsy = 0,
+		int frame = ANIM_LOOP, unsigned imgx = 0, unsigned imgy = 0,
+		unsigned width = 0, unsigned height = 0);
+	GuiSprite(const char *archive, unsigned id,
+		const uint8_t *palette = NULL, int offsx = 0, int offsy = 0,
 		int frame = ANIM_LOOP, unsigned imgx = 0, unsigned imgy = 0,
 		unsigned width = 0, unsigned height = 0);
 	GuiSprite(const GuiSprite &other);

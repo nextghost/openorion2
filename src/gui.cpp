@@ -71,24 +71,21 @@ GuiCallback *GuiCallback::copy(void) const {
 
 GuiSprite::GuiSprite(Image *img, int offsx, int offsy, int frame,
 	unsigned imgx, unsigned imgy, unsigned width, unsigned height) :
-	_image(img), _x(imgx), _y(imgy), _width(0), _height(0), _startTick(0),
+	_image(NULL), _x(imgx), _y(imgy), _width(0), _height(0), _startTick(0),
 	_offsx(offsx), _offsy(offsy), _frame(frame) {
 
-	if (!_image) {
-		throw std::runtime_error("Image is NULL");
-	}
+	initImage(img, width, height);
+}
 
-	if (_x >= _image->width() || _y >= _image->height()) {
-		throw std::out_of_range("Subimage offset out of range");
-	}
+GuiSprite::GuiSprite(const char *archive, unsigned id, const uint8_t *palette,
+	int offsx, int offsy, int frame, unsigned imgx, unsigned imgy,
+	unsigned width, unsigned height) : _image(NULL), _x(imgx), _y(imgy),
+	_width(0), _height(0), _startTick(0), _offsx(offsx), _offsy(offsy),
+	_frame(frame) {
 
-	if (_frame >= 0 && unsigned(_frame) > _image->frameCount()) {
-		throw std::out_of_range("Image frame out of range");
-	}
+	ImageAsset img = gameAssets->getImage(archive, id, palette);
 
-	gameAssets->takeAsset(_image);
-	_width = width ? width : _image->width() - _x;
-	_height = height ? height : _image->height() - _y;
+	initImage((Image *)img, width, height);
 }
 
 GuiSprite::GuiSprite(const GuiSprite &other) : _image(other._image),
@@ -121,6 +118,25 @@ const GuiSprite &GuiSprite::operator=(const GuiSprite &other) {
 	_offsy = other._offsy;
 	_frame = other._frame;
 	return *this;
+}
+
+void GuiSprite::initImage(Image *img, unsigned width, unsigned height) {
+	if (!img) {
+		throw std::runtime_error("Image is NULL");
+	}
+
+	if (_x >= img->width() || _y >= img->height()) {
+		throw std::out_of_range("Subimage offset out of range");
+	}
+
+	if (_frame >= 0 && unsigned(_frame) > img->frameCount()) {
+		throw std::out_of_range("Image frame out of range");
+	}
+
+	gameAssets->takeAsset(img);
+	_image = img;
+	_width = width ? width : _image->width() - _x;
+	_height = height ? height : _image->height() - _y;
 }
 
 void GuiSprite::startAnimation(void) {
