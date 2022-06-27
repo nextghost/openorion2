@@ -29,7 +29,8 @@ private:
 	char *_text;
 
 public:
-	MessageBoxWindow(GuiView *parent, const char *text);
+	MessageBoxWindow(GuiView *parent, const char *text,
+		unsigned flags = WINDOW_MOVABLE | WINDOW_MODAL);
 	~MessageBoxWindow(void);
 
 	void redraw(unsigned curtick);

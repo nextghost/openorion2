@@ -30,8 +30,8 @@
 #define ERROR_ARCHIVE "warning.lbx"
 #define ASSET_ERROR_BACKGROUND 0
 
-MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text) :
-	GuiWindow(parent) {
+MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text,
+	unsigned flags) : GuiWindow(parent, flags) {
 
 	Widget *w = NULL;
 	Font *fnt = gameFonts->getFont(FONTSIZE_MEDIUM);
