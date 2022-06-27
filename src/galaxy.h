@@ -63,6 +63,17 @@ public:
 	void redraw(unsigned curtick);
 
 	void clickGameMenu(int x, int y, int arg);
+
+	void clickColoniesButton(int x, int y, int arg);
+	void clickPlanetsButton(int x, int y, int arg);
+	void clickFleetsButton(int x, int y, int arg);
+	void clickLeadersButton(int x, int y, int arg);
+	void clickRacesButton(int x, int y, int arg);
+	void clickInfoButton(int x, int y, int arg);
+
+	void clickZoomInButton(int x, int y, int arg);
+	void clickZoomOutButton(int x, int y, int arg);
+	void clickTurnButton(int x, int y, int arg);
 };
 
 class SelectPlayerView : public GuiView {

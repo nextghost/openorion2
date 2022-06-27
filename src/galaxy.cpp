@@ -26,6 +26,15 @@
 #define GALAXY_ARCHIVE "buffer0.lbx"
 #define ASSET_GALAXY_GUI 0
 #define ASSET_GALAXY_GAME_BUTTON 1
+#define ASSET_GALAXY_TURN_BUTTON 2
+#define ASSET_GALAXY_COLONIES_BUTTON 3
+#define ASSET_GALAXY_PLANETS_BUTTON 4
+#define ASSET_GALAXY_FLEETS_BUTTON 5
+#define ASSET_GALAXY_ZOOMIN_BUTTON 6
+#define ASSET_GALAXY_ZOOMOUT_BUTTON 7
+#define ASSET_GALAXY_LEADERS_BUTTON 8
+#define ASSET_GALAXY_RACES_BUTTON 9
+#define ASSET_GALAXY_INFO_BUTTON 10
 #define ASSET_GALAXY_STAR_IMAGES 148
 #define ASSET_GALAXY_BHOLE_IMAGES 184
 #define ASSET_GALAXY_FLEET_IMAGES 205
@@ -156,6 +165,61 @@ void GalaxyView::initWidgets(void) {
 		GuiMethod(*this, &GalaxyView::clickGameMenu));
 	w->setClickSprite(MBUTTON_LEFT, GALAXY_ARCHIVE,
 		ASSET_GALAXY_GAME_BUTTON, pal, 1);
+
+	w = createWidget(15, 430, 67, 44);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &GalaxyView::clickColoniesButton));
+	w->setClickSprite(MBUTTON_LEFT, new GuiSprite(GALAXY_ARCHIVE,
+		ASSET_GALAXY_COLONIES_BUTTON, pal, -15, -5, 1));
+
+	w = createWidget(90, 430, 67, 44);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &GalaxyView::clickPlanetsButton));
+	w->setClickSprite(MBUTTON_LEFT, new GuiSprite(GALAXY_ARCHIVE,
+		ASSET_GALAXY_PLANETS_BUTTON, pal, -90, -5, 1));
+
+	w = createWidget(165, 430, 67, 44);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &GalaxyView::clickFleetsButton));
+	w->setClickSprite(MBUTTON_LEFT, new GuiSprite(GALAXY_ARCHIVE,
+		ASSET_GALAXY_FLEETS_BUTTON, pal, -165, -5, 1));
+
+	w = createWidget(310, 430, 70, 44);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &GalaxyView::clickLeadersButton));
+	w->setClickSprite(MBUTTON_LEFT, new GuiSprite(GALAXY_ARCHIVE,
+		ASSET_GALAXY_LEADERS_BUTTON, pal, -4, -5, 1));
+
+	w = createWidget(385, 430, 70, 44);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &GalaxyView::clickRacesButton));
+	w->setClickSprite(MBUTTON_LEFT, new GuiSprite(GALAXY_ARCHIVE,
+		ASSET_GALAXY_RACES_BUTTON, pal, -79, -5, 1));
+
+	w = createWidget(460, 430, 70, 44);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &GalaxyView::clickInfoButton));
+	w->setClickSprite(MBUTTON_LEFT, new GuiSprite(GALAXY_ARCHIVE,
+		ASSET_GALAXY_INFO_BUTTON, pal, -154, -5, 1));
+
+	w = createWidget(244, 428, 55, 16);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &GalaxyView::clickZoomInButton));
+	w->setClickSprite(MBUTTON_LEFT, GALAXY_ARCHIVE,
+		ASSET_GALAXY_ZOOMIN_BUTTON, pal, 1);
+
+	w = createWidget(244, 455, 55, 19);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &GalaxyView::clickZoomOutButton));
+	w->setClickSprite(MBUTTON_LEFT, GALAXY_ARCHIVE,
+		ASSET_GALAXY_ZOOMOUT_BUTTON, pal, 1);
+
+	w = createWidget(544, 441, 65, 26);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &GalaxyView::clickTurnButton));
+	w->setClickSprite(MBUTTON_LEFT, GALAXY_ARCHIVE,
+		ASSET_GALAXY_TURN_BUTTON, pal, 1);
+
 }
 
 int GalaxyView::transformX(int x) const {
@@ -470,6 +534,42 @@ void GalaxyView::redraw(unsigned curtick) {
 
 void GalaxyView::clickGameMenu(int x, int y, int arg) {
 	new MainMenuWindow(this, _game);
+}
+
+void GalaxyView::clickColoniesButton(int x, int y, int arg) {
+	new MessageBoxWindow(this, "Not implemented yet");
+}
+
+void GalaxyView::clickPlanetsButton(int x, int y, int arg) {
+	new MessageBoxWindow(this, "Not implemented yet");
+}
+
+void GalaxyView::clickFleetsButton(int x, int y, int arg) {
+	new MessageBoxWindow(this, "Not implemented yet");
+}
+
+void GalaxyView::clickLeadersButton(int x, int y, int arg) {
+	new MessageBoxWindow(this, "Not implemented yet");
+}
+
+void GalaxyView::clickRacesButton(int x, int y, int arg) {
+	new MessageBoxWindow(this, "Not implemented yet");
+}
+
+void GalaxyView::clickInfoButton(int x, int y, int arg) {
+	new MessageBoxWindow(this, "Not implemented yet");
+}
+
+void GalaxyView::clickZoomInButton(int x, int y, int arg) {
+	new MessageBoxWindow(this, "Not implemented yet");
+}
+
+void GalaxyView::clickZoomOutButton(int x, int y, int arg) {
+	new MessageBoxWindow(this, "Not implemented yet");
+}
+
+void GalaxyView::clickTurnButton(int x, int y, int arg) {
+	new MessageBoxWindow(this, "Not implemented yet");
 }
 
 SelectPlayerView::SelectPlayerView(const GameState *game,
