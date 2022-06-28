@@ -97,6 +97,20 @@ public:
 	void clickPlayer(int x, int y, int arg);
 };
 
+class PlanetsListView : public GuiView {
+private:
+	const GameState *_game;
+	int _activePlayer;
+	ImageAsset _planetAssets, _planetIcons[50];
+
+	void initWidgets(void);
+public:
+	PlanetsListView(const GameState *game, int activePlayer);
+	
+	void redraw(unsigned curtick);
+	void clickReturn(int x, int y, int arg);
+};
+
 class MainMenuWindow : public GuiWindow {
 private:
 	ImageAsset _bg;
