@@ -100,7 +100,10 @@
 #define FONT_COLOR_DEFICIT3 54
 #define FONT_COLOR_DEFICIT4 55
 #define FONT_COLOR_DEFICIT5 56
-#define FONT_COLOR_MAX 57
+
+#define FONT_COLOR_PLANET_LIST 57
+
+#define FONT_COLOR_MAX 58
 
 class Image {
 private:

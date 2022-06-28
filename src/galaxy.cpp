@@ -68,9 +68,72 @@
 #define PSELECT_BUFSIZE 128
 #define PSELECT_ANIM_LENGTH 8
 
+#define PLANET_ARCHIVE "plntsum.lbx"
+#define ASSET_PLANETLIST_BG 0
+#define ASSET_PLANETLIST_RETURN_BUTTON 14
+
+#define STRING_PLANET_LIST_CLIMATE_TOXIC 538
+#define STRING_PLANET_LIST_CLIMATE_RADIATED 718
+#define STRING_PLANET_LIST_CLIMATE_BARREN 719
+#define STRING_PLANET_LIST_CLIMATE_DESERT 720
+#define STRING_PLANET_LIST_CLIMATE_TUNDRA 721
+#define STRING_PLANET_LIST_CLIMATE_OCEAN 398
+#define STRING_PLANET_LIST_CLIMATE_SWAMP 500
+#define STRING_PLANET_LIST_CLIMATE_ARID 183
+#define STRING_PLANET_LIST_CLIMATE_TERRAN 722
+#define STRING_PLANET_LIST_CLIMATE_GAIA 302
+
+#define STRING_PLANET_LIST_GRAVITY_LOW 686
+#define STRING_PLANET_LIST_GRAVITY_NORMAL 687
+#define STRING_PLANET_LIST_GRAVITY_HEAVY 688
+
+#define STRING_PLANET_LIST_MINERALS_ULTRA_POOR 683
+#define STRING_PLANET_LIST_MINERALS_POOR 422
+#define STRING_PLANET_LIST_MINERALS_ABUNDANT 684
+#define STRING_PLANET_LIST_MINERALS_RICH 449
+#define STRING_PLANET_LIST_MINERALS_ULTRA_RICH 685
+
+#define STRING_PLANET_LIST_SIZE_TINY 682
+#define STRING_PLANET_LIST_SIZE_SMALL 479
+#define STRING_PLANET_LIST_SIZE_MEDIUM 370
+#define STRING_PLANET_LIST_SIZE_LARGE 359
+#define STRING_PLANET_LIST_SIZE_HUGE 322
+
 const unsigned galaxySizeFactors[] = {10, 15, 20, 30, 0};
 static const unsigned galaxy_fontanim[GALAXY_ANIM_LENGTH] = {
 	1, 2, 3, 4, 3, 2, 1, 0
+};
+const char *romanNumbers[5] = { "I", "II", "III", "IV", "V"};
+const int planetClimateMap[10] = {
+	STRING_PLANET_LIST_CLIMATE_TOXIC,
+	STRING_PLANET_LIST_CLIMATE_RADIATED,
+	STRING_PLANET_LIST_CLIMATE_BARREN,
+	STRING_PLANET_LIST_CLIMATE_DESERT,
+	STRING_PLANET_LIST_CLIMATE_TUNDRA,
+	STRING_PLANET_LIST_CLIMATE_OCEAN,
+	STRING_PLANET_LIST_CLIMATE_SWAMP,
+	STRING_PLANET_LIST_CLIMATE_ARID,
+	STRING_PLANET_LIST_CLIMATE_TERRAN,
+	STRING_PLANET_LIST_CLIMATE_GAIA
+};
+const int planetGravityMap[3] = {
+	STRING_PLANET_LIST_GRAVITY_LOW,
+	STRING_PLANET_LIST_GRAVITY_NORMAL,
+	STRING_PLANET_LIST_GRAVITY_HEAVY
+};
+const int mineralsMap[5] = {
+	STRING_PLANET_LIST_MINERALS_ULTRA_POOR,
+	STRING_PLANET_LIST_MINERALS_POOR,
+	STRING_PLANET_LIST_MINERALS_ABUNDANT,
+	STRING_PLANET_LIST_MINERALS_RICH,
+	STRING_PLANET_LIST_MINERALS_ULTRA_RICH
+};
+const int sizesMap[5] = {
+	STRING_PLANET_LIST_SIZE_TINY,
+	STRING_PLANET_LIST_SIZE_SMALL,
+	STRING_PLANET_LIST_SIZE_MEDIUM,
+	STRING_PLANET_LIST_SIZE_LARGE,
+	STRING_PLANET_LIST_SIZE_HUGE
 };
 
 GalaxyView::GalaxyView(GameState *game) : _game(game), _zoom(0), _zoomX(0),
@@ -575,7 +638,7 @@ void GalaxyView::clickColoniesButton(int x, int y, int arg) {
 }
 
 void GalaxyView::clickPlanetsButton(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Not implemented yet");
+	gui_stack->push(new PlanetsListView(_game, _activePlayer));
 }
 
 void GalaxyView::clickFleetsButton(int x, int y, int arg) {
@@ -753,6 +816,94 @@ void SelectPlayerView::highlightPlayer(int x, int y, int arg) {
 
 void SelectPlayerView::clickPlayer(int x, int y, int arg) {
 	_callback(arg, 0);
+	exitView();
+}
+
+PlanetsListView::PlanetsListView(const GameState *game, int activePlayer) : _game(game), _activePlayer(activePlayer) {
+	_planetAssets = gameAssets->getImage(PLANET_ARCHIVE, ASSET_PLANETLIST_BG);
+
+	// Load all planet icons: each climate holds 5 different sizes, so Toxic climate starts at 0, Radiated at 5, etc
+	for (int assetId = 0; assetId < 50; assetId++) { 
+		// The planet icons go from offset 26 to offset 26 + 50 = 75
+		_planetIcons[assetId] = gameAssets->getImage(PLANET_ARCHIVE, assetId + 26, _planetAssets->palette());
+	}
+
+	try {
+		initWidgets();
+	} catch (...) {
+		clearWidgets();
+		throw;
+	}
+}
+
+void PlanetsListView::initWidgets(void) {
+	Widget *w = NULL;
+
+	// Create the return button
+	w = createWidget(453, 440, 153, 18);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &PlanetsListView::clickReturn));
+	w->setClickSprite(MBUTTON_LEFT, PLANET_ARCHIVE, ASSET_PLANETLIST_RETURN_BUTTON,
+		_planetAssets->palette(), 1);
+}
+
+void PlanetsListView::redraw(unsigned curtick) {
+	Font *fnt, *smallFnt;
+	const uint8_t *pal;
+	int x, y, displayedPlanet = 1;
+	char buf[32];
+	const int climateOffset = 5,
+			  mineralsOffset = 5,
+			  sizeOffset = 5,
+			  nameOffset = 10,
+			  rowHeight = 55,
+			  planetListMaxItems = 8,
+			  offset = 10;
+	unsigned color = FONT_COLOR_PLANET_LIST;
+
+	clearScreen();
+	// Render the planet list background
+	_planetAssets->draw(0, 0);
+
+	fnt = gameFonts->getFont(FONTSIZE_SMALL);
+	smallFnt = gameFonts->getFont(FONTSIZE_SMALLER);
+
+	for (uint16_t i=0; i < _game->_planetCount; i++) {
+		const Planet *planet = &_game->_planets[i];
+		if (planet->colony >= 0 && _game->_colonies[planet->colony].owner == _activePlayer) {
+			continue;
+		}
+
+		// Planet climate
+		fnt->centerText(138, rowHeight * displayedPlanet - climateOffset, color, gameLang->estrings(planetClimateMap[planet->climate]));
+		smallFnt->centerText(138, rowHeight * displayedPlanet + offset, color, "0 Food"); // FIXME: Pull real data
+
+		// Planet Gravity
+		fnt->centerText(220, rowHeight * displayedPlanet, color, gameLang->estrings(planetGravityMap[planet->gravity]));
+
+		// Minerals
+		fnt->centerText(306, rowHeight * displayedPlanet - mineralsOffset, color, gameLang->estrings(mineralsMap[planet->minerals]));
+		smallFnt->centerText(306, rowHeight * displayedPlanet + offset, color, "3 prod/worker"); // FIXME: Pull real data
+
+		// Planet size
+		x = 50;
+		fnt->centerText(385, rowHeight * displayedPlanet - sizeOffset, color, gameLang->estrings(sizesMap[planet->size]));
+		smallFnt->centerText(385, rowHeight * displayedPlanet + offset, color, "4 max pop"); // FIXME: Pull real data
+
+		// Render the planet icon
+		_planetIcons[planet->climate * 5 + planet->size]->draw(x - planet->size, (rowHeight * displayedPlanet) - 10);
+
+		// Planet name
+		sprintf(buf, "%s %s", _game->_starSystems[planet->star].name, romanNumbers[planet->orbit]);
+		fnt->centerText(60, rowHeight * displayedPlanet + nameOffset, color, buf);
+
+		displayedPlanet++;
+	}
+
+	redrawWidgets(0, 0, curtick);
+}
+
+void PlanetsListView::clickReturn(int x, int y, int arg) {
 	exitView();
 }
 
