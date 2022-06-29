@@ -33,26 +33,57 @@
 MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text,
 	unsigned flags) : GuiWindow(parent, flags) {
 
-	Widget *w = NULL;
-
-	_header = gameAssets->getImage(TEXTBOX_ARCHIVE, ASSET_TEXTBOX_HEADER);
-	_body = gameAssets->getImage(TEXTBOX_ARCHIVE, ASSET_TEXTBOX_BODY,
-		_header->palette());
-	_footer = gameAssets->getImage(TEXTBOX_ARCHIVE, ASSET_TEXTBOX_FOOTER,
-		_header->palette());
-	_width = _header->width();
-	_text.appendText(text, 0, 0, _width - 40, FONTSIZE_MEDIUM,
+	initAssets();
+	_text.appendText(text, 0, 19, _width - 40, FONTSIZE_MEDIUM,
 		FONT_COLOR_DEFAULT);
-	_height = _header->height() + _footer->height() + _text.height();
-	_x = (SCREEN_WIDTH - _width) / 2;
+	_height += _text.height() >= 20 ? _text.height() - 20 : 0;
 	_y = (SCREEN_HEIGHT - _height) / 2;
 
 	try {
-		w = createWidget(158, _height - 27, 64, 19);
-		w->setClickSprite(MBUTTON_LEFT, TEXTBOX_ARCHIVE,
-			ASSET_TEXTBOX_BUTTON, _header->palette(), 1);
-		w->setMouseUpCallback(MBUTTON_LEFT,
-			GuiMethod<GuiWindow>(*this, &MessageBoxWindow::close));
+		initWidgets();
+	} catch (...) {
+		clearWidgets();
+		throw;
+	}
+}
+
+MessageBoxWindow::MessageBoxWindow(GuiView *parent, unsigned help_id,
+	const uint8_t *palette, unsigned flags) : GuiWindow(parent, flags) {
+
+	unsigned y = 0;
+	ImageAsset icon;
+	const HelpText *entry;
+
+	initAssets();
+
+	do {
+		entry = gameLang->help(help_id);
+
+		if (entry->title[0] != 0x14) {
+			_text.appendText(entry->title, 0, y, _width - 40,
+				FONTSIZE_BIG, FONT_COLOR_HELP);
+		}
+
+		if (entry->archive) {
+			icon = gameAssets->getImage(entry->archive,
+				entry->asset_id, palette);
+			_text.addSprite(_width - 40 - icon->width(), y,
+				(Image*)icon, entry->frame);
+		}
+
+		y = _text.height() + 4;
+		y = y < 30 ? 30 : y;
+		_text.appendText(entry->text, 0, y, _width - 40,
+			FONTSIZE_SMALL, FONT_COLOR_HELP);
+		y = _text.height() + 5;
+		help_id = entry->nextParagraph;
+	} while (help_id);
+
+	_height += _text.height() >= 20 ? _text.height() - 20 : 0;
+	_y = (SCREEN_HEIGHT - _height) / 2;
+
+	try {
+		initWidgets();
 	} catch (...) {
 		clearWidgets();
 		throw;
@@ -61,6 +92,27 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text,
 
 MessageBoxWindow::~MessageBoxWindow(void) {
 
+}
+
+void MessageBoxWindow::initAssets(void) {
+	_header = gameAssets->getImage(TEXTBOX_ARCHIVE, ASSET_TEXTBOX_HEADER);
+	_body = gameAssets->getImage(TEXTBOX_ARCHIVE, ASSET_TEXTBOX_BODY,
+		_header->palette());
+	_footer = gameAssets->getImage(TEXTBOX_ARCHIVE, ASSET_TEXTBOX_FOOTER,
+		_header->palette());
+	_width = _header->width();
+	_height = _header->height() + _footer->height();
+	_x = (SCREEN_WIDTH - _width) / 2;
+}
+
+void MessageBoxWindow::initWidgets(void) {
+	Widget *w = NULL;
+
+	w = createWidget(158, _height - 27, 64, 19);
+	w->setClickSprite(MBUTTON_LEFT, TEXTBOX_ARCHIVE, ASSET_TEXTBOX_BUTTON,
+		_header->palette(), 1);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod<GuiWindow>(*this, &MessageBoxWindow::close));
 }
 
 void MessageBoxWindow::redraw(unsigned curtick) {
@@ -76,7 +128,7 @@ void MessageBoxWindow::redraw(unsigned curtick) {
 	drawTextureTile(_body->textureID(0), _x, _y + by, 0, 0, _width,
 		_height - by - fh);
 	_footer->draw(_x, _y + _height - fh);
-	_text.redraw(_x + 20, _y + 30, curtick);
+	_text.redraw(_x + 20, _y + 11, curtick);
 	redrawWidgets(_x, _y, curtick);
 }
 
