@@ -34,7 +34,6 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text,
 	unsigned flags) : GuiWindow(parent, flags) {
 
 	Widget *w = NULL;
-	Font *fnt = gameFonts->getFont(FONTSIZE_MEDIUM);
 
 	_header = gameAssets->getImage(TEXTBOX_ARCHIVE, ASSET_TEXTBOX_HEADER);
 	_body = gameAssets->getImage(TEXTBOX_ARCHIVE, ASSET_TEXTBOX_BODY,
@@ -42,10 +41,11 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text,
 	_footer = gameAssets->getImage(TEXTBOX_ARCHIVE, ASSET_TEXTBOX_FOOTER,
 		_header->palette());
 	_width = _header->width();
-	_height = _header->height() + _footer->height() + fnt->height();
+	_text.appendText(text, 0, 0, _width - 40, FONTSIZE_MEDIUM,
+		FONT_COLOR_DEFAULT);
+	_height = _header->height() + _footer->height() + _text.height();
 	_x = (SCREEN_WIDTH - _width) / 2;
 	_y = (SCREEN_HEIGHT - _height) / 2;
-	_text = copystr(text);
 
 	try {
 		w = createWidget(158, _height - 27, 64, 19);
@@ -54,18 +54,16 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text,
 		w->setMouseUpCallback(MBUTTON_LEFT,
 			GuiMethod<GuiWindow>(*this, &MessageBoxWindow::close));
 	} catch (...) {
-		delete _text;
 		clearWidgets();
 		throw;
 	}
 }
 
 MessageBoxWindow::~MessageBoxWindow(void) {
-	delete[] _text;
+
 }
 
 void MessageBoxWindow::redraw(unsigned curtick) {
-	Font *fnt;
 	unsigned y, by = _header->height(), fh = _footer->height();
 
 	fillRect(_x + 9, _y + 9, _width - 18, _height - 40, 16, 16, 24);
@@ -78,8 +76,7 @@ void MessageBoxWindow::redraw(unsigned curtick) {
 	drawTextureTile(_body->textureID(0), _x, _y + by, 0, 0, _width,
 		_height - by - fh);
 	_footer->draw(_x, _y + _height - fh);
-	fnt = gameFonts->getFont(FONTSIZE_MEDIUM);
-	fnt->renderText(_x + 20, _y + 30, FONT_COLOR_DEFAULT, _text);
+	_text.redraw(_x + 20, _y + 30, curtick);
 	redrawWidgets(_x, _y, curtick);
 }
 
@@ -92,11 +89,12 @@ ErrorWindow::ErrorWindow(GuiView *parent, const char *text) :
 	_x = (SCREEN_WIDTH - _width) / 2;
 	_y = (SCREEN_HEIGHT - _height) / 2;
 
-	_text = copystr(text);
+	_text.appendText(text, 0, 0, 227, FONTSIZE_BIG, FONT_COLOR_ERROR,
+		OUTLINE_NONE, ALIGN_CENTER);
 }
 
 ErrorWindow::~ErrorWindow(void) {
-	delete[] _text;
+
 }
 
 void ErrorWindow::redraw(unsigned curtick) {
@@ -115,9 +113,8 @@ void ErrorWindow::redraw(unsigned curtick) {
 	frame = (curtick - _animStart) / 100;
 	frame %= 2 * fcount - 1;
 	_bg->draw(_x, _y, frame >= fcount ? 2 * fcount - frame - 1: frame);
-	x = _x + (_width - fnt->textWidth(_text)) / 2;
-	y = _y + (_height - fnt->height()) / 2;
-	fnt->renderText(x, y, FONT_COLOR_ERROR, _text);
+	y = _y + (_height - _text.height()) / 2;
+	_text.redraw(_x + 53, y, curtick);
 }
 
 void ErrorWindow::handleMouseUp(int x, int y, unsigned button) {

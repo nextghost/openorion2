@@ -26,7 +26,7 @@
 class MessageBoxWindow : public GuiWindow {
 private:
 	ImageAsset _header, _body, _footer;
-	char *_text;
+	TextLayout _text;
 
 public:
 	MessageBoxWindow(GuiView *parent, const char *text,
@@ -40,7 +40,7 @@ class ErrorWindow : public GuiWindow {
 private:
 	ImageAsset _bg;
 	unsigned _animStart;
-	char *_text;
+	TextLayout _text;
 
 public:
 	ErrorWindow(GuiView *parent, const char *text);

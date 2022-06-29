@@ -35,6 +35,8 @@
 #define MIN_FRAMETIME 10
 #define DEFAULT_FRAMETIME 15
 
+#define LINE_SPACING 3
+
 ViewStack *gui_stack = NULL;
 
 GuiCallback::GuiCallback(void) : _callback(NULL) {
@@ -145,6 +147,22 @@ void GuiSprite::startAnimation(void) {
 
 void GuiSprite::stopAnimation(void) {
 
+}
+
+int GuiSprite::getX(void) const {
+	return _offsx;
+}
+
+int GuiSprite::getY(void) const {
+	return _offsy;
+}
+
+unsigned GuiSprite::width(void) const {
+	return _width;
+}
+
+unsigned GuiSprite::height(void) const {
+	return _height;
 }
 
 void GuiSprite::redraw(unsigned x, unsigned y, unsigned curtick) {
@@ -882,4 +900,243 @@ GuiView *ViewStack::top(void) {
 	}
 
 	return ret;
+}
+
+TextLayout::TextLayout(void) : _blocks(NULL), _sprites(NULL), _height(0),
+	_blockCount(0), _blockSize(0), _spriteCount(0), _spriteSize(0) {
+
+}
+
+TextLayout::~TextLayout(void) {
+	unsigned i;
+
+	for (i = 0; i < _blockCount; i++) {
+		delete[] _blocks[i].text;
+	}
+
+	for (i = 0; i < _spriteCount; i++) {
+		delete _sprites[i];
+	}
+
+	delete[] _blocks;
+	delete[] _sprites;
+}
+
+TextLayout::TextBlock *TextLayout::addBlock(const char *text, ssize_t len) {
+	TextBlock *ret;
+
+	if (_blockCount >= _blockSize) {
+		TextBlock *tmp, *ptr;
+		unsigned newsize = _blockSize ? 2 * _blockSize : 8;
+
+		ptr = new TextBlock[newsize];
+		memcpy(ptr, _blocks, _blockCount * sizeof(TextBlock));
+		tmp = _blocks;
+		_blocks = ptr;
+		_blockSize = newsize;
+		delete[] tmp;
+	}
+
+	ret = _blocks + _blockCount;
+
+	if (len < 0) {
+		ret->text = copystr(text);
+	} else {
+		ret->text = new char[len+1];
+		strncpy(ret->text, text, len);
+		ret->text[len] = '\0';
+	}
+
+	_blockCount++;
+	return ret;
+}
+
+void TextLayout::adjustLine(unsigned lineStart, unsigned align,
+	unsigned maxwidth) {
+	unsigned i, width, extra;
+	TextBlock *ptr;
+
+	if (lineStart >= _blockCount) {
+		return;
+	}
+
+	ptr = _blocks + _blockCount - 1;
+	width = maxwidth - (ptr->x + ptr->width);
+
+	switch (align) {
+	case ALIGN_CENTER:
+		width /= 2;
+		// fall through
+
+	case ALIGN_RIGHT:
+		for (i = lineStart; i < _blockCount; i++) {
+			_blocks[i].x += width;
+		}
+
+		break;
+
+	case ALIGN_JUSTIFY:
+		i = _blockCount - lineStart - 1;
+
+		if (i < 1) {
+			return;
+		}
+
+		extra = width % i;
+		width /= i;
+
+		for (i = 1; lineStart + i < _blockCount; i++) {
+			_blocks[lineStart + i].x += i * width;
+			_blocks[lineStart + i].x += i < extra ? i : extra;
+		}
+
+		break;
+	}
+}
+
+void TextLayout::appendText(const char *text, unsigned x, unsigned y,
+	unsigned maxwidth, unsigned font, unsigned color, unsigned outline,
+	unsigned align) {
+
+	unsigned i = 0, tmp, wordStart, width, curx = 0, lineStart = 0;
+	int ret;
+	char c;
+	TextBlock *blk;
+	Font *fnt = gameFonts->getFont(font);
+
+	while (text[i]) {
+		for (; text[i] && text[i] <= ' '; i++) {
+			switch (text[i]) {
+			case '\n':
+				if (align != ALIGN_JUSTIFY) {
+					adjustLine(lineStart, align, maxwidth);
+				}
+
+				lineStart = _blockCount;
+				curx = 0;
+				y += fnt->height() + LINE_SPACING;
+				break;
+
+			// Absolute text position
+			case 0x7:
+				ret = sscanf(text + i + 1, "%c%u", &c, &tmp);
+
+				if (ret >= 2 && c == 'X') {
+					for (; text[i] && text[i] != '.'; i++);
+					curx = tmp;
+					lineStart = _blockCount;
+				}
+
+				break;
+
+			default:
+				curx += fnt->charWidth(text[i]) + 1;
+				break;
+			}
+		}
+
+		if (!text[i]) {
+			break;
+		}
+
+		for (width = 0, wordStart = i; text[i] > ' '; i++) {
+			width += fnt->charWidth(text[i]) + 1;
+		}
+
+		if (curx + width > maxwidth + 1 && lineStart < _blockCount) {
+			adjustLine(lineStart, align, maxwidth);
+			lineStart = _blockCount;
+			curx = 0;
+			y += fnt->height() + LINE_SPACING;
+		}
+
+		blk = addBlock(text + wordStart, i - wordStart);
+		blk->x = curx;
+		blk->y = y;
+		blk->width = width - 1;
+		blk->font = font;
+		blk->color = color;
+		blk->outline = outline;
+		curx += width;
+	}
+
+	if (align != ALIGN_JUSTIFY) {
+		adjustLine(lineStart, align, maxwidth);
+	}
+
+	if (_blockCount) {
+		tmp = _blocks[_blockCount - 1].y + fnt->height() + LINE_SPACING;
+		_height = _height < tmp ? tmp : _height;
+	}
+
+	// keep trailing newlines
+	_height = _height < y ? y : _height;
+}
+
+void TextLayout::addSprite(GuiSprite *sprite) {
+	int bottom;
+
+	if (_spriteCount >= _spriteSize) {
+		GuiSprite **tmp, **ptr;
+		unsigned newsize = _spriteSize ? 2 * _spriteSize : 8;
+
+		ptr = new GuiSprite*[newsize];
+		memcpy(ptr, _sprites, _spriteCount * sizeof(GuiSprite*));
+		tmp = _sprites;
+		_sprites = ptr;
+		_spriteSize = newsize;
+		delete[] tmp;
+	}
+
+	_sprites[_spriteCount] = sprite;
+	_spriteCount++;
+	bottom = sprite->getY() + sprite->height();
+
+	if (bottom > 0 && _height < (unsigned)bottom) {
+		_height = bottom;
+	}
+
+	sprite->startAnimation();
+}
+
+void TextLayout::addSprite(unsigned x, unsigned y, Image *img, int frame) {
+	GuiSprite *sprite = new GuiSprite(img, x, y, frame);
+
+	try {
+		addSprite(sprite);
+	} catch (...) {
+		delete sprite;
+		throw;
+	}
+}
+
+void TextLayout::addSprite(unsigned x, unsigned y, const char *archive,
+	unsigned id, const uint8_t *palette, int frame) {
+
+	ImageAsset img = gameAssets->getImage(archive, id, palette);
+
+	addSprite(x, y, (Image*)img, frame);
+}
+
+void TextLayout::redraw(unsigned x, unsigned y, unsigned curtick) {
+	unsigned i;
+	TextBlock *block;
+	Font *fnt;
+
+	for (i = 0; i < _spriteCount; i++) {
+		_sprites[i]->redraw(x, y, curtick);
+	}
+
+	for (i = 0, block = _blocks; i < _blockCount; i++, block++) {
+		if (!i || _blocks[i-1].font != _blocks[i].font) {
+			fnt = gameFonts->getFont(block->font);
+		}
+
+		fnt->renderText(x + block->x, y + block->y, block->color,
+			block->text, block->outline);
+	}
+}
+
+unsigned TextLayout::height(void) const {
+	return _height;
 }
