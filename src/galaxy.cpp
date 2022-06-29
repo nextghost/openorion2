@@ -21,6 +21,7 @@
 #include "screen.h"
 #include "guimisc.h"
 #include "mainmenu.h"
+#include "lang.h"
 #include "galaxy.h"
 
 #define GALAXY_ARCHIVE "buffer0.lbx"
@@ -165,61 +166,90 @@ void GalaxyView::initWidgets(void) {
 		GuiMethod(*this, &GalaxyView::clickGameMenu));
 	w->setClickSprite(MBUTTON_LEFT, GALAXY_ARCHIVE,
 		ASSET_GALAXY_GAME_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_GAME_BUTTON));
 
 	w = createWidget(15, 430, 67, 44);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &GalaxyView::clickColoniesButton));
 	w->setClickSprite(MBUTTON_LEFT, new GuiSprite(GALAXY_ARCHIVE,
 		ASSET_GALAXY_COLONIES_BUTTON, pal, -15, -5, 1));
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_COLONIES_BUTTON));
 
 	w = createWidget(90, 430, 67, 44);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &GalaxyView::clickPlanetsButton));
 	w->setClickSprite(MBUTTON_LEFT, new GuiSprite(GALAXY_ARCHIVE,
 		ASSET_GALAXY_PLANETS_BUTTON, pal, -90, -5, 1));
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_PLANETS_BUTTON));
 
 	w = createWidget(165, 430, 67, 44);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &GalaxyView::clickFleetsButton));
 	w->setClickSprite(MBUTTON_LEFT, new GuiSprite(GALAXY_ARCHIVE,
 		ASSET_GALAXY_FLEETS_BUTTON, pal, -165, -5, 1));
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_FLEETS_BUTTON));
 
 	w = createWidget(310, 430, 70, 44);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &GalaxyView::clickLeadersButton));
 	w->setClickSprite(MBUTTON_LEFT, new GuiSprite(GALAXY_ARCHIVE,
 		ASSET_GALAXY_LEADERS_BUTTON, pal, -4, -5, 1));
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_LEADERS_BUTTON));
 
 	w = createWidget(385, 430, 70, 44);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &GalaxyView::clickRacesButton));
 	w->setClickSprite(MBUTTON_LEFT, new GuiSprite(GALAXY_ARCHIVE,
 		ASSET_GALAXY_RACES_BUTTON, pal, -79, -5, 1));
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_RACES_BUTTON));
 
 	w = createWidget(460, 430, 70, 44);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &GalaxyView::clickInfoButton));
 	w->setClickSprite(MBUTTON_LEFT, new GuiSprite(GALAXY_ARCHIVE,
 		ASSET_GALAXY_INFO_BUTTON, pal, -154, -5, 1));
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_INFO_BUTTON));
 
 	w = createWidget(244, 428, 55, 16);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &GalaxyView::clickZoomInButton));
 	w->setClickSprite(MBUTTON_LEFT, GALAXY_ARCHIVE,
 		ASSET_GALAXY_ZOOMIN_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_ZOOM_BUTTON));
 
 	w = createWidget(244, 455, 55, 19);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &GalaxyView::clickZoomOutButton));
 	w->setClickSprite(MBUTTON_LEFT, GALAXY_ARCHIVE,
 		ASSET_GALAXY_ZOOMOUT_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_ZOOM_BUTTON));
 
 	w = createWidget(544, 441, 65, 26);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &GalaxyView::clickTurnButton));
 	w->setClickSprite(MBUTTON_LEFT, GALAXY_ARCHIVE,
 		ASSET_GALAXY_TURN_BUTTON, pal, 1);
-
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_TURN_BUTTON));
 }
 
 int GalaxyView::transformX(int x) const {
@@ -532,6 +562,10 @@ void GalaxyView::redraw(unsigned curtick) {
 	redrawWindows(curtick);
 }
 
+void GalaxyView::showHelp(int x, int y, int arg) {
+	new MessageBoxWindow(this, arg, _bg->palette());
+}
+
 void GalaxyView::clickGameMenu(int x, int y, int arg) {
 	new MainMenuWindow(this, _game);
 }
@@ -758,6 +792,9 @@ void MainMenuWindow::initWidgets(const uint8_t *pal) {
 		GuiMethod(*this, &MainMenuWindow::clickSave));
 	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_SAVE,
 		pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &MainMenuWindow::showHelp,
+		HELP_GAMEMENU_SAVE));
 
 	// Load Game button
 	w = createWidget(147, 43, 91, 28);
@@ -765,6 +802,9 @@ void MainMenuWindow::initWidgets(const uint8_t *pal) {
 		GuiMethod(*this, &MainMenuWindow::clickLoad));
 	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_LOAD,
 		pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &MainMenuWindow::showHelp,
+		HELP_GAMEMENU_LOAD));
 
 	// New Game button
 	w = createWidget(40, 88, 91, 28);
@@ -772,6 +812,9 @@ void MainMenuWindow::initWidgets(const uint8_t *pal) {
 		GuiMethod(*this, &MainMenuWindow::clickNew));
 	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_NEW,
 		pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &MainMenuWindow::showHelp,
+		HELP_GAMEMENU_NEWGAME));
 
 	// Quit Game button
 	w = createWidget(147, 88, 91, 28);
@@ -779,6 +822,9 @@ void MainMenuWindow::initWidgets(const uint8_t *pal) {
 		GuiMethod(*this, &MainMenuWindow::clickQuit));
 	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_QUIT,
 		pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &MainMenuWindow::showHelp,
+		HELP_GAMEMENU_QUIT));
 
 	// Settings button
 	w = createWidget(40, 307, 91, 27);
@@ -786,6 +832,9 @@ void MainMenuWindow::initWidgets(const uint8_t *pal) {
 		GuiMethod(*this, &MainMenuWindow::clickSettings));
 	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
 		ASSET_GAMEMENU_SETTINGS, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &MainMenuWindow::showHelp,
+		HELP_GAMEMENU_SETTINGS));
 
 	// Return button
 	w = createWidget(151, 307, 91, 27);
@@ -793,11 +842,20 @@ void MainMenuWindow::initWidgets(const uint8_t *pal) {
 		GuiMethod<GuiWindow>(*this, &MainMenuWindow::close));
 	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
 		ASSET_GAMEMENU_RETURN, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &MainMenuWindow::showHelp,
+		HELP_GAMEMENU_RETURN));
 }
 
 void MainMenuWindow::redraw(unsigned curtick) {
 	_bg->draw(_x, _y);
 	redrawWidgets(_x, _y, curtick);
+}
+
+void MainMenuWindow::showHelp(int x, int y, int arg) {
+	ImageAsset img = gameAssets->getImage(GALAXY_ARCHIVE, ASSET_GALAXY_GUI);
+
+	new MessageBoxWindow(_parent, arg, img->palette());
 }
 
 void MainMenuWindow::clickNew(int x, int y, int arg) {

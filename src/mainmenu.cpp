@@ -26,6 +26,7 @@
 #include "system.h"
 #include "guimisc.h"
 #include "galaxy.h"
+#include "lang.h"
 #include "mainmenu.h"
 
 #define MENU_ARCHIVE "mainmenu.lbx"
@@ -182,6 +183,9 @@ void MainMenuView::initWidgets(void) {
 
 	// Continue button
 	w = createWidget(415, 172, 153, 23);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &MainMenuView::showHelp,
+		HELP_MAINMENU_CONTINUE));
 
 	if (autosave) {
 		w->setMouseUpCallback(MBUTTON_LEFT,
@@ -195,6 +199,9 @@ void MainMenuView::initWidgets(void) {
 
 	// Load Game button
 	w = createWidget(415, 195, 153, 22);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &MainMenuView::showHelp,
+		HELP_MAINMENU_LOAD));
 
 	if (savecount) {
 		w->setMouseUpCallback(MBUTTON_LEFT,
@@ -209,24 +216,36 @@ void MainMenuView::initWidgets(void) {
 	w = createWidget(415, 217, 153, 23);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &MainMenuView::clickNew));
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &MainMenuView::showHelp,
+		HELP_MAINMENU_NEWGAME));
 	w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_NEWGAME, pal, 0);
 
 	// Multiplayer button
 	w = createWidget(415, 240, 153, 22);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &MainMenuView::clickMultiplayer));
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &MainMenuView::showHelp,
+		HELP_MAINMENU_MULTIPLAYER));
 	w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_MULTIPLAYER, pal, 0);
 
 	// Hall of Fame button
 	w = createWidget(415, 262, 153, 23);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &MainMenuView::clickScoreboard));
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &MainMenuView::showHelp,
+		HELP_MAINMENU_SCORES));
 	w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_SCORES, pal, 0);
 
 	// Quit Game button
 	w = createWidget(415, 285, 153, 22);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &MainMenuView::clickQuit));
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &MainMenuView::showHelp,
+		HELP_MAINMENU_QUIT));
 	w->setMouseOverSprite(MENU_ARCHIVE, ASSET_MENU_QUIT, pal, 0);
 }
 
@@ -234,6 +253,10 @@ void MainMenuView::redraw(unsigned curtick) {
 	_background->draw(0, 0);
 	redrawWidgets(0, 0, curtick);
 	redrawWindows(curtick);
+}
+
+void MainMenuView::showHelp(int x, int y, int arg) {
+	new MessageBoxWindow(this, arg, _background->palette());
 }
 
 void MainMenuView::clickContinue(int x, int y, int arg) {

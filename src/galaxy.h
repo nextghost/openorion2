@@ -62,6 +62,7 @@ public:
 
 	void redraw(unsigned curtick);
 
+	void showHelp(int x, int y, int arg);
 	void clickGameMenu(int x, int y, int arg);
 
 	void clickColoniesButton(int x, int y, int arg);
@@ -110,6 +111,7 @@ public:
 
 	void redraw(unsigned curtick);
 
+	void showHelp(int x, int y, int arg);
 	void clickNew(int x, int y, int arg);
 	void clickSave(int x, int y, int arg);
 	void clickLoad(int x, int y, int arg);

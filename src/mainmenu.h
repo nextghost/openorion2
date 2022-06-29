@@ -39,6 +39,7 @@ public:
 
 	void redraw(unsigned curtick);
 
+	void showHelp(int x, int y, int arg);
 	void clickContinue(int x, int y, int arg);
 	void clickLoad(int x, int y, int arg);
 	void clickNew(int x, int y, int arg);
