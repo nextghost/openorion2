@@ -930,7 +930,11 @@ TextLayout::TextBlock *TextLayout::addBlock(const char *text, ssize_t len) {
 		unsigned newsize = _blockSize ? 2 * _blockSize : 8;
 
 		ptr = new TextBlock[newsize];
-		memcpy(ptr, _blocks, _blockCount * sizeof(TextBlock));
+
+		if (_blockCount) {
+			memcpy(ptr, _blocks, _blockCount * sizeof(TextBlock));
+		}
+
 		tmp = _blocks;
 		_blocks = ptr;
 		_blockSize = newsize;
@@ -1081,7 +1085,11 @@ void TextLayout::addSprite(GuiSprite *sprite) {
 		unsigned newsize = _spriteSize ? 2 * _spriteSize : 8;
 
 		ptr = new GuiSprite*[newsize];
-		memcpy(ptr, _sprites, _spriteCount * sizeof(GuiSprite*));
+
+		if (_spriteCount) {
+			memcpy(ptr, _sprites, _spriteCount*sizeof(GuiSprite*));
+		}
+
 		tmp = _sprites;
 		_sprites = ptr;
 		_spriteSize = newsize;
