@@ -429,23 +429,23 @@ WidgetContainer::~WidgetContainer(void) {
 Widget *WidgetContainer::createWidget(unsigned x, unsigned y, unsigned width,
 	unsigned height) {
 
-	Widget *w = NULL;
+	Widget *w = new Widget(x, y, width, height);
 
-	try {
-		w = new Widget(x, y, width, height);
-		addWidget(w);
-	} catch (...) {
-		delete w;
-		throw;
-	}
-
+	addWidget(w);
 	return w;
 }
 
 void WidgetContainer::addWidget(Widget *w) {
 	if (_widgetCount >= _widgetMax) {
 		size_t size = _widgetMax ? 2 * _widgetMax : 32;
-		Widget **tmp = new Widget*[size];
+		Widget **tmp;
+
+		try {
+			tmp = new Widget*[size];
+		} catch (...) {
+			delete w;
+			throw;
+		}
 
 		if (_widgets) {
 			memcpy(tmp, _widgets, _widgetCount * sizeof(Widget*));

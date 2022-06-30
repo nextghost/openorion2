@@ -175,7 +175,11 @@ protected:
 
 	Widget *createWidget(unsigned x, unsigned y, unsigned width,
 		unsigned height);
+
+	// Add new widget to the container. If the widget cannot be added,
+	// it'll be automatically deleted and excetpion will be thrown.
 	void addWidget(Widget *w);
+
 	Widget *findWidget(int x, int y);
 	void redrawWidgets(int x, int y, unsigned curtick);
 	void clearWidgets(void);
