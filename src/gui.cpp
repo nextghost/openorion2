@@ -413,6 +413,57 @@ void Widget::redraw(int x, int y, unsigned curtick) {
 	}
 }
 
+ToggleWidget::ToggleWidget(unsigned x, unsigned y, unsigned width,
+	unsigned height, Image *img, unsigned val) :
+	Widget(x, y, width, height), _valImg(img), _value(val) {
+
+	if (img->frameCount() < 2) {
+		throw std::invalid_argument(
+			"ToggleWidget needs image with 2 frames");
+	}
+
+	setValue(_value);
+	gameAssets->takeAsset(_valImg);
+}
+
+ToggleWidget::ToggleWidget(unsigned x, unsigned y, unsigned width,
+	unsigned height, const char *archive, unsigned id,
+	const uint8_t *palette, unsigned val) : Widget(x, y, width, height),
+	_valImg(NULL), _value(val) {
+
+	ImageAsset img = gameAssets->getImage(archive, id, palette);
+
+	if (img->frameCount() < 2) {
+		throw std::invalid_argument(
+			"ToggleWidget needs image with 2 frames");
+	}
+
+	_valImg = (Image*)img;
+	setValue(_value);
+	gameAssets->takeAsset(_valImg);
+}
+
+ToggleWidget::~ToggleWidget(void) {
+	gameAssets->freeAsset(_valImg);
+}
+
+void ToggleWidget::setValue(unsigned val) {
+	_value = !!val;
+	setIdleSprite(_valImg, _value);
+}
+
+unsigned ToggleWidget::value(void) const {
+	return _value;
+}
+
+void ToggleWidget::handleMouseUp(int x, int y, unsigned button) {
+	if (button == MBUTTON_LEFT) {
+		setValue(!_value);
+	}
+
+	Widget::handleMouseUp(x, y, button);
+}
+
 WidgetContainer::WidgetContainer(void) : _widgets(NULL), _widgetCount(0),
 	_widgetMax(32), _currentWidget(NULL) {
 	_widgets = new Widget*[_widgetMax];

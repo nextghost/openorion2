@@ -162,6 +162,25 @@ public:
 	virtual void redraw(int x, int y, unsigned curtick);
 };
 
+class ToggleWidget : public Widget {
+private:
+	Image *_valImg;
+	unsigned _value;
+
+public:
+	ToggleWidget(unsigned x, unsigned y, unsigned width, unsigned height,
+		Image *img, unsigned val = 0);
+	ToggleWidget(unsigned x, unsigned y, unsigned width, unsigned height,
+		const char *archive, unsigned id,
+		const uint8_t *palette = NULL, unsigned val = 0);
+	~ToggleWidget(void);
+
+	void setValue(unsigned val);
+	unsigned value(void) const;
+
+	void handleMouseUp(int x, int y, unsigned button);
+};
+
 class WidgetContainer : public Recyclable {
 private:
 	Widget **_widgets;
