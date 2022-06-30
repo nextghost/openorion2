@@ -208,6 +208,17 @@ Widget::~Widget(void) {
 	}
 }
 
+void Widget::setSprite(unsigned state, GuiSprite *sprite) {
+	GuiSprite *oldsprite = _sprites[state];
+
+	_sprites[state] = sprite;
+	changeSprite();
+
+	if (oldsprite) {
+		oldsprite->discard();
+	}
+}
+
 void Widget::changeSprite(void) {
 	GuiSprite *newsprite = _sprites[WSPRITE_IDLE];
 	unsigned i;
@@ -264,12 +275,7 @@ void Widget::setMouseUpCallback(unsigned button, const GuiCallback &callback) {
 }
 
 void Widget::setIdleSprite(GuiSprite *sprite) {
-	if (_sprites[WSPRITE_IDLE]) {
-		delete _sprites[WSPRITE_IDLE];
-	}
-
-	_sprites[WSPRITE_IDLE] = sprite;
-	changeSprite();
+	setSprite(WSPRITE_IDLE, sprite);
 }
 
 void Widget::setIdleSprite(Image *img, int frame) {
@@ -291,12 +297,7 @@ void Widget::setIdleSprite(const char *archive, unsigned id,
 }
 
 void Widget::setMouseOverSprite(GuiSprite *sprite) {
-	if (_sprites[WSPRITE_MOUSEOVER]) {
-		delete _sprites[WSPRITE_MOUSEOVER];
-	}
-
-	_sprites[WSPRITE_MOUSEOVER] = sprite;
-	changeSprite();
+	setSprite(WSPRITE_MOUSEOVER, sprite);
 }
 
 void Widget::setMouseOverSprite(Image *img, int frame) {
@@ -322,12 +323,7 @@ void Widget::setClickSprite(unsigned button, GuiSprite *sprite) {
 		throw std::out_of_range("Invalid button ID");
 	}
 
-	if (_sprites[WSPRITE_CLICK + button]) {
-		delete _sprites[WSPRITE_CLICK + button];
-	}
-
-	_sprites[WSPRITE_CLICK + button] = sprite;
-	changeSprite();
+	setSprite(WSPRITE_CLICK + button, sprite);
 }
 
 void Widget::setClickSprite(unsigned button, Image *img, int frame) {

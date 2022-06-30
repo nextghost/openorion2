@@ -75,7 +75,7 @@ public:
 	void operator()(int x, int y);
 };
 
-class GuiSprite {
+class GuiSprite : public Recyclable {
 private:
 	Image *_image;
 	unsigned _x, _y, _width, _height, _startTick;
@@ -121,6 +121,7 @@ private:
 	const Widget &operator=(const Widget &other);
 
 protected:
+	virtual void setSprite(unsigned state, GuiSprite *sprite);
 	virtual void changeSprite(void);
 
 public:
