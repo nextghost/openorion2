@@ -620,6 +620,11 @@ struct Ship {
 
 	Ship(void);
 
+	bool operator<(const Ship &other) const;
+	bool operator<=(const Ship &other) const;
+	bool operator>(const Ship &other) const;
+	bool operator>=(const Ship &other) const;
+
 	void load(ReadStream &stream);
 
 	// _starSystemCount is the special ID of Antaran homeworld

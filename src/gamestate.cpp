@@ -769,6 +769,46 @@ Ship::Ship(void) {
 	justBuilt = 0;
 }
 
+bool Ship::operator<(const Ship &other) const {
+	if (design.type != other.design.type) {
+		return design.type < other.design.type;
+	}
+
+	if (design.size != other.design.size) {
+		return design.size > other.design.size;
+	}
+
+	if (design.builder != other.design.builder) {
+		return design.builder < other.design.builder;
+	}
+
+	return design.picture > other.design.picture;
+}
+
+bool Ship::operator<=(const Ship &other) const {
+	if (design.type != other.design.type) {
+		return design.type < other.design.type;
+	}
+
+	if (design.size != other.design.size) {
+		return design.size > other.design.size;
+	}
+
+	if (design.builder != other.design.builder) {
+		return design.builder < other.design.builder;
+	}
+
+	return design.picture >= other.design.picture;
+}
+
+bool Ship::operator>(const Ship &other) const {
+	return !(*this <= other);
+}
+
+bool Ship::operator>=(const Ship &other) const {
+	return !(*this < other);
+}
+
 void Ship::load(ReadStream &stream) {
 	design.load(stream);
 	owner = stream.readUint8();
@@ -1390,7 +1430,7 @@ Fleet::~Fleet(void) {
 
 void Fleet::addShip(unsigned ship_id) {
 	Ship *s;
-	int dest;
+	int dest, i = 0, j = _shipCount, pos;
 
 	if (ship_id >= _parent->_shipCount) {
 		throw std::out_of_range("Invalid ship ID");
@@ -1420,7 +1460,22 @@ void Fleet::addShip(unsigned ship_id) {
 		_maxShips = size;
 	}
 
-	_ships[_shipCount++] = ship_id;
+	while (i < j) {
+		pos = (i + j) / 2;
+
+		if (*s < _parent->_ships[_ships[pos]]) {
+			j = pos;
+		} else {
+			i = pos + 1;
+		}
+	}
+
+	for (pos = i, i = _shipCount; i > pos; i--) {
+		_ships[i] = _ships[i - 1];
+	}
+
+	_ships[pos] = ship_id;
+	_shipCount++;
 	// FIXME: update _hasNavigator, recalculate speed, eta and update ships
 }
 
