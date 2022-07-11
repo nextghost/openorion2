@@ -1,0 +1,17 @@
+*.o
+/config.sub
+/config.status
+/config.log
+/config.h
+/config.guess
+/autom4te.cache/
+/aclocal.m4
+*Makefile.in
+*Makefile
+/missing
+/compile
+/configure
+/depcomp
+/install-sh
+/stamp-h1
+/src/.deps/
