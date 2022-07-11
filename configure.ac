@@ -1,4 +1,4 @@
-AC_PREREQ([2.71])
+AC_PREREQ([2.69])
 AC_INIT([openorion2], [0.1], [next_ghost@quick.cz])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CANONICAL_TARGET
