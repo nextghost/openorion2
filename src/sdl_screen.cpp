@@ -319,6 +319,28 @@ void drawLine(int x1, int y1, int x2, int y2, uint8_t r, uint8_t g, uint8_t b) {
 	}
 }
 
+void drawRect(int x, int y, unsigned width, unsigned height, uint8_t r,
+	uint8_t g, uint8_t b, unsigned thickness) {
+
+	Uint32 color = SDL_MapRGB(wsurface->format, r, g, b);
+	SDL_Rect rect = {x, y, (int)width, (int)thickness};
+
+	if (width <= 2 * thickness || height <= 2 * thickness) {
+		fillRect(x, y, width, height, r, g, b);
+		return;
+	}
+
+	SDL_FillRect(wsurface, &rect, color);
+	rect.y += height - thickness;
+	SDL_FillRect(wsurface, &rect, color);
+	rect.y = y + thickness;
+	rect.w = thickness;
+	rect.h = height - 2 * thickness;
+	SDL_FillRect(wsurface, &rect, color);
+	rect.x += width - thickness;
+	SDL_FillRect(wsurface, &rect, color);
+}
+
 void fillRect(int x, int y, unsigned width, unsigned height, uint8_t r,
 	uint8_t g, uint8_t b) {
 	SDL_Rect rect = {x, y, (int)width, (int)height};
