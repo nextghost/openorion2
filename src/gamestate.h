@@ -190,6 +190,14 @@ enum ShipState {
 	UnderConstruction
 };
 
+enum ShipType {
+	COMBAT_SHIP = 0,
+	COLONY_SHIP,
+	TRANSPORT_SHIP,
+	BAD_SHIP_TYPE,
+	OUTPOST_SHIP
+};
+
 class Fleet;
 
 struct GameConfig {
@@ -681,7 +689,7 @@ class Fleet : public Recyclable {
 private:
 	GameState *_parent;
 	unsigned *_ships;
-	size_t _shipCount, _maxShips;
+	size_t _shipCount, _combatCount, _maxShips;
 	int _orbitedStar, _destStar;
 	uint8_t _owner, _status;
 	uint16_t _x, _y;
@@ -710,6 +718,8 @@ public:
 	const Star *getDestStar(void) const;
 
 	size_t shipCount(void) const;
+	size_t combatCount(void) const;
+	size_t supportCount(void) const;
 	uint8_t getOwner(void) const;
 	uint8_t getStatus(void) const;
 	uint16_t getX(void) const;

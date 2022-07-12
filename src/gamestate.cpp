@@ -1233,6 +1233,11 @@ void GameState::validate(void) const {
 			throw std::out_of_range("Invalid ship status");
 		}
 
+		if (ptr->design.type > OUTPOST_SHIP ||
+			ptr->design.type == BAD_SHIP_TYPE) {
+			throw std::out_of_range("Invalid ship type");
+		}
+
 		if (ptr->x >= _galaxy.width || ptr->y >= _galaxy.height) {
 			throw std::out_of_range("Ship outside galaxy area");
 		}
@@ -1371,7 +1376,8 @@ void GameState::dump(void) const {
 }
 
 Fleet::Fleet(GameState *parent, unsigned flagship) : _parent(parent),
-	_shipCount(0), _maxShips(8), _orbitedStar(-1), _destStar(-1) {
+	_shipCount(0), _combatCount(0), _maxShips(8), _orbitedStar(-1),
+	_destStar(-1) {
 
 	Ship *fs;
 
@@ -1410,14 +1416,18 @@ Fleet::Fleet(GameState *parent, unsigned flagship) : _parent(parent),
 
 	_ships = new unsigned[_maxShips];
 	_ships[_shipCount++] = flagship;
+
+	if (fs->design.type == COMBAT_SHIP) {
+		_combatCount++;
+	}
 }
 
 Fleet::Fleet(const Fleet &other) : _parent(other._parent), _ships(NULL),
-	_shipCount(other._shipCount), _orbitedStar(other._orbitedStar),
-	_destStar(other._destStar), _owner(other._owner),
-	_status(other._status), _x(other._x), _y(other._y),
-	_hasNavigator(other._hasNavigator), _warpSpeed(other._warpSpeed),
-	_eta(other._eta) {
+	_shipCount(other._shipCount), _combatCount(other._combatCount),
+	_orbitedStar(other._orbitedStar), _destStar(other._destStar),
+	_owner(other._owner), _status(other._status), _x(other._x),
+	_y(other._y), _hasNavigator(other._hasNavigator),
+	_warpSpeed(other._warpSpeed), _eta(other._eta) {
 
 	_maxShips = _shipCount > 8 ? _shipCount : 8;
 	_ships = new unsigned[_maxShips];
@@ -1475,6 +1485,11 @@ void Fleet::addShip(unsigned ship_id) {
 	}
 
 	_ships[pos] = ship_id;
+
+	if (s->design.type == COMBAT_SHIP) {
+		_combatCount++;
+	}
+
 	_shipCount++;
 	// FIXME: update _hasNavigator, recalculate speed, eta and update ships
 }
@@ -1491,6 +1506,10 @@ void Fleet::removeShip(size_t pos) {
 	}
 
 	_shipCount--;
+
+	if (pos < _combatCount) {
+		_combatCount--;
+	}
 }
 
 Ship *Fleet::getShip(size_t pos) {
@@ -1527,6 +1546,14 @@ const Star *Fleet::getDestStar(void) const {
 
 size_t Fleet::shipCount(void) const {
 	return _shipCount;
+}
+
+size_t Fleet::combatCount(void) const {
+	return _combatCount;
+}
+
+size_t Fleet::supportCount(void) const {
+	return _shipCount - _combatCount;
 }
 
 uint8_t Fleet::getOwner(void) const {
