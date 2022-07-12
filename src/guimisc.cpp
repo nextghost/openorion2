@@ -151,14 +151,12 @@ ErrorWindow::~ErrorWindow(void) {
 
 void ErrorWindow::redraw(unsigned curtick) {
 	unsigned frame, fcount;
-	Font *fnt;
-	int x, y;
+	int y;
 
 	if (!_animStart) {
 		_animStart = curtick;
 	}
 
-	fnt = gameFonts->getFont(FONTSIZE_BIG);
 	fcount = _bg->frameCount();
 	// FIXME: calculate frame time from image header
 	// Original game plays 14 frames in ~1.3 seconds
