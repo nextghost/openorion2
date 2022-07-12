@@ -92,3 +92,8 @@ char *strupper(const char *str) {
 	ret[i] = '\0';
 	return ret;
 }
+
+int isInRect(int x, int y, int rx, int ry, unsigned width, unsigned height) {
+	return x >= rx && y >= ry && x < rx + (int)width &&
+		y < ry + (int)height;
+}

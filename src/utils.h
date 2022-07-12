@@ -112,6 +112,8 @@ char *copystr(const char *str);
 char *strlower(const char *str);
 char *strupper(const char *str);
 
+int isInRect(int x, int y, int rx, int ry, unsigned width, unsigned height);
+
 template <class C>
 BilistNode<C>::BilistNode(void) : _prev(NULL), _next(NULL), _discarded(0),
 	data(NULL) {

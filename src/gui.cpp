@@ -241,7 +241,7 @@ void Widget::changeSprite(void) {
 }
 
 int Widget::isInside(unsigned x, unsigned y) const {
-	return x >= _x && x < _x + _width && y >= _y && y < _y + _height;
+	return isInRect(x, y, _x, _y, _width, _height);
 }
 
 void Widget::setMouseOverCallback(const GuiCallback &callback) {
@@ -605,8 +605,7 @@ void GuiWindow::discard(void) {
 }
 
 int GuiWindow::isInside(int x, int y) const {
-	return x >= _x && x < _x + (int)_width && y >= _y &&
-		y < _y + (int)_height;
+	return isInRect(x, y, _x, _y, _width, _height);
 }
 
 int GuiWindow::isModal(void) const {
