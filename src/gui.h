@@ -128,6 +128,10 @@ public:
 	Widget(unsigned x, unsigned y, unsigned width, unsigned height);
 	virtual ~Widget(void);
 
+	unsigned getX(void) const;
+	unsigned getY(void) const;
+	unsigned width(void) const;
+	unsigned height(void) const;
 	virtual int isInside(unsigned x, unsigned y) const;
 
 	virtual void setMouseOverCallback(const GuiCallback &callback);

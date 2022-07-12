@@ -240,6 +240,22 @@ void Widget::changeSprite(void) {
 	}
 }
 
+unsigned Widget::getX(void) const {
+	return _x;
+}
+
+unsigned Widget::getY(void) const {
+	return _y;
+}
+
+unsigned Widget::width(void) const {
+	return _width;
+}
+
+unsigned Widget::height(void) const {
+	return _height;
+}
+
 int Widget::isInside(unsigned x, unsigned y) const {
 	return isInRect(x, y, _x, _y, _width, _height);
 }
