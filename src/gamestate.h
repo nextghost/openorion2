@@ -532,11 +532,7 @@ public:
 	uint16_t x;
 	uint16_t y;
 	uint8_t size;
-	/*
-	* 0-7: player id
-	* 0xFF: no owner
-	*/
-	uint8_t owner;
+	int8_t owner;
 	uint8_t pictureType;
 	uint8_t spectralClass;
 	// Remembers the last selected planet for the system for each player

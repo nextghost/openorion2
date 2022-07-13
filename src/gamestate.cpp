@@ -657,7 +657,7 @@ void Star::load(ReadStream &stream) {
 	x = stream.readUint16LE();
 	y = stream.readUint16LE();
 	size = stream.readUint8();
-	owner = stream.readUint8();
+	owner = stream.readSint8();
 	pictureType = stream.readUint8();
 	spectralClass = stream.readUint8();
 
