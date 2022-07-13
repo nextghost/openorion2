@@ -22,6 +22,7 @@
 #include "guimisc.h"
 #include "mainmenu.h"
 #include "lang.h"
+#include "ships.h"
 #include "galaxy.h"
 
 #define STARSEL_FRAMECOUNT 6
@@ -1003,7 +1004,7 @@ void GalaxyView::clickPlanetsButton(int x, int y, int arg) {
 }
 
 void GalaxyView::clickFleetsButton(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Not implemented yet");
+	gui_stack->push(new FleetListView(_game, _activePlayer));
 }
 
 void GalaxyView::clickLeadersButton(int x, int y, int arg) {

@@ -21,7 +21,32 @@
 
 #include "screen.h"
 #include "guimisc.h"
+#include "lang.h"
 #include "ships.h"
+
+#define FLEETLIST_ARCHIVE "fleet.lbx"
+#define ASSET_FLEET_GUI 0
+#define ASSET_FLEET_SCROLL_UP_BUTTON 2
+#define ASSET_FLEET_PREV_FLEET_BUTTON 3
+#define ASSET_FLEET_NEXT_FLEET_BUTTON 4
+#define ASSET_FLEET_SCROLL_DOWN_BUTTON 5
+#define ASSET_FLEET_ALL_BUTTON 6
+#define ASSET_FLEET_RELOCATE_BUTTON 7
+#define ASSET_FLEET_SCRAP_BUTTON 8
+#define ASSET_FLEET_SUPPORT_TOGGLE 9
+#define ASSET_FLEET_COMBAT_TOGGLE 10
+#define ASSET_FLEET_LEADERS_BUTTON 11
+#define ASSET_FLEET_RETURN_BUTTON 12
+#define ASSET_FLEET_ALL_BUTTON_DISABLED 13
+#define ASSET_FLEET_SCRAP_BUTTON_DISABLED 15
+#define ASSET_FLEET_SLOT_SELECTED 17
+#define ASSET_FLEET_SLOT_HIGHLIGHTED 18
+#define ASSET_FLEET_SHIP_IMAGES 19
+#define ASSET_FLEET_STAR_IMAGES 34
+#define ASSET_FLEET_NEUTRAL_STAR_IMAGE 42
+#define ASSET_FLEET_BHOLE_IMAGE 44
+#define ASSET_FLEET_LEADER_IMAGES 45
+#define ASSET_FLEET_PALETTE 111
 
 #define SHIPSPRITE_ARCHIVE "ships.lbx"
 #define PALSPRITE_ANTARAN 413
@@ -369,4 +394,317 @@ void ShipGridWidget::redraw(int x, int y, unsigned curtick) {
 			_slotframe->draw(x + xpos - 1, y + ypos - 1);
 		}
 	}
+}
+
+FleetListView::FleetListView(GameState *game, int activePlayer) :
+	_game(game), _minimap(NULL), _grid(NULL), _allButton(NULL),
+	_scrapButton(NULL), _supportToggle(NULL), _combatToggle(NULL),
+	_scroll(0), _activePlayer(activePlayer) {
+
+	ImageAsset palimg;
+	const uint8_t *pal;
+
+	palimg = gameAssets->getImage(FLEETLIST_ARCHIVE, ASSET_FLEET_PALETTE);
+	pal = palimg->palette();
+	_bg = gameAssets->getImage(FLEETLIST_ARCHIVE, ASSET_FLEET_GUI, pal);
+
+	initWidgets();
+}
+
+FleetListView::~FleetListView(void) {
+
+}
+
+void FleetListView::initWidgets(void) {
+	ImageAsset slotsel, slotframe;
+	const uint8_t *pal = _bg->palette();
+	Widget *w;
+
+	_minimap = new GalaxyMinimapWidget(15, 52, 305, 182, _game,
+		_activePlayer, FLEETLIST_ARCHIVE, ASSET_FLEET_STAR_IMAGES,
+		ASSET_FLEET_SHIP_IMAGES, pal);
+	addWidget(_minimap);
+	_minimap->setStarSelectCallback(GuiMethod(*this,
+		&FleetListView::starSelectionChanged));
+	_minimap->setFleetSelectCallback(GuiMethod(*this,
+		&FleetListView::fleetSelectionChanged));
+	_minimap->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_MINIMAP));
+
+	slotsel = gameAssets->getImage(FLEETLIST_ARCHIVE,
+		ASSET_FLEET_SLOT_SELECTED, pal);
+	slotframe = gameAssets->getImage(FLEETLIST_ARCHIVE,
+		ASSET_FLEET_SLOT_HIGHLIGHTED, pal);
+	_grid = new ShipGridWidget(this, 345, 54, 5, 4, 3, 2, _game,
+		_activePlayer, (Image*)slotsel, (Image*)slotframe);
+	addWidget(_grid);
+	_grid->setShipHighlightCallback(GuiMethod(*this,
+		&FleetListView::shipHighlightChanged));
+	_grid->setSelectionChangeCallback(GuiMethod(*this,
+		&FleetListView::shipSelectionChanged));
+	_grid->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_SHIP_GRID));
+
+	w = createWidget(606, 59, 13, 24);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &FleetListView::clickScrollUp));
+	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_SCROLL_UP_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_SCROLLBAR));
+
+	w = createWidget(605, 325, 14, 25);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &FleetListView::clickScrollDown));
+	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_SCROLL_DOWN_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_SCROLLBAR));
+
+	w = createWidget(19, 249, 32, 19);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &FleetListView::clickPrevFleet));
+	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_PREV_FLEET_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_PREV_BUTTON));
+
+	w = createWidget(283, 249, 31, 19);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &FleetListView::clickNextFleet));
+	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_NEXT_FLEET_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_NEXT_BUTTON));
+
+	_allButton = createWidget(348, 380, 74, 28);
+	_allButton->setDisabledSprite(FLEETLIST_ARCHIVE,
+		ASSET_FLEET_ALL_BUTTON_DISABLED, pal, 0);
+	_allButton->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &FleetListView::clickAllButton));
+	_allButton->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_ALL_BUTTON, pal, 1);
+	_allButton->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_ALL_BUTTON));
+	_allButton->disable(1);
+
+	w = createWidget(441, 380, 89, 28);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &FleetListView::clickRelocate));
+	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_RELOCATE_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_RELOCATE_BUTTON));
+
+	_scrapButton = createWidget(549, 380, 73, 28);
+	_scrapButton->setDisabledSprite(FLEETLIST_ARCHIVE,
+		ASSET_FLEET_SCRAP_BUTTON_DISABLED, pal, 0);
+	_scrapButton->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &FleetListView::clickScrap));
+	_scrapButton->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_SCRAP_BUTTON, pal, 1);
+	_scrapButton->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_SCRAP_BUTTON));
+	_scrapButton->disable(1);
+
+	w = createWidget(342, 430, 73, 27);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &FleetListView::clickLeaders));
+	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_LEADERS_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_LEADERS_BUTTON));
+
+	_supportToggle = new ToggleWidget(425, 435, 61, 19, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_SUPPORT_TOGGLE, pal, 1);
+	addWidget(_supportToggle);
+	_supportToggle->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &FleetListView::filterSupport));
+	_supportToggle->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_SUPPORT_TOGGLE));
+
+	_combatToggle = new ToggleWidget(487, 435, 60, 19, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_COMBAT_TOGGLE, pal, 1);
+	addWidget(_combatToggle);
+	_combatToggle->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &FleetListView::filterCombat));
+	_combatToggle->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_COMBAT_TOGGLE));
+
+	w = createWidget(556, 430, 73, 27);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &FleetListView::clickReturn));
+	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_RETURN_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_RETURN_BUTTON));
+
+	w = createWidget(66, 247, 202, 23);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_NAME_BAR));
+
+	w = createWidget(15, 280, 305, 185);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_SHIP_INFO));
+}
+
+void FleetListView::starSelectionChanged(int x, int y, int arg) {
+	// TODO: implement movement and relocation commands
+	_minimap->selectStar(-1);
+}
+
+void FleetListView::fleetSelectionChanged(int x, int y, int arg) {
+	int select = 0;
+	Fleet *f = _minimap->selectedFleet();
+
+	if (f) {
+		select = f->getOwner() == _activePlayer;
+	}
+
+	_grid->setFleet(f, select);
+	_scroll = 0;
+	_grid->setScroll(_scroll);
+
+	if (!_grid->visibleShipCount()) {
+		if (f->combatCount()) {
+			_combatToggle->setValue(1);
+		} else {
+			_supportToggle->setValue(1);
+		}
+
+		_grid->setFilter(_combatToggle->value(),
+			_supportToggle->value());
+	}
+
+	_allButton->disable(!select || !_grid->visibleShipCount());
+	shipHighlightChanged(0, 0, 0);
+	shipSelectionChanged(0, 0, 0);
+}
+
+void FleetListView::shipHighlightChanged(int x, int y, int arg) {
+	// TODO: show ship info
+}
+
+void FleetListView::shipSelectionChanged(int x, int y, int arg) {
+	_scrapButton->disable(!_grid->selectedVisibleCount());
+}
+
+void FleetListView::filterCombat(int x, int y, int arg) {
+	unsigned combat, support;
+	Fleet *f = _minimap->selectedFleet();
+
+	combat = _combatToggle->value();
+	support = _supportToggle->value();
+
+	if (f) {
+		combat = combat || !f->supportCount();
+		_combatToggle->setValue(combat);
+	}
+
+	support = support || !combat;
+	_supportToggle->setValue(support);
+	_grid->setFilter(combat, support);
+	_allButton->disable(f->getOwner() != _activePlayer ||
+		!_grid->visibleShipCount());
+	shipHighlightChanged(0, 0, 0);
+	shipSelectionChanged(0, 0, 0);
+}
+
+void FleetListView::filterSupport(int x, int y, int arg) {
+	unsigned combat, support;
+	Fleet *f = _minimap->selectedFleet();
+
+	combat = _combatToggle->value();
+	support = _supportToggle->value();
+
+	if (f) {
+		support = support || !f->combatCount();
+		_supportToggle->setValue(support);
+	}
+
+	combat = combat || !support;
+	_combatToggle->setValue(combat);
+	_grid->setFilter(combat, support);
+	_allButton->disable(f->getOwner() != _activePlayer ||
+		!_grid->visibleShipCount());
+	shipHighlightChanged(0, 0, 0);
+	shipSelectionChanged(0, 0, 0);
+}
+
+void FleetListView::redraw(unsigned curtick) {
+	clearScreen();
+	_bg->draw(0, 0);
+
+	redrawWidgets(0, 0, curtick);
+	redrawWindows(curtick);
+}
+
+void FleetListView::showHelp(int x, int y, int arg) {
+	new MessageBoxWindow(this, arg, _bg->palette());
+}
+
+void FleetListView::clickScrollUp(int x, int y, int arg) {
+	if (_scroll > 0) {
+		_scroll--;
+		_grid->setScroll(_scroll);
+	}
+}
+
+void FleetListView::clickScrollDown(int x, int y, int arg) {
+	_grid->setScroll(++_scroll);
+}
+
+void FleetListView::clickPrevFleet(int x, int y, int arg) {
+	new MessageBoxWindow(this, "Not implemented");
+}
+
+void FleetListView::clickNextFleet(int x, int y, int arg) {
+	new MessageBoxWindow(this, "Not implemented");
+}
+
+void FleetListView::clickAllButton(int x, int y, int arg) {
+	Fleet *f = _minimap->selectedFleet();
+
+	if (!f || f->getOwner() != _activePlayer) {
+		return;
+	}
+
+	if (_grid->selectedVisibleCount() == _grid->visibleShipCount()) {
+		_grid->selectNone();
+	} else {
+		_grid->selectAll();
+	}
+
+	shipSelectionChanged(x, y, 0);
+}
+
+void FleetListView::clickRelocate(int x, int y, int arg) {
+	new MessageBoxWindow(this, "Not implemented");
+}
+
+void FleetListView::clickScrap(int x, int y, int arg) {
+	new MessageBoxWindow(this, "Not implemented");
+}
+
+void FleetListView::clickLeaders(int x, int y, int arg) {
+	new MessageBoxWindow(this, "Not implemented");
+}
+
+void FleetListView::clickReturn(int x, int y, int arg) {
+	exitView();
 }

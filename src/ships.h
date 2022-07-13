@@ -22,6 +22,7 @@
 
 #include "gui.h"
 #include "lbx.h"
+#include "galaxy.h"
 #include "gamestate.h"
 
 // FIXME: handle captured ships
@@ -84,6 +85,47 @@ public:
 	void handleMouseUp(int x, int y, unsigned button);
 
 	void redraw(int x, int y, unsigned curtick);
+};
+
+class FleetListView : public GuiView {
+private:
+	ImageAsset _bg;
+	GameState *_game;
+	GalaxyMinimapWidget *_minimap;
+	ShipGridWidget *_grid;
+	Widget *_allButton, *_scrapButton;
+	ToggleWidget *_supportToggle, *_combatToggle;
+	unsigned _scroll;
+	int _activePlayer;
+
+	void initWidgets(void);
+
+protected:
+	void starSelectionChanged(int x, int y, int arg);
+	void fleetSelectionChanged(int x, int y, int arg);
+
+	void shipHighlightChanged(int x, int y, int arg);
+	void shipSelectionChanged(int x, int y, int arg);
+
+	void filterCombat(int x, int y, int arg);
+	void filterSupport(int x, int y, int arg);
+
+public:
+	FleetListView(GameState *game, int activePlayer);
+	~FleetListView(void);
+
+	void redraw(unsigned curtick);
+
+	void showHelp(int x, int y, int arg);
+	void clickScrollUp(int x, int y, int arg);
+	void clickScrollDown(int x, int y, int arg);
+	void clickPrevFleet(int x, int y, int arg);
+	void clickNextFleet(int x, int y, int arg);
+	void clickAllButton(int x, int y, int arg);
+	void clickRelocate(int x, int y, int arg);
+	void clickScrap(int x, int y, int arg);
+	void clickLeaders(int x, int y, int arg);
+	void clickReturn(int x, int y, int arg);
 };
 
 #endif
