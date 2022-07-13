@@ -39,12 +39,7 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text,
 	_height += _text.height() >= 20 ? _text.height() - 20 : 0;
 	_y = (SCREEN_HEIGHT - _height) / 2;
 
-	try {
-		initWidgets();
-	} catch (...) {
-		clearWidgets();
-		throw;
-	}
+	initWidgets();
 }
 
 MessageBoxWindow::MessageBoxWindow(GuiView *parent, unsigned help_id,
@@ -82,12 +77,7 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, unsigned help_id,
 	_height += _text.height() >= 20 ? _text.height() - 20 : 0;
 	_y = (SCREEN_HEIGHT - _height) / 2;
 
-	try {
-		initWidgets();
-	} catch (...) {
-		clearWidgets();
-		throw;
-	}
+	initWidgets();
 }
 
 MessageBoxWindow::~MessageBoxWindow(void) {

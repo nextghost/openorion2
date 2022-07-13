@@ -144,15 +144,10 @@ void loadGame(const char *filename) {
 	delete[] path;
 }
 
-MainMenuView::MainMenuView(void) : _background() {
+MainMenuView::MainMenuView(void) {
 	_background = gameAssets->getImage(MENU_ARCHIVE, ASSET_MENU_BACKGROUND);
 
-	try {
-		initWidgets();
-	} catch (...) {
-		clearWidgets();
-		throw;
-	}
+	initWidgets();
 }
 
 MainMenuView::~MainMenuView(void) {
@@ -338,15 +333,8 @@ LoadGameWindow::LoadGameWindow(GuiView *parent, int quickload) :
 	_x = (SCREEN_WIDTH - _width) / 2;
 	_y = (SCREEN_HEIGHT - _height) / 2;
 
+	initWidgets(pal);
 	_saveFiles = findSavedGames();
-
-	try {
-		initWidgets(pal);
-	} catch (...) {
-		delete[] _saveFiles;
-		clearWidgets();
-		throw;
-	}
 }
 
 LoadGameWindow::~LoadGameWindow(void) {

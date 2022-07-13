@@ -208,12 +208,7 @@ GalaxyView::GalaxyView(GameState *game) : _game(game), _zoom(0), _zoomX(0),
 		}
 	}
 
-	try {
-		initWidgets();
-	} catch (...) {
-		clearWidgets();
-		throw;
-	}
+	initWidgets();
 }
 
 GalaxyView::~GalaxyView(void) {
@@ -705,12 +700,7 @@ SelectPlayerView::SelectPlayerView(const GameState *game,
 	_y = SCREEN_HEIGHT - _header->height() - _footer->height();
 	_y = (_y - _playerCount * _row->height()) / 2;
 
-	try {
-		initWidgets();
-	} catch (...) {
-		clearWidgets();
-		throw;
-	}
+	initWidgets();
 }
 
 void SelectPlayerView::initWidgets(void) {
@@ -828,12 +818,7 @@ PlanetsListView::PlanetsListView(const GameState *game, int activePlayer) : _gam
 		_planetIcons[assetId] = gameAssets->getImage(PLANET_ARCHIVE, assetId + 26, _planetAssets->palette());
 	}
 
-	try {
-		initWidgets();
-	} catch (...) {
-		clearWidgets();
-		throw;
-	}
+	initWidgets();
 }
 
 void PlanetsListView::initWidgets(void) {
@@ -922,12 +907,7 @@ MainMenuWindow::MainMenuWindow(GuiView *parent, GameState *game) :
 	_width = _bg->width();
 	_height = _bg->height();
 
-	try {
-		initWidgets(pal);
-	} catch (...) {
-		clearWidgets();
-		throw;
-	}
+	initWidgets(pal);
 }
 
 MainMenuWindow::~MainMenuWindow(void) {
