@@ -195,7 +195,7 @@ void GuiSprite::redraw(unsigned x, unsigned y, unsigned curtick) {
 
 Widget::Widget(unsigned x, unsigned y, unsigned width, unsigned height) :
 	_x(x), _y(y), _width(width), _height(height), _state(WSTATE_IDLE),
-	_cursprite(NULL) {
+	_disabled(0), _hidden(0), _cursprite(NULL), _disSprite(NULL) {
 
 	memset(_sprites, 0, WIDGET_SPRITES * sizeof(GuiSprite*));
 }
@@ -206,6 +206,8 @@ Widget::~Widget(void) {
 	for (i = 0; i < WIDGET_SPRITES; i++) {
 		delete _sprites[i];
 	}
+
+	delete _disSprite;
 }
 
 void Widget::setSprite(unsigned state, GuiSprite *sprite) {
@@ -288,6 +290,42 @@ void Widget::setMouseUpCallback(unsigned button, const GuiCallback &callback) {
 	}
 
 	_onMouseUp[button] = callback;
+}
+
+void Widget::setDisabledSprite(GuiSprite *sprite) {
+	GuiSprite *oldsprite = _disSprite;
+
+	_disSprite = sprite;
+
+	if (oldsprite) {
+		if (_disabled) {
+			oldsprite->stopAnimation();
+		}
+
+		oldsprite->discard();
+	}
+
+	if (_disabled && _disSprite) {
+		_disSprite->startAnimation();
+	}
+}
+
+void Widget::setDisabledSprite(Image *img, int frame) {
+	GuiSprite *sprite = new GuiSprite(img, 0, 0, frame);
+
+	try {
+		setDisabledSprite(sprite);
+	} catch (...) {
+		delete sprite;
+		throw;
+	}
+}
+
+void Widget::setDisabledSprite(const char *archive, unsigned id,
+	const uint8_t *palette, int frame) {
+	ImageAsset img = gameAssets->getImage(archive, id, palette);
+
+	setDisabledSprite((Image*)img, frame);
 }
 
 void Widget::setIdleSprite(GuiSprite *sprite) {
@@ -423,7 +461,69 @@ void Widget::handleMouseUp(int x, int y, unsigned button) {
 	changeSprite();
 }
 
+void Widget::disable(int value) {
+	int oldval = _disabled;
+
+	_disabled = value;
+
+	if (_disabled && !oldval) {
+		_state = WSTATE_IDLE;
+		changeSprite();
+
+		if (_disSprite) {
+			if (_cursprite) {
+				_cursprite->stopAnimation();
+			}
+
+			_disSprite->startAnimation();
+		}
+	}
+
+	if (!_disabled && oldval) {
+		if (_disSprite) {
+			_disSprite->stopAnimation();
+		}
+
+		changeSprite();
+	}
+}
+
+void Widget::hide(int value) {
+	int oldval = _hidden;
+
+	_hidden = value;
+
+	if (_hidden && !oldval) {
+		_state = WSTATE_IDLE;
+
+		if (_cursprite) {
+			_cursprite->stopAnimation();
+		}
+	}
+
+	if (!_hidden && oldval) {
+		changeSprite();
+	}
+}
+
+int Widget::isDisabled(void) const {
+	return _disabled;
+}
+
+int Widget::isHidden(void) const {
+	return _hidden;
+}
+
 void Widget::redraw(int x, int y, unsigned curtick) {
+	if (_hidden) {
+		return;
+	}
+
+	if (_disabled && _disSprite) {
+		_disSprite->redraw(x + _x, y + _y, curtick);
+		return;
+	}
+
 	if (_cursprite) {
 		_cursprite->redraw(x + _x, y + _y, curtick);
 	}
@@ -531,8 +631,8 @@ Widget *WidgetContainer::findWidget(int x, int y) {
 	}
 
 	for (i = 0, ptr = _widgets; i < _widgetCount; i++, ptr++) {
-		if ((*ptr)->isInside(x, y)) {
-			return *ptr;
+		if (!(*ptr)->isHidden() && (*ptr)->isInside(x, y)) {
+			return (*ptr)->isDisabled() ? NULL : *ptr;
 		}
 	}
 
@@ -543,7 +643,9 @@ void WidgetContainer::redrawWidgets(int x, int y, unsigned curtick) {
 	size_t i;
 
 	for (i = 0; i < _widgetCount; i++) {
-		_widgets[i]->redraw(x, y, curtick);
+		if (!_widgets[i]->isHidden()) {
+			_widgets[i]->redraw(x, y, curtick);
+		}
 	}
 }
 

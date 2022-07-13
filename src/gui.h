@@ -112,9 +112,10 @@ public:
 class Widget {
 private:
 	unsigned _x, _y, _width, _height, _state;
+	int _disabled, _hidden;
 	GuiCallback _onMouseOver, _onMouseOut, _onMouseMove;
 	GuiCallback _onMouseDown[MBUTTON_COUNT], _onMouseUp[MBUTTON_COUNT];
-	GuiSprite *_cursprite, *_sprites[WIDGET_SPRITES];
+	GuiSprite *_cursprite, *_disSprite, *_sprites[WIDGET_SPRITES];
 
 	// Do NOT implement
 	Widget(const Widget &other);
@@ -142,6 +143,10 @@ public:
 	virtual void setMouseUpCallback(unsigned button,
 		const GuiCallback &callback);
 
+	virtual void setDisabledSprite(GuiSprite *sprite);
+	virtual void setDisabledSprite(Image *img, int frame = ANIM_LOOP);
+	virtual void setDisabledSprite(const char *archive, unsigned id,
+		const uint8_t *palette = NULL, int frame = ANIM_LOOP);
 	virtual void setIdleSprite(GuiSprite *sprite);
 	virtual void setIdleSprite(Image *img, int frame = ANIM_LOOP);
 	virtual void setIdleSprite(const char *archive, unsigned id,
@@ -162,6 +167,11 @@ public:
 	virtual void handleMouseOut(int x, int y, unsigned buttons);
 	virtual void handleMouseDown(int x, int y, unsigned button);
 	virtual void handleMouseUp(int x, int y, unsigned button);
+
+	virtual void disable(int value);
+	virtual void hide(int value);
+	int isDisabled(void) const;
+	int isHidden(void) const;
 
 	virtual void redraw(int x, int y, unsigned curtick);
 };
