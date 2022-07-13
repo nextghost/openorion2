@@ -105,6 +105,11 @@
 
 #define FONT_COLOR_MAX 58
 
+#define RGB(x) (((x) >> 16) & 0xff), (((x) >> 8) & 0xff), ((x) & 0xff)
+#define SRGB(x) 0xff, RGB(x)
+#define RGBA(x, a) ((a) & 0xff), (((x) >> 16) & 0xff), (((x) >> 8) & 0xff), ((x) & 0xff)
+#define TRANSPARENT 0, 0, 0, 0
+
 class Image {
 private:
 	unsigned _width, _height, _frames, _frametime, _flags;
