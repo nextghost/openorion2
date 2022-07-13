@@ -1,8 +1,8 @@
 SOURCE_FILES = galaxy.cpp gamestate.cpp gfx.cpp gui.cpp guimisc.cpp lbx.cpp \
 	main.cpp mainmenu.cpp sdl_events.cpp sdl_screen.cpp sdl_utils.cpp \
-	stream.cpp system.cpp utils.cpp
+	ships.cpp stream.cpp system.cpp utils.cpp
 HEADER_FILES = galaxy.h gamestate.h gfx.h gui.h guimisc.h lang.h lbx.h \
-	mainmenu.h screen.h stream.h system.h utils.h
+	mainmenu.h screen.h ships.h stream.h system.h utils.h
 
 if SYSTEM_UNIX
 SOURCE_FILES += unix.cpp

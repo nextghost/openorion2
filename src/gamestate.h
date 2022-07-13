@@ -72,6 +72,14 @@ const int MAX_SETTLERS				= 25;
 
 #define MAX_PLANET_BGS 3
 
+#define MAX_SHIP_SPRITES 49
+#define SHIPSPRITE_ANTARAN 0
+#define SHIPSPRITE_GUARDIAN 7
+#define SHIPSPRITE_MONSTER 8
+#define SHIPSPRITE_MINIMONSTER 20
+#define MAX_SHIPTYPES_ANTARAN 5
+#define MAX_SHIPTYPES_MONSTER 5
+
 enum MultiplayerType {
 	Single = 0,
 	Hotseat = 1,
