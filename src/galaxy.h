@@ -26,6 +26,60 @@
 #define GALAXY_ZOOM_LEVELS 4
 #define GALAXY_STAR_SIZES 6
 
+class GalaxyMinimapWidget : public Widget {
+private:
+	ImageAsset _bhole, _freestar, _starimg[MAX_PLAYERS];
+	ImageAsset _fleetimg[MAX_FLEET_OWNERS];
+	GuiCallback _onStarHighlight, _onStarSelect;
+	GuiCallback _onFleetHighlight, _onFleetSelect;
+	GameState *_game;
+	Fleet *_curFleet, *_selFleet;
+	unsigned _startTick;
+	int _curStar, _selStar, _activePlayer;
+
+protected:
+	unsigned starX(unsigned x);
+	unsigned starY(unsigned y);
+	unsigned fleetX(const Fleet *f);
+	unsigned fleetY(const Fleet *f);
+	const Image *getFleetSprite(const Fleet *f);
+	const Image *getStarSprite(const Star *s);
+
+	void drawFleet(int x, int y, const Fleet *f,
+		unsigned curtick);
+	void drawStar(int x, int y, const Star *s, unsigned curtick);
+
+	void findObject(unsigned x, unsigned y, int *rstar, Fleet **rfleet);
+	int touchesFleet(unsigned x, unsigned y, const Fleet *f);
+
+public:
+	GalaxyMinimapWidget(unsigned x, unsigned y, unsigned width,
+		unsigned height, GameState *game, int activePlayer,
+		const char *archive, unsigned starAssets, unsigned fleetAssets,
+		const uint8_t *palette = NULL);
+	~GalaxyMinimapWidget(void);
+
+	Fleet *highlightedFleet(void);
+	Fleet *selectedFleet(void);
+	int highlightedStar(void);
+	int selectedStar(void);
+
+	void highlightFleet(Fleet *f);
+	void selectFleet(Fleet *f);
+	void highlightStar(int id);
+	void selectStar(int id);
+
+	void setStarHighlightCallback(const GuiCallback &callback);
+	void setStarSelectCallback(const GuiCallback &callback);
+	void setFleetHighlightCallback(const GuiCallback &callback);
+	void setFleetSelectCallback(const GuiCallback &callback);
+
+	void handleMouseMove(int x, int y, unsigned buttons);
+	void handleMouseUp(int x, int y, unsigned button);
+
+	void redraw(int x, int y, unsigned curtick);
+};
+
 class GalaxyView : public GuiView {
 private:
 	ImageAsset _bg, _gui, _starimg[STAR_TYPE_COUNT][GALAXY_STAR_SIZES];

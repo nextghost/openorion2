@@ -24,6 +24,8 @@
 #include "lang.h"
 #include "galaxy.h"
 
+#define STARSEL_FRAMECOUNT 6
+
 #define GALAXY_ARCHIVE "buffer0.lbx"
 #define ASSET_GALAXY_GUI 0
 #define ASSET_GALAXY_GAME_BUTTON 1
@@ -99,6 +101,11 @@
 #define STRING_PLANET_LIST_SIZE_LARGE 359
 #define STRING_PLANET_LIST_SIZE_HUGE 322
 
+static const uint8_t minimapStarSelColors[STARSEL_FRAMECOUNT * 3] = {
+	RGB(0x043804), RGB(0x004c00), RGB(0x006000), RGB(0x087008),
+	RGB(0x2c8024), RGB(0x489038)
+};
+
 const unsigned galaxySizeFactors[] = {10, 15, 20, 30, 0};
 static const unsigned galaxy_fontanim[GALAXY_ANIM_LENGTH] = {
 	1, 2, 3, 4, 3, 2, 1, 0
@@ -135,6 +142,365 @@ const int sizesMap[5] = {
 	STRING_PLANET_LIST_SIZE_LARGE,
 	STRING_PLANET_LIST_SIZE_HUGE
 };
+
+GalaxyMinimapWidget::GalaxyMinimapWidget(unsigned x, unsigned y,
+	unsigned width, unsigned height, GameState *game, int activePlayer,
+	const char *archive, unsigned starAssets, unsigned fleetAssets,
+	const uint8_t *palette) : Widget(x, y, width, height), _game(game),
+	_curFleet(NULL), _selFleet(NULL), _startTick(0), _curStar(-1),
+	_selStar(-1), _activePlayer(activePlayer) {
+
+	unsigned i;
+
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		_starimg[i] = gameAssets->getImage(archive, starAssets + i,
+			palette);
+	}
+
+	_freestar = gameAssets->getImage(archive, starAssets + MAX_PLAYERS,
+		palette);
+	_bhole = gameAssets->getImage(archive, starAssets + MAX_PLAYERS + 2,
+		palette);
+
+	for (i = 0; i < MAX_FLEET_OWNERS; i++) {
+		_fleetimg[i] = gameAssets->getImage(archive, fleetAssets + i,
+			palette);
+	}
+}
+
+GalaxyMinimapWidget::~GalaxyMinimapWidget(void) {
+
+}
+
+unsigned GalaxyMinimapWidget::starX(unsigned x) {
+	return getX() + (x * width()) / _game->_galaxy.width;
+}
+
+unsigned GalaxyMinimapWidget::starY(unsigned y) {
+	return getY() + (y * height()) / _game->_galaxy.height;
+}
+
+unsigned GalaxyMinimapWidget::fleetX(const Fleet *f) {
+	unsigned ret = starX(f->getX());
+	const Image *img;
+
+	switch (f->getStatus()) {
+	case ShipState::InOrbit:
+		return ret + 1;
+
+	case ShipState::LeavingOrbit:
+		img = getFleetSprite(f);
+		return ret - img->width();
+
+	case ShipState::InTransit:
+		img = getFleetSprite(f);
+		return ret - img->width() / 2;
+
+	default:
+		throw std::runtime_error("Invalid fleet state");
+	}
+}
+
+unsigned GalaxyMinimapWidget::fleetY(const Fleet *f) {
+	unsigned ret = starY(f->getY());
+	const Image *img;
+
+	switch (f->getStatus()) {
+	case ShipState::InOrbit:
+	case ShipState::LeavingOrbit:
+		return ret - 10;
+
+	case ShipState::InTransit:
+		img = getFleetSprite(f);
+		return ret - img->height() / 2;
+
+	default:
+		throw std::runtime_error("Invalid fleet state");
+	}
+}
+
+const Image *GalaxyMinimapWidget::getFleetSprite(const Fleet *f) {
+	unsigned cls = f->getOwner();
+
+	if (cls < MAX_PLAYERS) {
+		cls = _game->_players[cls].color;
+	}
+
+	return (const Image*)_fleetimg[cls];
+}
+
+const Image *GalaxyMinimapWidget::getStarSprite(const Star *s) {
+	unsigned color;
+
+	if (s->spectralClass == BlackHole) {
+		return (Image*)_bhole;
+	} else if (s->owner < 0) {
+		return (Image*)_freestar;
+	}
+
+	// FIXME: handle unexplored stars
+	color = _game->_players[s->owner].color;
+	return (Image*)_starimg[color];
+}
+
+void GalaxyMinimapWidget::drawFleet(int x, int y, const Fleet *f,
+	unsigned curtick) {
+
+	unsigned frame = 0;
+	const Image *img = getFleetSprite(f);
+
+	if (f == _selFleet) {
+		frame = (curtick - _startTick) / 60;
+		frame %= img->frameCount();
+	}
+
+	img->draw(x + fleetX(f), y + fleetY(f), frame);
+}
+
+void GalaxyMinimapWidget::drawStar(int x, int y, const Star *s,
+	unsigned curtick) {
+
+	unsigned frame = 0;
+	const Star *selptr, *curptr;
+	const Image *img = getStarSprite(s);
+	const uint8_t *color;
+
+	selptr = _selStar < 0 ? NULL : _game->_starSystems + _selStar;
+	curptr = _curStar < 0 ? NULL : _game->_starSystems + _curStar;
+	x += starX(s->x);
+	y += starY(s->y);
+
+	img->draw(x - img->width() / 2, y - img->height() / 2, frame);
+
+	if (s == selptr) {
+		frame = (curtick - _startTick) / 200;
+		frame %= 2 * STARSEL_FRAMECOUNT - 1;
+
+		if (frame >= STARSEL_FRAMECOUNT) {
+			frame = 2 * STARSEL_FRAMECOUNT - frame - 1;
+		}
+
+		color = minimapStarSelColors + frame * 3;
+		drawRect(x - 5, y - 5, 11, 11, color[0], color[1], color[2]);
+	} else if (s == curptr) {
+		drawRect(x - 5, y - 5, 11, 11, RGB(0x006000));
+	}
+}
+
+void GalaxyMinimapWidget::findObject(unsigned x, unsigned y, int *rstar,
+	Fleet **rfleet) {
+
+	unsigned i, px, py;
+	const BilistNode<Fleet> *fnode;
+
+	*rstar = -1;
+	*rfleet = NULL;
+	fnode = _game->getMovingFleets();
+
+	for (; fnode; fnode = fnode->next()) {
+		if (!fnode->data) {
+			continue;
+		}
+
+		if (touchesFleet(x, y, fnode->data)) {
+			*rfleet = fnode->data;
+			return;
+		}
+	}
+
+	for (i = 0; i < _game->_starSystemCount; i++) {
+		const Star *ptr = _game->_starSystems + i;
+
+		fnode = ptr->getOrbitingFleets();
+
+		if (fnode && fnode->data && touchesFleet(x, y,
+			fnode->data)) {
+
+			*rfleet = fnode->data;
+			return;
+		}
+
+		fnode = ptr->getLeavingFleets();
+
+		if (fnode && fnode->data && touchesFleet(x, y,
+			fnode->data)) {
+
+			*rfleet = fnode->data;
+			return;
+		}
+
+		px = starX(ptr->x);
+		py = starY(ptr->y);
+
+		if (isInRect(x, y, px - 4, py - 4, 9, 9)) {
+			*rstar = i;
+			return;
+		}
+	}
+}
+
+int GalaxyMinimapWidget::touchesFleet(unsigned x, unsigned y, const Fleet *f) {
+	unsigned fx, fy;
+	const Image *img;
+
+	img = getFleetSprite(f);
+	fx = fleetX(f);
+	fy = fleetY(f);
+
+	return isInRect(x, y, fx, fy, img->width(), img->height());
+}
+
+Fleet *GalaxyMinimapWidget::highlightedFleet(void) {
+	return _curFleet;
+}
+
+Fleet *GalaxyMinimapWidget::selectedFleet(void) {
+	return _selFleet;
+}
+
+int GalaxyMinimapWidget::highlightedStar(void) {
+	return _curStar;
+}
+
+int GalaxyMinimapWidget::selectedStar(void) {
+	return _selStar;
+}
+
+void GalaxyMinimapWidget::highlightFleet(Fleet *f) {
+	_curStar = -1;
+	_curFleet = f;
+}
+
+void GalaxyMinimapWidget::selectFleet(Fleet *f) {
+	_selFleet = f;
+	_startTick = 0;
+}
+
+void GalaxyMinimapWidget::highlightStar(int id) {
+	if (id >= _game->_starSystemCount) {
+		throw std::invalid_argument("Star ID out of range");
+	}
+
+	_curFleet = NULL;
+	_curStar = id;
+}
+
+void GalaxyMinimapWidget::selectStar(int id) {
+	if (id >= _game->_starSystemCount) {
+		throw std::invalid_argument("Star ID out of range");
+	}
+
+	_selStar = id;
+	_startTick = 0;
+}
+
+void GalaxyMinimapWidget::setStarHighlightCallback(
+	const GuiCallback &callback) {
+
+	_onStarHighlight = callback;
+}
+
+void GalaxyMinimapWidget::setStarSelectCallback(const GuiCallback &callback) {
+	_onStarSelect = callback;
+}
+
+void GalaxyMinimapWidget::setFleetHighlightCallback(
+	const GuiCallback &callback) {
+
+	_onFleetHighlight = callback;
+}
+
+void GalaxyMinimapWidget::setFleetSelectCallback(const GuiCallback &callback) {
+	_onFleetSelect = callback;
+}
+
+void GalaxyMinimapWidget::handleMouseMove(int x, int y, unsigned buttons) {
+	Fleet *f = NULL;
+	int star = -1;
+
+	findObject(x, y, &star, &f);
+
+	if (f && f != _curFleet) {
+		highlightFleet(f);
+		_onFleetHighlight(x, y);
+		return;
+	}
+
+	if (star >= 0 && star != _curStar &&
+		_game->_starSystems[star].spectralClass != BlackHole) {
+		highlightStar(star);
+		_onStarHighlight(x, y);
+		return;
+	}
+
+	Widget::handleMouseMove(x, y, buttons);
+}
+
+void GalaxyMinimapWidget::handleMouseUp(int x, int y, unsigned button) {
+	Fleet *f = NULL;
+	int star = -1;
+
+	if (button != MBUTTON_LEFT) {
+		Widget::handleMouseUp(x, y, button);
+		return;
+	}
+
+	findObject(x, y, &star, &f);
+
+	if (f) {
+		selectFleet(f);
+		_onFleetSelect(x, y);
+		return;
+	}
+
+	if (star >= 0) {
+		selectStar(star);
+		_onStarSelect(x, y);
+		return;
+	}
+
+	Widget::handleMouseUp(x, y, button);
+}
+
+void GalaxyMinimapWidget::redraw(int x, int y, unsigned curtick) {
+	unsigned i;
+	const BilistNode<Fleet> *fnode;
+
+	if (isHidden()) {
+		return;
+	}
+
+	if (!_startTick) {
+		_startTick = curtick;
+	}
+
+	for (i = 0; i < _game->_starSystemCount; i++) {
+		const Star *ptr = _game->_starSystems + i;
+
+		drawStar(x, y, ptr, curtick);
+
+		// FIXME: draw draw up to 3 fleets from both groups
+		fnode = ptr->getOrbitingFleets();
+
+		if (fnode && fnode->data) {
+			drawFleet(x, y, fnode->data, curtick);
+		}
+
+		fnode = ptr->getLeavingFleets();
+
+		if (fnode && fnode->data) {
+			drawFleet(x, y, fnode->data, curtick);
+		}
+	}
+
+	for (fnode = _game->getMovingFleets(); fnode; fnode = fnode->next()) {
+		if (!fnode->data) {
+			continue;
+		}
+
+		drawFleet(x, y, fnode->data, curtick);
+	}
+}
 
 GalaxyView::GalaxyView(GameState *game) : _game(game), _zoom(0), _zoomX(0),
 	_zoomY(0), _startTick(0), _activePlayer(-1) {
