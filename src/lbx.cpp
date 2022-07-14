@@ -307,7 +307,7 @@ void TextManager::StringList::loadAsset(const char *filename,
 	newsize = asset->readUint16LE();
 	bufsize = asset->readUint16LE();
 
-	if (asset->size() < newsize * bufsize + 4) {
+	if (asset->size() < long(newsize * bufsize + 4)) {
 		delete asset;
 		throw std::runtime_error("Premature end of asset data");
 	}
@@ -441,7 +441,7 @@ void TextManager::loadDiplomsg(unsigned lang_id) {
 				continue;
 			}
 
-			if (asset->size() < 6 + size * DIPLOMSG_BUFSIZE) {
+			if (asset->size() < long(6 + size * DIPLOMSG_BUFSIZE)) {
 				throw std::runtime_error(
 					"Premature end of asset data");
 			}
@@ -484,7 +484,7 @@ void TextManager::loadHelp(unsigned lang_id) {
 			throw std::runtime_error("Invalid help data format");
 		}
 
-		if (asset->size() < count * size + 4) {
+		if (asset->size() < long(count * size + 4)) {
 			throw std::runtime_error("Premature end of asset data");
 		}
 
@@ -522,7 +522,7 @@ void TextManager::loadHelp(unsigned lang_id) {
 					"Invalid help index format");
 			}
 
-			if (asset->size() < count * size + 4) {
+			if (asset->size() < long(count * size + 4)) {
 				throw std::runtime_error(
 					"Premature end of asset data");
 			}
