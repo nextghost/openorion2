@@ -195,6 +195,50 @@ public:
 	void handleMouseUp(int x, int y, unsigned button);
 };
 
+class ScrollBarWidget : public Widget {
+private:
+	GuiCallback _onBeginScroll, _onScroll, _onEndScroll;
+	unsigned _position, _step, _pagesize, _range;
+	unsigned _slidePos, _slideLength;	// rendering info
+	int _grabOffset;	// mouse grab position on slider
+	uint8_t *_texture;
+
+protected:
+	unsigned slideWidth(void) const;
+	unsigned pixelRange(void) const;
+	void updateSlide(void);
+
+public:
+	// Slider will be MIN(width, height) pixels wide and texture must
+	// contain that many RGB triplets. If width < height, scroll bar
+	// will be vertical, otherwise it'll be horizontal.
+	ScrollBarWidget(unsigned x, unsigned y, unsigned width,
+		unsigned height, unsigned pagesize, unsigned range,
+		const uint8_t *texture);
+	~ScrollBarWidget(void);
+
+	void setPosition(unsigned position);
+	void setStep(unsigned step);
+	void setRange(unsigned range);
+	unsigned position(void) const;
+	unsigned step(void) const;
+	unsigned pagesize(void) const;
+	unsigned range(void) const;
+
+	void setBeginScrollCallback(const GuiCallback &callback);
+	void setScrollCallback(const GuiCallback &callback);
+	void setEndScrollCallback(const GuiCallback &callback);
+
+	void handleMouseMove(int x, int y, unsigned buttons);
+	void handleMouseDown(int x, int y, unsigned button);
+	void handleMouseUp(int x, int y, unsigned button);
+
+	void scrollMinus(int x, int y, int arg);
+	void scrollPlus(int x, int y, int arg);
+
+	void redraw(int x, int y, unsigned curtick);
+};
+
 class WidgetContainer : public Recyclable {
 private:
 	Widget **_widgets;

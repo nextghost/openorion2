@@ -35,6 +35,9 @@
 #define MIN_FRAMETIME 10
 #define DEFAULT_FRAMETIME 15
 
+#define SCROLLBAR_MIN_WIDTH 2
+#define SCROLLBAR_MIN_LENGTH 10
+
 #define LINE_SPACING 3
 
 ViewStack *gui_stack = NULL;
@@ -578,6 +581,222 @@ void ToggleWidget::handleMouseUp(int x, int y, unsigned button) {
 	}
 
 	Widget::handleMouseUp(x, y, button);
+}
+
+ScrollBarWidget::ScrollBarWidget(unsigned x, unsigned y, unsigned width,
+	unsigned height, unsigned pagesize, unsigned range,
+	const uint8_t *texture) : Widget(x, y, width, height), _position(0),
+	_step(1), _pagesize(pagesize), _range(range), _slidePos(0),
+	_slideLength(10), _grabOffset(-1), _texture(NULL) {
+
+	unsigned size = 3 * (width < height ? width : height);
+
+	if (width < SCROLLBAR_MIN_WIDTH || height < SCROLLBAR_MIN_WIDTH) {
+		throw std::invalid_argument("Scrollbar width is too narrow");
+	}
+
+	if (width < SCROLLBAR_MIN_LENGTH && height < SCROLLBAR_MIN_LENGTH) {
+		throw std::invalid_argument("Scrollbar length is too short");
+	}
+
+	if (!pagesize) {
+		throw std::invalid_argument("Page size must not be zero");
+	}
+
+	_texture = new uint8_t[size];
+	memcpy(_texture, texture, size * sizeof(uint8_t));
+	setRange(range);
+}
+
+ScrollBarWidget::~ScrollBarWidget(void) {
+	delete[] _texture;
+}
+
+unsigned ScrollBarWidget::slideWidth(void) const {
+	unsigned w = width(), h = height();
+
+	return w < h ? w : h;
+}
+
+unsigned ScrollBarWidget::pixelRange(void) const {
+	unsigned w = width(), h = height();
+
+	return w < h ? h : w;
+}
+
+void ScrollBarWidget::updateSlide(void) {
+	unsigned pos = _position * (pixelRange() - _slideLength);
+
+	_slidePos = _range > 0 ? pos / _range : 0;
+}
+
+void ScrollBarWidget::setPosition(unsigned position) {
+	if (position > _range) {
+		throw std::out_of_range("Position is out of range");
+	}
+
+	_position = position;
+	updateSlide();
+}
+
+void ScrollBarWidget::setStep(unsigned step) {
+	if (!step) {
+		throw std::invalid_argument("Step must not be zero");
+	}
+
+	_step = step;
+}
+
+void ScrollBarWidget::setRange(unsigned range) {
+	unsigned tmp;
+
+	_position = _slidePos = 0;
+	_range = range > _pagesize ? range - _pagesize : 0;
+	tmp = pixelRange() / (_range + 1);
+	_slideLength = tmp < SCROLLBAR_MIN_LENGTH ? SCROLLBAR_MIN_LENGTH : tmp;
+	_onScroll(0, 0);
+}
+
+unsigned ScrollBarWidget::position(void) const {
+	return _position;
+}
+
+unsigned ScrollBarWidget::step(void) const {
+	return _step;
+}
+
+unsigned ScrollBarWidget::pagesize(void) const {
+	return _pagesize;
+}
+
+unsigned ScrollBarWidget::range(void) const {
+	return _range + _pagesize;
+}
+
+void ScrollBarWidget::setBeginScrollCallback(const GuiCallback &callback) {
+	_onBeginScroll = callback;
+}
+
+void ScrollBarWidget::setScrollCallback(const GuiCallback &callback) {
+	_onScroll = callback;
+}
+
+void ScrollBarWidget::setEndScrollCallback(const GuiCallback &callback) {
+	_onEndScroll = callback;
+}
+
+void ScrollBarWidget::handleMouseMove(int x, int y, unsigned buttons) {
+	unsigned w, h;
+	int pos, len;
+
+	// User released left mouse button outside the scrollbar,
+	// release slider grab
+	if (_grabOffset >= 0 && !(buttons & (1 << MBUTTON_LEFT))) {
+		handleMouseUp(x, y, MBUTTON_LEFT);
+	}
+
+	if (_grabOffset >= 0) {
+		// Note: x and y may be outside the scroll bar widget here
+		w = width();
+		h = height();
+		len = pixelRange() - _slideLength;
+		pos = w < h ? y - getY() : x - getX();
+		pos = pos < _grabOffset ? 0 : pos - _grabOffset;
+		pos = pos > len ? len : pos;
+		_slidePos = pos;
+		pos += _range > 0 ? len / (2 * _range) : 0;
+		pos = len > 0 ? (pos * _range) / len : 0;
+		_position = unsigned(pos) > _range ? _range : pos;
+		_onScroll(x, y);
+	}
+
+	Widget::handleMouseMove(x, y, buttons);
+}
+
+void ScrollBarWidget::handleMouseDown(int x, int y, unsigned button) {
+	unsigned len, w = width(), h = height();
+	unsigned pos = w < h ? y - getY() : x - getX();
+
+	if (button != MBUTTON_LEFT) {
+		Widget::handleMouseDown(x, y, button);
+		return;
+	}
+
+	// clicked on slider, grab it
+	if (pos >= _slidePos && pos < _slidePos + _slideLength) {
+		_grabOffset = pos - _slidePos;
+		_onBeginScroll(x, y);
+		return;
+	}
+
+	// clicked outside the slider, jump to that position
+	len = pixelRange() - _slideLength;
+	pos = len > 0 ? (pos * _range) / len : 0;
+	_position = pos > _range ? _range : pos;
+	updateSlide();
+	_onScroll(x, y);
+}
+
+void ScrollBarWidget::handleMouseUp(int x, int y, unsigned button) {
+	if (button != MBUTTON_LEFT || _grabOffset < 0) {
+		Widget::handleMouseUp(x, y, button);
+		return;
+	}
+
+	_grabOffset = -1;
+	updateSlide();	// snap slider back to discrete position
+	_onEndScroll(x, y);
+	// _position did not change, no need to call _onScroll()
+}
+
+void ScrollBarWidget::scrollMinus(int x, int y, int arg) {
+	_position = _position > _step ? _position - _step : 0;
+	updateSlide();
+	_onScroll(x, y);
+}
+
+void ScrollBarWidget::scrollPlus(int x, int y, int arg) {
+	unsigned pos = _position + _step;
+
+	_position = pos > _range ? _range : pos;
+	updateSlide();
+	_onScroll(x, y);
+}
+
+void ScrollBarWidget::redraw(int x, int y, unsigned curtick) {
+	unsigned i, thickness, dx, dy, swidth, sheight, ewidth, eheight;
+	const uint8_t *color = _texture;
+
+	x += getX();
+	y += getY();
+
+	if (width() < height()) {
+		thickness = width();
+		dx = swidth = eheight = 1;
+		dy = 0;
+		sheight = _slideLength;
+		ewidth = thickness - 2;
+		y += _slidePos;
+	} else {
+		thickness = height();
+		dx = 0;
+		dy = sheight = ewidth = 1;
+		swidth = _slideLength;
+		eheight = thickness - 2;
+		x += _slidePos;
+	}
+
+	for (i = 0; i < thickness; i++, color += 3) {
+		drawRect(x + i * dx, y + i * dy, swidth, sheight, color[0],
+			color[1], color[2]);
+	}
+
+	color -= 3;
+	drawRect(x + dx, y + dy, ewidth, eheight, _texture[0], _texture[1],
+		_texture[2]);
+	drawRect(x + dx + dy * (_slideLength - 1),
+		y + dy + dx * (_slideLength - 1), ewidth, eheight,
+		color[0], color[1], color[2]);
 }
 
 WidgetContainer::WidgetContainer(void) : _widgets(NULL), _widgetCount(0),
