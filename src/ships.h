@@ -93,10 +93,10 @@ private:
 	GameState *_game;
 	GalaxyMinimapWidget *_minimap;
 	ShipGridWidget *_grid;
+	ScrollBarWidget *_scroll;
 	Widget *_allButton, *_scrapButton;
 	ToggleWidget *_supportToggle, *_combatToggle;
-	unsigned _scroll;
-	int _activePlayer;
+	int _scrollgrab, _activePlayer;
 
 	void initWidgets(void);
 
@@ -110,15 +110,21 @@ protected:
 	void filterCombat(int x, int y, int arg);
 	void filterSupport(int x, int y, int arg);
 
+	void handleBeginScroll(int x, int y, int arg);
+	void handleScroll(int x, int y, int arg);
+	void handleEndScroll(int x, int y, int arg);
+	void updateScrollbar(void);
+
 public:
 	FleetListView(GameState *game, int activePlayer);
 	~FleetListView(void);
 
 	void redraw(unsigned curtick);
 
+	void handleMouseMove(int x, int y, unsigned buttons);
+	void handleMouseUp(int x, int y, unsigned buttons);
+
 	void showHelp(int x, int y, int arg);
-	void clickScrollUp(int x, int y, int arg);
-	void clickScrollDown(int x, int y, int arg);
 	void clickPrevFleet(int x, int y, int arg);
 	void clickNextFleet(int x, int y, int arg);
 	void clickAllButton(int x, int y, int arg);

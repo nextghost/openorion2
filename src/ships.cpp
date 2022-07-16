@@ -57,9 +57,17 @@
 #define PALSPRITE_AMOEBA 418
 #define PALSPRITE_GUARDIAN 419
 
+#define FLEETLIST_SCROLL_WIDTH 10
+
 static const unsigned monster_palettes[MAX_SHIPTYPES_MONSTER] = {
 	PALSPRITE_AMOEBA, PALSPRITE_CRYSTAL, PALSPRITE_DRAGON, PALSPRITE_EEL,
 	PALSPRITE_HYDRA
+};
+
+static const uint8_t fleetlistScrollTexture[FLEETLIST_SCROLL_WIDTH * 3] = {
+	RGB(0x0000dc), RGB(0x0000dc), RGB(0x0000b4), RGB(0x0000b4),
+	RGB(0x0c0888), RGB(0x0c0888), RGB(0x00006c), RGB(0x00006c),
+	RGB(0x080850), RGB(0x080850)
 };
 
 ShipAssets::ShipAssets(const GameState *game) : _game(game) {
@@ -397,9 +405,9 @@ void ShipGridWidget::redraw(int x, int y, unsigned curtick) {
 }
 
 FleetListView::FleetListView(GameState *game, int activePlayer) :
-	_game(game), _minimap(NULL), _grid(NULL), _allButton(NULL),
-	_scrapButton(NULL), _supportToggle(NULL), _combatToggle(NULL),
-	_scroll(0), _activePlayer(activePlayer) {
+	_game(game), _minimap(NULL), _grid(NULL), _scroll(NULL),
+	_allButton(NULL), _scrapButton(NULL), _supportToggle(NULL),
+	_combatToggle(NULL), _scrollgrab(0), _activePlayer(activePlayer) {
 
 	ImageAsset palimg;
 	const uint8_t *pal;
@@ -447,9 +455,22 @@ void FleetListView::initWidgets(void) {
 		GuiMethod(*this, &FleetListView::showHelp,
 		HELP_FLEET_SHIP_GRID));
 
+	_scroll = new ScrollBarWidget(607, 89, FLEETLIST_SCROLL_WIDTH, 229,
+		5, 5, fleetlistScrollTexture);
+	addWidget(_scroll);
+	_scroll->setBeginScrollCallback(GuiMethod(*this,
+		&FleetListView::handleBeginScroll));
+	_scroll->setScrollCallback(GuiMethod(*this,
+		&FleetListView::handleScroll));
+	_scroll->setEndScrollCallback(GuiMethod(*this,
+		&FleetListView::handleEndScroll));
+	_scroll->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &FleetListView::showHelp,
+		HELP_FLEET_SCROLLBAR));
+
 	w = createWidget(606, 59, 13, 24);
 	w->setMouseUpCallback(MBUTTON_LEFT,
-		GuiMethod(*this, &FleetListView::clickScrollUp));
+		GuiMethod(*_scroll, &ScrollBarWidget::scrollMinus));
 	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
 		ASSET_FLEET_SCROLL_UP_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
@@ -458,7 +479,7 @@ void FleetListView::initWidgets(void) {
 
 	w = createWidget(605, 325, 14, 25);
 	w->setMouseUpCallback(MBUTTON_LEFT,
-		GuiMethod(*this, &FleetListView::clickScrollDown));
+		GuiMethod(*_scroll, &ScrollBarWidget::scrollPlus));
 	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
 		ASSET_FLEET_SCROLL_DOWN_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
@@ -577,8 +598,6 @@ void FleetListView::fleetSelectionChanged(int x, int y, int arg) {
 	}
 
 	_grid->setFleet(f, select);
-	_scroll = 0;
-	_grid->setScroll(_scroll);
 
 	if (!_grid->visibleShipCount()) {
 		if (f->combatCount()) {
@@ -592,6 +611,7 @@ void FleetListView::fleetSelectionChanged(int x, int y, int arg) {
 	}
 
 	_allButton->disable(!select || !_grid->visibleShipCount());
+	updateScrollbar();
 	shipHighlightChanged(0, 0, 0);
 	shipSelectionChanged(0, 0, 0);
 }
@@ -621,6 +641,7 @@ void FleetListView::filterCombat(int x, int y, int arg) {
 	_grid->setFilter(combat, support);
 	_allButton->disable(f->getOwner() != _activePlayer ||
 		!_grid->visibleShipCount());
+	updateScrollbar();
 	shipHighlightChanged(0, 0, 0);
 	shipSelectionChanged(0, 0, 0);
 }
@@ -642,8 +663,28 @@ void FleetListView::filterSupport(int x, int y, int arg) {
 	_grid->setFilter(combat, support);
 	_allButton->disable(f->getOwner() != _activePlayer ||
 		!_grid->visibleShipCount());
+	updateScrollbar();
 	shipHighlightChanged(0, 0, 0);
 	shipSelectionChanged(0, 0, 0);
+}
+
+void FleetListView::handleBeginScroll(int x, int y, int arg) {
+	_scrollgrab = 1;
+}
+
+void FleetListView::handleScroll(int x, int y, int arg) {
+	_grid->setScroll(_scroll->position());
+}
+
+void FleetListView::handleEndScroll(int x, int y, int arg) {
+	_scrollgrab = 0;
+	handleMouseMove(x, y, 0);	// force active widget lookup
+}
+
+void FleetListView::updateScrollbar(void) {
+	unsigned cols = _grid->cols();
+
+	_scroll->setRange((_grid->visibleShipCount() + cols - 1) / cols);
 }
 
 void FleetListView::redraw(unsigned curtick) {
@@ -654,19 +695,26 @@ void FleetListView::redraw(unsigned curtick) {
 	redrawWindows(curtick);
 }
 
+void FleetListView::handleMouseMove(int x, int y, unsigned buttons) {
+	if (_scrollgrab) {
+		_scroll->handleMouseMove(x, y, buttons);
+		return;
+	}
+
+	GuiView::handleMouseMove(x, y, buttons);
+}
+
+void FleetListView::handleMouseUp(int x, int y, unsigned button) {
+	if (_scrollgrab) {
+		_scroll->handleMouseUp(x, y, button);
+		return;
+	}
+
+	GuiView::handleMouseUp(x, y, button);
+}
+
 void FleetListView::showHelp(int x, int y, int arg) {
 	new MessageBoxWindow(this, arg, _bg->palette());
-}
-
-void FleetListView::clickScrollUp(int x, int y, int arg) {
-	if (_scroll > 0) {
-		_scroll--;
-		_grid->setScroll(_scroll);
-	}
-}
-
-void FleetListView::clickScrollDown(int x, int y, int arg) {
-	_grid->setScroll(++_scroll);
 }
 
 void FleetListView::clickPrevFleet(int x, int y, int arg) {
