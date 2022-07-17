@@ -502,8 +502,31 @@ void ShipDesign::load(ReadStream &stream) {
 }
 
 void ShipDesign::validate(void) const {
+	unsigned monster;
+
 	if (type > OUTPOST_SHIP || type == BAD_SHIP_TYPE) {
 		throw std::out_of_range("Invalid ship type");
+	}
+
+	if (builder >= MAX_FLEET_OWNERS) {
+		throw std::out_of_range("Invalid ship builder");
+	}
+
+	if (picture >= MAX_SHIP_SPRITES) {
+		throw std::out_of_range("Invalid ship sprite");
+	}
+
+	if (builder == MAX_PLAYERS && picture >= MAX_SHIPTYPES_ANTARAN) {
+		throw std::out_of_range("Invalid antaran ship sprite");
+	}
+
+	if (builder > MAX_PLAYERS) {
+		monster = builder - MAX_PLAYERS - 1;
+
+		if ((picture != SHIPSPRITE_GUARDIAN + monster) && (!monster ||
+			picture != SHIPSPRITE_MINIMONSTER + monster - 1)) {
+			throw std::runtime_error("Invalid monster sprite");
+		}
 	}
 }
 
@@ -661,12 +684,18 @@ void Player::load(SeekableReadStream &stream) {
 }
 
 void Player::validate(void) const {
+	unsigned i;
+
 	if (picture >= RACE_COUNT) {
 		throw std::out_of_range("Player has invalid race ID");
 	}
 
 	if (color >= PLAYER_COUNT) {
 		throw std::out_of_range("Player has invalid color ID");
+	}
+
+	for (i = 0; i < MAX_PLAYER_BLUEPRINTS; i++) {
+		blueprints[i].validate();
 	}
 }
 
@@ -1206,6 +1235,12 @@ void GameState::validate(void) const {
 	// Validate players
 	for (i = 0; i < _playerCount; i++) {
 		_players[i].validate();
+
+		for (j = 0; j < MAX_PLAYER_BLUEPRINTS; j++) {
+			if (_players[i].blueprints[j].builder != i) {
+				throw std::runtime_error("Wrong blueprint builder");
+			}
+		}
 
 		for (j = 0; j < MAX_PLAYERS; j++) {
 			if ((j < _playerCount && !_players[i].eliminated) ||
