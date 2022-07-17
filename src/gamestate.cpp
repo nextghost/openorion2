@@ -23,6 +23,8 @@
 
 #define COLONY_COUNT_OFFSET 0x25b
 
+const unsigned galaxySizeFactors[GALAXY_ZOOM_LEVELS] = {10, 15, 20, 30};
+
 GameConfig::GameConfig(void) {
 	version = 0;
 	memset(saveGameName, 0, SAVE_GAME_NAME_SIZE);
@@ -72,7 +74,9 @@ void Nebula::load(ReadStream &stream) {
 	x = stream.readUint16LE();
 	y = stream.readUint16LE();
 	type = stream.readUint8();
+}
 
+void Nebula::validate(void) const {
 	if (type >= NEBULA_TYPE_COUNT) {
 		throw std::runtime_error("Invalid nebula type");
 	}
@@ -94,9 +98,31 @@ void Galaxy::load(ReadStream &stream) {
 	}
 
 	nebulaCount = stream.readUint8();
+}
+
+void Galaxy::validate(void) const {
+	unsigned i;
 
 	if (nebulaCount > MAX_NEBULAS) {
 		throw std::runtime_error("Invalid nebula count");
+	}
+
+	for (i = 0; i < GALAXY_ZOOM_LEVELS; i++) {
+		if (sizeFactor == galaxySizeFactors[i]) {
+			break;
+		}
+	}
+
+	if (i >= GALAXY_ZOOM_LEVELS) {
+		throw std::runtime_error("Invalid galaxy size factor");
+	}
+
+	for (i = 0; i < nebulaCount; i++) {
+		nebulas[i].validate();
+
+		if (nebulas[i].x >= width || nebulas[i].y >= height) {
+			throw std::runtime_error("Nebula outside galaxy area");
+		}
 	}
 }
 
@@ -1134,6 +1160,8 @@ void GameState::validate(void) const {
 	if (_shipCount > MAX_SHIPS) {
 		throw std::out_of_range("Invalid star system count");
 	}
+
+	_galaxy.validate();
 
 	// Validate star systems
 	for (i = 0; i < _starSystemCount; i++) {

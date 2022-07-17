@@ -107,7 +107,6 @@ static const uint8_t minimapStarSelColors[STARSEL_FRAMECOUNT * 3] = {
 	RGB(0x2c8024), RGB(0x489038)
 };
 
-const unsigned galaxySizeFactors[] = {10, 15, 20, 30, 0};
 static const unsigned galaxy_fontanim[GALAXY_ANIM_LENGTH] = {
 	1, 2, 3, 4, 3, 2, 1, 0
 };
@@ -510,14 +509,14 @@ GalaxyView::GalaxyView(GameState *game) : _game(game), _zoom(0), _zoomX(0),
 	const Player *plr;
 	int i, j, k;
 
-	for (i = 0; galaxySizeFactors[i]; i++) {
+	for (i = 0; i < GALAXY_ZOOM_LEVELS; i++) {
 		if (galaxySizeFactors[i] == game->_galaxy.sizeFactor) {
 			_zoom = i;
 			break;
 		}
 	}
 
-	if (!galaxySizeFactors[i]) {
+	if (i >= GALAXY_ZOOM_LEVELS) {
 		throw std::runtime_error("Invalid galaxy size");
 	}
 

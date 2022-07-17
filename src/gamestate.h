@@ -61,6 +61,8 @@ const int MAX_SETTLERS				= 25;
 #define MAX_BUILD_QUEUE 7
 #define MAX_BUILDINGS 49
 #define STAR_TYPE_COUNT 6
+#define GALAXY_ZOOM_LEVELS 4
+#define GALAXY_STAR_SIZES 6
 #define NEBULA_TYPE_COUNT 12
 #define MAX_FLEET_OWNERS 15
 
@@ -206,6 +208,8 @@ enum ShipType {
 	OUTPOST_SHIP
 };
 
+extern const unsigned galaxySizeFactors[GALAXY_ZOOM_LEVELS];
+
 class Fleet;
 
 struct GameConfig {
@@ -239,6 +243,8 @@ struct Nebula {
 	Nebula(void);
 
 	void load(ReadStream &stream);
+
+	void validate(void) const;
 };
 
 struct Galaxy {
@@ -251,6 +257,8 @@ struct Galaxy {
 	Galaxy(void);
 
 	void load(ReadStream &stream);
+
+	void validate(void) const;
 };
 
 struct Colonist {
