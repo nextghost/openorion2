@@ -280,6 +280,24 @@ void Colony::load(ReadStream &stream) {
 	status = stream.readUint16LE();
 }
 
+void Colony::validate(void) const {
+	unsigned i;
+
+	if (population > MAX_POPULATION) {
+		throw std::out_of_range("Colony population too high");
+	}
+
+	if (climate > GAIA) {
+		throw std::out_of_range("Colony has invalid climate");
+	}
+
+	for (i = 0; i < population; i++) {
+		if (colonists[i].job > SCIENTIST) {
+			throw std::out_of_range("Invalid colonist job");
+		}
+	}
+}
+
 Planet::Planet(void) {
 	colony = -1;
 	star = 0;
@@ -316,6 +334,41 @@ void Planet::load(ReadStream &stream) {
 	max_pop = stream.readUint8();
 	special = stream.readUint8();
 	flags = stream.readUint8();
+}
+
+void Planet::validate(void) const {
+	if (orbit >= MAX_ORBITS) {
+		throw std::out_of_range("Planet has invalid orbit");
+	}
+
+	if (type < ASTEROIDS || type > HABITABLE) {
+		throw std::out_of_range("Planet has invalid type");
+	}
+
+	if (size > HUGE_PLANET) {
+		throw std::out_of_range("Planet has invalid size");
+	}
+
+	if (gravity > HEAVY_G) {
+		throw std::out_of_range("Planet has invalid gravity value");
+	}
+
+	if (type == HABITABLE && climate > GAIA) {
+		throw std::out_of_range("Planet has invalid climate");
+	}
+
+	if (bg >= MAX_PLANET_BGS) {
+		throw std::out_of_range("Planet has invalid surface image");
+	}
+
+	if (minerals > ULTRA_RICH) {
+		throw std::out_of_range("Planet has invalid mineral value");
+	}
+
+	if (special == BAD_SPECIAL1 || special == BAD_SPECIAL2 ||
+		special > ORION_SPECIAL) {
+		throw std::out_of_range("Planet has invalid special treasure");
+	}
 }
 
 Leader::Leader(void) {
@@ -420,6 +473,12 @@ void ShipDesign::load(ReadStream &stream) {
 	cost = stream.readUint16LE();
 	combatSpeed = stream.readUint8();
 	buildDate = stream.readUint16LE();
+}
+
+void ShipDesign::validate(void) const {
+	if (type > OUTPOST_SHIP || type == BAD_SHIP_TYPE) {
+		throw std::out_of_range("Invalid ship type");
+	}
 }
 
 void RacePicks::load(ReadStream &stream) {
@@ -573,6 +632,16 @@ void Player::load(SeekableReadStream &stream) {
 	}
 
 	stream.seek(74, SEEK_CUR);
+}
+
+void Player::validate(void) const {
+	if (picture >= RACE_COUNT) {
+		throw std::out_of_range("Player has invalid race ID");
+	}
+
+	if (color >= PLAYER_COUNT) {
+		throw std::out_of_range("Player has invalid color ID");
+	}
 }
 
 Star::Star(void) {
@@ -747,6 +816,21 @@ const BilistNode<Fleet> *Star::getLeavingFleets(void) const {
 	return _firstLeavingFleet.next();
 }
 
+void Star::validate(void) const {
+	if (size > StarSize::Small) {
+		throw std::out_of_range("Invalid star size");
+	}
+
+	if (spectralClass > SpectralClass::BlackHole) {
+		throw std::out_of_range("Invalid star spectral class");
+	}
+
+	if (special == BAD_SPECIAL1 || special == BAD_SPECIAL2 ||
+		special > ORION_SPECIAL) {
+		throw std::out_of_range("Star has invalid special treasure");
+	}
+}
+
 Ship::Ship(void) {
 	owner = 0;
 	status = 0;
@@ -843,6 +927,18 @@ int Ship::isActive(void) const {
 int Ship::exists(void) const {
 	return status <= ShipState::UnderConstruction &&
 		status != ShipState::Unknown && status != ShipState::Destroyed;
+}
+
+void Ship::validate(void) const {
+	design.validate();
+
+	if (status > ShipState::UnderConstruction) {
+		throw std::out_of_range("Invalid ship status");
+	}
+
+	if (officer >= LEADER_COUNT) {
+		throw std::out_of_range("Ship has invalid officer");
+	}
 }
 
 GameState::GameState(void) {
@@ -1043,13 +1139,7 @@ void GameState::validate(void) const {
 	for (i = 0; i < _starSystemCount; i++) {
 		const Star *ptr = _starSystems + i;
 
-		if (ptr->size > StarSize::Small) {
-			throw std::out_of_range("Invalid star size");
-		}
-
-		if (ptr->spectralClass > SpectralClass::BlackHole) {
-			throw std::out_of_range("Invalid star spectral class");
-		}
+		ptr->validate();
 
 		if (ptr->x >= _galaxy.width || ptr->y >= _galaxy.height) {
 			throw std::out_of_range("Star outside galaxy area");
@@ -1062,12 +1152,6 @@ void GameState::validate(void) const {
 		if (ptr->wormhole >= 0 &&
 			_starSystems[ptr->wormhole].wormhole != i) {
 			throw std::logic_error("One-way wormholes not allowed");
-		}
-
-		if (ptr->special == BAD_SPECIAL1 ||
-			ptr->special == BAD_SPECIAL2 ||
-			ptr->special > ORION_SPECIAL) {
-			throw std::out_of_range("Star has invalid special treasure");
 		}
 
 		for (j = 0; j < MAX_ORBITS; j++) {
@@ -1093,13 +1177,7 @@ void GameState::validate(void) const {
 
 	// Validate players
 	for (i = 0; i < _playerCount; i++) {
-		if (_players[i].picture >= RACE_COUNT) {
-			throw std::out_of_range("Player has invalid race ID");
-		}
-
-		if (_players[i].color >= PLAYER_COUNT) {
-			throw std::out_of_range("Player has invalid color ID");
-		}
+		_players[i].validate();
 
 		for (j = 0; j < MAX_PLAYERS; j++) {
 			if ((j < _playerCount && !_players[i].eliminated) ||
@@ -1115,12 +1193,10 @@ void GameState::validate(void) const {
 	for (i = 0; i < _planetCount; i++) {
 		const Planet *ptr = _planets + i;
 
+		ptr->validate();
+
 		if (ptr->star >= _starSystemCount) {
 			throw std::out_of_range("Planet has invalid star ID");
-		}
-
-		if (ptr->orbit >= MAX_ORBITS) {
-			throw std::out_of_range("Planet has invalid orbit");
 		}
 
 		if (_starSystems[ptr->star].planetIndex[ptr->orbit] != i) {
@@ -1136,36 +1212,6 @@ void GameState::validate(void) const {
 		if (ptr->colony >= 0 && _colonies[ptr->colony].planet != i) {
 			throw std::logic_error("Colony referenced by wrong planet");
 		}
-
-		if (ptr->type < ASTEROIDS || ptr->type > HABITABLE) {
-			throw std::out_of_range("Planet has invalid type");
-		}
-
-		if (ptr->size > HUGE_PLANET) {
-			throw std::out_of_range("Planet has invalid size");
-		}
-
-		if (ptr->gravity > HEAVY_G) {
-			throw std::out_of_range("Planet has invalid gravity value");
-		}
-
-		if (ptr->type == HABITABLE && ptr->climate > GAIA) {
-			throw std::out_of_range("Planet has invalid climate");
-		}
-
-		if (ptr->bg >= MAX_PLANET_BGS) {
-			throw std::out_of_range("Planet has invalid surface image");
-		}
-
-		if (ptr->minerals > ULTRA_RICH) {
-			throw std::out_of_range("Planet has invalid mineral value");
-		}
-
-		if (ptr->special == BAD_SPECIAL1 ||
-			ptr->special == BAD_SPECIAL2 ||
-			ptr->special > ORION_SPECIAL) {
-			throw std::out_of_range("Planet has invalid special treasure");
-		}
 	}
 
 	// Validate colonies
@@ -1175,6 +1221,8 @@ void GameState::validate(void) const {
 		if (ptr->planet < 0) {
 			continue;	// Colony was destroyed, skip
 		}
+
+		ptr->validate();
 
 		if (ptr->owner < 0 || ptr->owner >= _playerCount ||
 			_players[ptr->owner].eliminated) {
@@ -1187,14 +1235,6 @@ void GameState::validate(void) const {
 
 		if (_planets[ptr->planet].colony != (int)i) {
 			throw std::logic_error("Colony not referenced by parent planet");
-		}
-
-		if (ptr->population > MAX_POPULATION) {
-			throw std::out_of_range("Colony population too high");
-		}
-
-		if (ptr->climate > GAIA) {
-			throw std::out_of_range("Colony has invalid climate");
 		}
 
 		if (ptr->climate != _planets[ptr->planet].climate &&
@@ -1214,10 +1254,6 @@ void GameState::validate(void) const {
 			if (ptr->colonists[j].loyalty >= _playerCount) {
 				throw std::out_of_range("Colonist loyal to invalid player");
 			}
-
-			if (ptr->colonists[j].job > SCIENTIST) {
-				throw std::out_of_range("Invalid colonist job");
-			}
 		}
 	}
 
@@ -1229,14 +1265,7 @@ void GameState::validate(void) const {
 			continue;
 		}
 
-		if (ptr->status > ShipState::UnderConstruction) {
-			throw std::out_of_range("Invalid ship status");
-		}
-
-		if (ptr->design.type > OUTPOST_SHIP ||
-			ptr->design.type == BAD_SHIP_TYPE) {
-			throw std::out_of_range("Invalid ship type");
-		}
+		ptr->validate();
 
 		if (ptr->x >= _galaxy.width || ptr->y >= _galaxy.height) {
 			throw std::out_of_range("Ship outside galaxy area");
@@ -1249,10 +1278,6 @@ void GameState::validate(void) const {
 			tmp != _starSystemCount)) {
 
 			throw std::out_of_range("Ship has invalid star ID");
-		}
-
-		if (ptr->officer >= LEADER_COUNT) {
-			throw std::out_of_range("Ship has invalid officer");
 		}
 	}
 }

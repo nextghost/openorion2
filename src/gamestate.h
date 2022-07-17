@@ -361,6 +361,8 @@ struct Colony {
 	Colony(void);
 
 	void load(ReadStream &stream);
+
+	void validate(void) const;
 };
 
 struct Planet {
@@ -384,6 +386,8 @@ struct Planet {
 	Planet(void);
 
 	void load(ReadStream &stream);
+
+	void validate(void) const;
 };
 
 struct Leader {
@@ -433,6 +437,8 @@ struct ShipDesign {
 	ShipDesign(void);
 
 	void load(ReadStream &stream);
+
+	void validate(void) const;
 };
 
 struct RacePicks {
@@ -524,6 +530,8 @@ struct Player {
 	Player(void);
 
 	void load(SeekableReadStream &stream);
+
+	void validate(void) const;
 };
 
 class Star {
@@ -613,6 +621,8 @@ public:
 	BilistNode<Fleet> *getLeavingFleets(void);
 	const BilistNode<Fleet> *getOrbitingFleets(void) const;
 	const BilistNode<Fleet> *getLeavingFleets(void) const;
+
+	void validate(void) const;
 };
 
 struct Ship {
@@ -643,6 +653,8 @@ struct Ship {
 	unsigned getStarID(void) const;
 	int isActive(void) const;
 	int exists(void) const;
+
+	void validate(void) const;
 };
 
 class GameState {
