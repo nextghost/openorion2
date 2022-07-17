@@ -1159,8 +1159,8 @@ void GameState::validate(void) const {
 
 			if (ptr->planetIndex[j] < 0) {
 				continue;
-			} else if (ptr->planetIndex[j] >= MAX_PLANETS) {
-				throw std::out_of_range("Star has invalid planet ID");
+			} else if (ptr->planetIndex[j] >= _planetCount) {
+				throw std::out_of_range("Star references invalid planet ID");
 			}
 
 			planet = _planets + ptr->planetIndex[j];
