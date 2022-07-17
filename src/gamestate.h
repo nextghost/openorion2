@@ -22,7 +22,6 @@
 
 #include "utils.h"
 #include "stream.h"
-#include <vector>
 
 const int SAVE_GAME_NAME_SIZE		= 37;
 const int LEADER_COUNT 				= 67;
