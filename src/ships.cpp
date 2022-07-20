@@ -76,50 +76,54 @@ ShipAssets::ShipAssets(const GameState *game) : _game(game) {
 
 void ShipAssets::load(const uint8_t *palette) {
 	unsigned i, j, pos;
-	ImageAsset palimg;
-	const uint8_t *pal;
+	ImageAsset palimg[MAX_PLAYERS + 1];
+	const uint8_t *pals[MAX_PLAYERS + 1];
+
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		palimg[i] = gameAssets->getImage(SHIPSPRITE_ARCHIVE,
+			(i + 1) * MAX_SHIP_SPRITES + i, palette);
+		pals[i] = palimg[i]->palette();
+	}
+
+	palimg[MAX_PLAYERS] = gameAssets->getImage(SHIPSPRITE_ARCHIVE,
+		PALSPRITE_ANTARAN, palette);
+	pals[MAX_PLAYERS] = palimg[MAX_PLAYERS]->palette();
 
 	// Player ships
 	for (i = 0, pos = 0; i < MAX_PLAYERS; i++, pos += MAX_SHIP_SPRITES+1) {
-		palimg = gameAssets->getImage(SHIPSPRITE_ARCHIVE,
-			pos + MAX_SHIP_SPRITES, palette);
-		pal = palimg->palette();
-
 		for (j = 0; j < MAX_SHIP_SPRITES; j++) {
 			_sprites[i][j] = gameAssets->getImage(
-				SHIPSPRITE_ARCHIVE, pos + j, pal);
+				SHIPSPRITE_ARCHIVE, pos + j, pals,
+				MAX_PLAYERS);
 		}
 	}
 
 	// Antaran ships
-	palimg = gameAssets->getImage(SHIPSPRITE_ARCHIVE, PALSPRITE_ANTARAN,
-		palette);
-	pal = palimg->palette();
 	j = SHIPSPRITE_ANTARAN;
 
 	for (i = 0; i < MAX_SHIPTYPES_ANTARAN; i++, j++) {
 		_sprites[MAX_PLAYERS][j] = gameAssets->getImage(
-			SHIPSPRITE_ARCHIVE, pos + j, pal);
+			SHIPSPRITE_ARCHIVE, pos + j, pals, MAX_PLAYERS + 1);
 	}
 
 	// Orion Guardian
-	palimg = gameAssets->getImage(SHIPSPRITE_ARCHIVE, PALSPRITE_GUARDIAN,
+	palimg[0] = gameAssets->getImage(SHIPSPRITE_ARCHIVE, PALSPRITE_GUARDIAN,
 		palette);
 	_sprites[MAX_PLAYERS][SHIPSPRITE_GUARDIAN] = gameAssets->getImage(
 		SHIPSPRITE_ARCHIVE, pos + SHIPSPRITE_GUARDIAN,
-		palimg->palette());
+		palimg[0]->palette());
 
 	// Monsters
 	for (i = 0; i < MAX_SHIPTYPES_MONSTER; i++) {
-		palimg = gameAssets->getImage(SHIPSPRITE_ARCHIVE,
+		palimg[0] = gameAssets->getImage(SHIPSPRITE_ARCHIVE,
 			monster_palettes[i], palette);
-		pal = palimg->palette();
+		pals[0] = palimg[0]->palette();
 		_sprites[MAX_PLAYERS][SHIPSPRITE_MONSTER + i] =
 			gameAssets->getImage(SHIPSPRITE_ARCHIVE,
-			pos + SHIPSPRITE_MONSTER + i, pal);
+			pos + SHIPSPRITE_MONSTER + i, pals[0]);
 		_sprites[MAX_PLAYERS][SHIPSPRITE_MINIMONSTER + i] =
 			gameAssets->getImage(SHIPSPRITE_ARCHIVE,
-			pos + SHIPSPRITE_MINIMONSTER + i, pal);
+			pos + SHIPSPRITE_MINIMONSTER + i, pals[0]);
 	}
 }
 
@@ -369,7 +373,7 @@ void ShipGridWidget::handleMouseUp(int x, int y, unsigned button) {
 }
 
 void ShipGridWidget::redraw(int x, int y, unsigned curtick) {
-	unsigned i, offset, count, sw, sh, xpos, ypos;
+	unsigned i, offset, count, sw, sh, xpos, ypos, color;
 	int dx, dy;
 	const Image *img;
 
@@ -385,6 +389,10 @@ void ShipGridWidget::redraw(int x, int y, unsigned curtick) {
 	sw = _slotsel->width() + _hspace;
 	sh = _slotsel->height() + _vspace;
 
+	color = _fleet->getColor();
+	// Non-Antaran monsters have only 1 color variant
+	color = color <= MAX_PLAYERS ? color : 0;
+
 	for (i = 0; i < _rows * _cols && i + _scroll * _cols < count; i++) {
 		xpos = sw * (i % _cols);
 		ypos = sh * (i / _cols);
@@ -396,7 +404,8 @@ void ShipGridWidget::redraw(int x, int y, unsigned curtick) {
 		img = _shipimg.getSprite(_fleet->getShip(offset + i));
 		dx = ((int)_slotsel->width() - (int)img->width()) / 2;
 		dy = ((int)_slotsel->height() - (int)img->height()) / 2;
-		img->draw(x + xpos + dx, y + ypos + dy);
+		img->draw(x + xpos + dx, y + ypos + dy,
+			color * img->frameCount());
 
 		if (_slotframe && _curSlot == int(i + _scroll * _cols)) {
 			_slotframe->draw(x + xpos - 1, y + ypos - 1);
