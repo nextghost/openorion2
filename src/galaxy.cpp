@@ -220,13 +220,9 @@ unsigned GalaxyMinimapWidget::fleetY(const Fleet *f) {
 }
 
 const Image *GalaxyMinimapWidget::getFleetSprite(const Fleet *f) {
-	unsigned cls = f->getOwner();
+	unsigned color = f->getColor();
 
-	if (cls < MAX_PLAYERS) {
-		cls = _game->_players[cls].color;
-	}
-
-	return (const Image*)_fleetimg[cls];
+	return (const Image*)_fleetimg[color];
 }
 
 const Image *GalaxyMinimapWidget::getStarSprite(const Star *s) {
@@ -732,13 +728,9 @@ int GalaxyView::transformFleetY(const Fleet *f) const {
 }
 
 const Image *GalaxyView::getFleetSprite(const Fleet *f) const {
-	unsigned cls = f->getOwner();
+	unsigned color = f->getColor();
 
-	if (cls < MAX_PLAYERS) {
-		cls = _game->_players[cls].color;
-	}
-
-	return (const Image*)_fleetimg[cls][_zoom];
+	return (const Image*)_fleetimg[color][_zoom];
 }
 
 void GalaxyView::selectPlayer(void) {

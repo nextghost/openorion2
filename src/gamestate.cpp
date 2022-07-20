@@ -1648,6 +1648,10 @@ uint8_t Fleet::getOwner(void) const {
 	return _owner;
 }
 
+uint8_t Fleet::getColor(void) const {
+	return _owner < MAX_PLAYERS ? _parent->_players[_owner].color : _owner;
+}
+
 uint8_t Fleet::getStatus(void) const {
 	return _status;
 }

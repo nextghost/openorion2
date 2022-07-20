@@ -744,6 +744,10 @@ public:
 	size_t combatCount(void) const;
 	size_t supportCount(void) const;
 	uint8_t getOwner(void) const;
+
+	// Returns player[owner].color for player fleets, owner ID for monsters
+	uint8_t getColor(void) const;
+
 	uint8_t getStatus(void) const;
 	uint16_t getX(void) const;
 	uint16_t getY(void) const;
