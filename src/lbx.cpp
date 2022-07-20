@@ -815,8 +815,8 @@ void AssetManager::openArchive(FileCache *entry) {
 	}
 }
 
-ImageAsset AssetManager::getImage(const char *filename, unsigned id,
-	const uint8_t *palette) {
+AssetManager::FileCache *AssetManager::cacheImage(const char *filename,
+	unsigned id, const uint8_t **palettes, unsigned palcount) {
 
 	FileCache *entry;
 	MemoryReadStream *stream;
@@ -826,7 +826,7 @@ ImageAsset AssetManager::getImage(const char *filename, unsigned id,
 	entry = getCache(filename);
 
 	if (entry->images && id < entry->size && entry->images[id].data) {
-		return ImageAsset(this, entry->images[id].data);
+		return entry;
 	}
 
 	openArchive(entry);
@@ -838,7 +838,7 @@ ImageAsset AssetManager::getImage(const char *filename, unsigned id,
 	stream = _curfile->loadAsset(id);
 
 	try {
-		img = new Image(*stream, palette);
+		img = new Image(*stream, palettes, palcount);
 		texid = img->textureID(0);
 
 		if (texid >= _imgLookupSize) {
@@ -867,6 +867,20 @@ ImageAsset AssetManager::getImage(const char *filename, unsigned id,
 	entry->images[id].data = img;
 	entry->images[id].refs = 0;
 	_imageLookup[texid] = entry->images + id;
+	return entry;
+}
+
+ImageAsset AssetManager::getImage(const char *filename, unsigned id,
+	const uint8_t *palette) {
+	FileCache *entry = cacheImage(filename, id, &palette, 1);
+
+	return ImageAsset(this, entry->images[id].data);
+}
+
+ImageAsset AssetManager::getImage(const char *filename, unsigned id,
+	const uint8_t **palettes, unsigned palcount) {
+	FileCache *entry = cacheImage(filename, id, palettes, palcount);
+
 	return ImageAsset(this, entry->images[id].data);
 }
 

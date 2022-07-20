@@ -127,30 +127,47 @@ static uint8_t font_palettes[FONT_COLOR_MAX][FONT_PALSIZE * 4] = {
 };
 
 Image::Image(SeekableReadStream &stream, const uint8_t *base_palette) :
-	_width(0), _height(0), _frames(0), _textureIDs(NULL), _palette(NULL) {
+	_width(0), _height(0), _frames(0), _palcount(0), _textureIDs(NULL),
+	_palettes(NULL) {
 
-	unsigned i, palstart, palsize;
+	load(stream, &base_palette, base_palette ? 1 : 0);
+}
+
+Image::Image(SeekableReadStream &stream, const uint8_t **base_palettes,
+	unsigned palcount) : _width(0), _height(0), _frames(0), _palcount(0),
+	_textureIDs(NULL), _palettes(NULL) {
+
+	load(stream, base_palettes, palcount);
+}
+
+Image::~Image(void) {
+	clear();
+}
+
+void Image::load(SeekableReadStream &stream, const uint8_t **base_palettes,
+	unsigned palcount) {
+
+	unsigned i, palstart, palsize, framecount;
 	size_t *offsets;
-	uint32_t *buffer;
 
 	_width = stream.readUint16LE();
 	_height = stream.readUint16LE();
 	stream.readUint16LE();
-	_frames = stream.readUint16LE();
+	framecount = stream.readUint16LE();
 	_frametime = stream.readUint16LE();
 	_flags = stream.readUint16LE();
 
-	if (!_width || !_height || !_frames) {
+	if (!_width || !_height || !framecount) {
 		throw std::runtime_error("Invalid image header");
 	}
 
-	if (!(_flags & FLAG_PALETTE) && !base_palette) {
+	if (!(_flags & FLAG_PALETTE) && !palcount) {
 		throw std::runtime_error("Palette missing");
 	}
 
-	offsets = new size_t[_frames + 1];
+	offsets = new size_t[framecount + 1];
 
-	for (i = 0; i <= _frames; i++) {
+	for (i = 0; i <= framecount; i++) {
 		offsets[i] = stream.readUint32LE();
 
 		if (i && offsets[i] <= offsets[i-1]) {
@@ -159,17 +176,40 @@ Image::Image(SeekableReadStream &stream, const uint8_t *base_palette) :
 		}
 	}
 
-	if (offsets[_frames] != (size_t)stream.size()) {
+	if (offsets[framecount] != (size_t)stream.size()) {
 		delete[] offsets;
 		throw std::runtime_error("Image data size mismatch");
 	}
 
-	_palette = new uint8_t[PALSIZE];
+	_palcount = palcount ? palcount : 1;
 
-	if (base_palette) {
-		memcpy(_palette, base_palette, PALSIZE);
-	} else {
-		memset(_palette, 0, PALSIZE);
+	try {
+		_palettes = new uint8_t*[_palcount];
+	} catch (...) {
+		delete[] offsets;
+		throw;
+	}
+
+	memset(_palettes, 0, _palcount * sizeof(uint8_t*));
+
+	for (i = 0; i < _palcount; i++) {
+		try {
+			_palettes[i] = new uint8_t[PALSIZE];
+		} catch (...) {
+			delete[] offsets;
+			clear();
+			throw;
+		}
+
+		if (i < palcount && base_palettes[i]) {
+			memcpy(_palettes[i], base_palettes[i], PALSIZE);
+		} else if (!(_flags & FLAG_PALETTE)) {
+			delete[] offsets;
+			clear();
+			throw std::runtime_error("Palette missing");
+		} else {
+			memset(_palettes[i], 0, PALSIZE);
+		}
 	}
 
 	if (_flags & FLAG_PALETTE) {
@@ -178,25 +218,58 @@ Image::Image(SeekableReadStream &stream, const uint8_t *base_palette) :
 
 		if (palstart + palsize > 256) {
 			delete[] offsets;
-			delete[] _palette;
+			clear();
 			throw std::runtime_error("Palette buffer overflow");
 		}
 
-		stream.read(_palette + 4 * palstart, palsize * 4);
+		stream.read(_palettes[0] + 4 * palstart, palsize * 4);
 
 		for (i = palstart; i < palstart + palsize; i++) {
-			_palette[4*i] = 0xff;
-			_palette[4*i+1] <<= 2;
-			_palette[4*i+2] <<= 2;
-			_palette[4*i+3] <<= 2;
+			_palettes[0][4*i] = 0xff;
+			_palettes[0][4*i+1] <<= 2;
+			_palettes[0][4*i+2] <<= 2;
+			_palettes[0][4*i+3] <<= 2;
+		}
+
+		for (i = 1; i < _palcount; i++) {
+			memcpy(_palettes[i] + 4 * palstart,
+				_palettes[0] + 4 * palstart, 4 * palsize);
 		}
 	}
 
-	_textureIDs = new unsigned[_frames];
+	try {
+		_textureIDs = new unsigned[framecount * _palcount];
+	} catch (...) {
+		delete[] offsets;
+		clear();
+		throw;
+	}
+
+	_frames = framecount;
+
+	for (i = 0; i < _palcount; i++) {
+		try {
+			loadFrames(stream, i, offsets);
+		} catch (...) {
+			delete[] offsets;
+			clear();
+			throw;
+		}
+	}
+
+	delete[] offsets;
+}
+
+void Image::loadFrames(SeekableReadStream &stream, unsigned variant,
+	const size_t *offsets) {
+
+	unsigned i, fpos = variant * _frames;
+	uint32_t *buffer;
+
 	buffer = new uint32_t[_width * _height];
 	memset(buffer, 0, _width * _height * sizeof(uint32_t));
 
-	for (i = 0; i < _frames; i++) {
+	for (i = 0; i < _frames; i++, fpos++) {
 		MemoryReadStream *substream = NULL;
 
 		stream.seek(offsets[i], SEEK_SET);
@@ -207,38 +280,40 @@ Image::Image(SeekableReadStream &stream, const uint8_t *base_palette) :
 
 		try {
 			substream = stream.readStream(offsets[i+1]-offsets[i]);
-			decodeFrame(buffer, (uint32_t*)_palette, *substream);
-			_textureIDs[i] = registerTexture(_width, _height,
-				buffer);
+			decodeFrame(buffer, (uint32_t*)_palettes[variant],
+				*substream);
+			_textureIDs[fpos] = registerTexture(_width,
+				_height, buffer);
 		} catch (...) {
-			_frames = i;
+			for (i = 0; i < fpos; i++) {
+				freeTexture(_textureIDs[i]);
+			}
+
+			_frames = 0;
 			delete substream;
-			delete[] offsets;
 			delete[] buffer;
-			clear();
 			throw;
 		}
 
 		delete substream;
 	}
 
-	delete[] offsets;
 	delete[] buffer;
-}
-
-Image::~Image(void) {
-	clear();
 }
 
 void Image::clear(void) {
 	unsigned i;
 
-	for (i = 0; i < _frames; i++) {
+	for (i = 0; i < _frames * _palcount; i++) {
 		freeTexture(_textureIDs[i]);
 	}
 
+	for (i = 0; i < _palcount; i++) {
+		delete[] _palettes[i];
+	}
+
 	delete[] _textureIDs;
-	delete[] _palette;
+	delete[] _palettes;
 }
 
 void Image::decodeFrame(uint32_t *buffer, uint32_t *palette,
@@ -314,16 +389,24 @@ unsigned Image::frameTime(void) const {
 	return _frametime;
 }
 
+unsigned Image::variantCount(void) const {
+	return _palcount;
+}
+
 unsigned Image::textureID(unsigned frame) const {
-	if (frame >= _frames) {
+	if (frame >= _frames * _palcount) {
 		throw std::out_of_range("Image frame ID out of range");
 	}
 
 	return _textureIDs[frame];
 }
 
-const uint8_t *Image::palette(void) const {
-	return _palette;
+const uint8_t *Image::palette(unsigned id) const {
+	if (id >= _palcount) {
+		throw std::out_of_range("Image palette ID out of range");
+	}
+
+	return _palettes[id];
 }
 
 void Image::draw(int x, int y, unsigned frame) const {

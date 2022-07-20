@@ -252,6 +252,8 @@ private:
 protected:
 	FileCache *getCache(const char *filename);
 	void openArchive(FileCache *entry);
+	FileCache *cacheImage(const char *filename, unsigned id,
+		const uint8_t **palettes, unsigned palcount);
 
 public:
 	AssetManager(void);
@@ -261,6 +263,8 @@ public:
 	// counter gets automatically increased.
 	ImageAsset getImage(const char *filename, unsigned id,
 		const uint8_t *palette = NULL);
+	ImageAsset getImage(const char *filename, unsigned id,
+		const uint8_t **palettes, unsigned palcount);
 
 	// Bump the asset reference counter to ensure it does not get deleted
 	// by another part of code. You must call freeAsset() later.

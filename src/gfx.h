@@ -112,15 +112,19 @@
 
 class Image {
 private:
-	unsigned _width, _height, _frames, _frametime, _flags;
+	unsigned _width, _height, _frames, _frametime, _flags, _palcount;
 	unsigned *_textureIDs;
-	uint8_t *_palette;
+	uint8_t **_palettes;
 
 	// Do NOT implement
 	Image(const Image &other);
 	const Image &operator=(const Image &other);
 
 protected:
+	void load(SeekableReadStream &stream, const uint8_t **base_palettes,
+		unsigned palcount);
+	void loadFrames(SeekableReadStream &stream, unsigned variant,
+		const size_t *offsets);
 	void decodeFrame(uint32_t *buffer, uint32_t *palette,
 		MemoryReadStream &stream);
 	void clear(void);
@@ -128,14 +132,17 @@ protected:
 public:
 	explicit Image(SeekableReadStream &stream,
 		const uint8_t *base_palette = NULL);
+	Image(SeekableReadStream &stream, const uint8_t **base_palettes,
+		unsigned palcount);
 	~Image(void);
 
 	unsigned width(void) const;
 	unsigned height(void) const;
 	unsigned frameCount(void) const;
 	unsigned frameTime(void) const;
+	unsigned variantCount(void) const;
 	unsigned textureID(unsigned frame) const;
-	const uint8_t *palette(void) const;
+	const uint8_t *palette(unsigned id = 0) const;
 
 	void draw(int x, int y, unsigned frame = 0) const;
 };
