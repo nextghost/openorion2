@@ -71,6 +71,9 @@ const int MAX_SETTLERS				= 25;
 #define SPY_MISSION_SABOTAGE 0x40
 #define SPY_MISSION_HIDE 0x80
 
+#define PLANET_CLIMATE_COUNT 10
+#define PLANET_SIZE_COUNT 5
+#define PLANET_MINERALS_COUNT 5
 #define MAX_PLANET_BGS 3
 
 #define MAX_SHIP_SPRITES 49
@@ -628,6 +631,9 @@ public:
 	BilistNode<Fleet> *getLeavingFleets(void);
 	const BilistNode<Fleet> *getOrbitingFleets(void) const;
 	const BilistNode<Fleet> *getLeavingFleets(void) const;
+
+	// Find the sequential number for planet, ignoring empty orbits
+	unsigned planetSeq(unsigned orbit) const;
 
 	void validate(void) const;
 };

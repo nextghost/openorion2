@@ -155,9 +155,14 @@ class PlanetsListView : public GuiView {
 private:
 	const GameState *_game;
 	int _activePlayer;
-	ImageAsset _planetAssets, _planetIcons[50];
+	ImageAsset _bg, _planetimg[PLANET_CLIMATE_COUNT][PLANET_SIZE_COUNT];
+	unsigned _planetCount, _planets[MAX_PLANETS];
 
 	void initWidgets(void);
+
+protected:
+	void updateList(void);
+
 public:
 	PlanetsListView(const GameState *game, int activePlayer);
 	

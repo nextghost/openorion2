@@ -871,6 +871,18 @@ const BilistNode<Fleet> *Star::getLeavingFleets(void) const {
 	return _firstLeavingFleet.next();
 }
 
+unsigned Star::planetSeq(unsigned orbit) const {
+	unsigned i, ret;
+
+	for (i = 0, ret = 0; i < MAX_ORBITS && i < orbit; i++) {
+		if (planetIndex[i] >= 0) {
+			ret++;
+		}
+	}
+
+	return ret;
+}
+
 void Star::validate(void) const {
 	if (size > StarSize::Small) {
 		throw std::out_of_range("Invalid star size");

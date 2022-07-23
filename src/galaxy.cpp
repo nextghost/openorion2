@@ -74,33 +74,7 @@
 #define PLANET_ARCHIVE "plntsum.lbx"
 #define ASSET_PLANETLIST_BG 0
 #define ASSET_PLANETLIST_RETURN_BUTTON 14
-
-#define STRING_PLANET_LIST_CLIMATE_TOXIC 538
-#define STRING_PLANET_LIST_CLIMATE_RADIATED 718
-#define STRING_PLANET_LIST_CLIMATE_BARREN 719
-#define STRING_PLANET_LIST_CLIMATE_DESERT 720
-#define STRING_PLANET_LIST_CLIMATE_TUNDRA 721
-#define STRING_PLANET_LIST_CLIMATE_OCEAN 398
-#define STRING_PLANET_LIST_CLIMATE_SWAMP 500
-#define STRING_PLANET_LIST_CLIMATE_ARID 183
-#define STRING_PLANET_LIST_CLIMATE_TERRAN 722
-#define STRING_PLANET_LIST_CLIMATE_GAIA 302
-
-#define STRING_PLANET_LIST_GRAVITY_LOW 686
-#define STRING_PLANET_LIST_GRAVITY_NORMAL 687
-#define STRING_PLANET_LIST_GRAVITY_HEAVY 688
-
-#define STRING_PLANET_LIST_MINERALS_ULTRA_POOR 683
-#define STRING_PLANET_LIST_MINERALS_POOR 422
-#define STRING_PLANET_LIST_MINERALS_ABUNDANT 684
-#define STRING_PLANET_LIST_MINERALS_RICH 449
-#define STRING_PLANET_LIST_MINERALS_ULTRA_RICH 685
-
-#define STRING_PLANET_LIST_SIZE_TINY 682
-#define STRING_PLANET_LIST_SIZE_SMALL 479
-#define STRING_PLANET_LIST_SIZE_MEDIUM 370
-#define STRING_PLANET_LIST_SIZE_LARGE 359
-#define STRING_PLANET_LIST_SIZE_HUGE 322
+#define ASSET_PLANETLIST_PLANET_IMAGES 26
 
 static const uint8_t minimapStarSelColors[STARSEL_FRAMECOUNT * 3] = {
 	RGB(0x043804), RGB(0x004c00), RGB(0x006000), RGB(0x087008),
@@ -110,37 +84,35 @@ static const uint8_t minimapStarSelColors[STARSEL_FRAMECOUNT * 3] = {
 static const unsigned galaxy_fontanim[GALAXY_ANIM_LENGTH] = {
 	1, 2, 3, 4, 3, 2, 1, 0
 };
-const char *romanNumbers[5] = { "I", "II", "III", "IV", "V"};
-const int planetClimateMap[10] = {
-	STRING_PLANET_LIST_CLIMATE_TOXIC,
-	STRING_PLANET_LIST_CLIMATE_RADIATED,
-	STRING_PLANET_LIST_CLIMATE_BARREN,
-	STRING_PLANET_LIST_CLIMATE_DESERT,
-	STRING_PLANET_LIST_CLIMATE_TUNDRA,
-	STRING_PLANET_LIST_CLIMATE_OCEAN,
-	STRING_PLANET_LIST_CLIMATE_SWAMP,
-	STRING_PLANET_LIST_CLIMATE_ARID,
-	STRING_PLANET_LIST_CLIMATE_TERRAN,
-	STRING_PLANET_LIST_CLIMATE_GAIA
+const char *romanNumbers[] = { "I", "II", "III", "IV", "V"};
+
+const int planetClimateMap[PLANET_CLIMATE_COUNT] = {
+	ESTR_CLIMATE_TOXIC,
+	ESTR_CLIMATE_RADIATED,
+	ESTR_CLIMATE_BARREN,
+	ESTR_CLIMATE_DESERT,
+	ESTR_CLIMATE_TUNDRA,
+	ESTR_CLIMATE_OCEAN,
+	ESTR_CLIMATE_SWAMP,
+	ESTR_CLIMATE_ARID,
+	ESTR_CLIMATE_TERRAN,
+	ESTR_CLIMATE_GAIA
 };
-const int planetGravityMap[3] = {
-	STRING_PLANET_LIST_GRAVITY_LOW,
-	STRING_PLANET_LIST_GRAVITY_NORMAL,
-	STRING_PLANET_LIST_GRAVITY_HEAVY
+
+const int mineralsMap[PLANET_MINERALS_COUNT] = {
+	ESTR_LMINERALS_ULTRA_POOR,
+	ESTR_LMINERALS_POOR,
+	ESTR_LMINERALS_ABUNDANT,
+	ESTR_LMINERALS_RICH,
+	ESTR_LMINERALS_ULTRA_RICH
 };
-const int mineralsMap[5] = {
-	STRING_PLANET_LIST_MINERALS_ULTRA_POOR,
-	STRING_PLANET_LIST_MINERALS_POOR,
-	STRING_PLANET_LIST_MINERALS_ABUNDANT,
-	STRING_PLANET_LIST_MINERALS_RICH,
-	STRING_PLANET_LIST_MINERALS_ULTRA_RICH
-};
-const int sizesMap[5] = {
-	STRING_PLANET_LIST_SIZE_TINY,
-	STRING_PLANET_LIST_SIZE_SMALL,
-	STRING_PLANET_LIST_SIZE_MEDIUM,
-	STRING_PLANET_LIST_SIZE_LARGE,
-	STRING_PLANET_LIST_SIZE_HUGE
+
+const int sizesMap[PLANET_SIZE_COUNT] = {
+	ESTR_PLANET_SIZE_TINY,
+	ESTR_PLANET_SIZE_SMALL,
+	ESTR_PLANET_SIZE_MEDIUM,
+	ESTR_PLANET_SIZE_LARGE,
+	ESTR_PLANET_SIZE_HUGE
 };
 
 GalaxyMinimapWidget::GalaxyMinimapWidget(unsigned x, unsigned y,
@@ -1167,80 +1139,122 @@ void SelectPlayerView::clickPlayer(int x, int y, int arg) {
 	exitView();
 }
 
-PlanetsListView::PlanetsListView(const GameState *game, int activePlayer) : _game(game), _activePlayer(activePlayer) {
-	_planetAssets = gameAssets->getImage(PLANET_ARCHIVE, ASSET_PLANETLIST_BG);
+PlanetsListView::PlanetsListView(const GameState *game, int activePlayer) :
+	_game(game), _activePlayer(activePlayer), _planetCount(0) {
 
-	// Load all planet icons: each climate holds 5 different sizes, so Toxic climate starts at 0, Radiated at 5, etc
-	for (int assetId = 0; assetId < 50; assetId++) { 
-		// The planet icons go from offset 26 to offset 26 + 50 = 75
-		_planetIcons[assetId] = gameAssets->getImage(PLANET_ARCHIVE, assetId + 26, _planetAssets->palette());
+	unsigned i, j, k;
+	const uint8_t *pal;
+
+	_bg = gameAssets->getImage(PLANET_ARCHIVE, ASSET_PLANETLIST_BG);
+	pal = _bg->palette();
+
+	for (i = 0, k = 0; i < PLANET_CLIMATE_COUNT; i++) {
+		for (j = 0; j < PLANET_SIZE_COUNT; j++, k++) {
+			_planetimg[i][j] = gameAssets->getImage(PLANET_ARCHIVE,
+				ASSET_PLANETLIST_PLANET_IMAGES + k, pal);
+		}
 	}
 
 	initWidgets();
+	updateList();
 }
 
 void PlanetsListView::initWidgets(void) {
+	const uint8_t *pal = _bg->palette();
 	Widget *w = NULL;
 
 	// Create the return button
-	w = createWidget(453, 440, 153, 18);
+	w = createWidget(454, 440, 156, 25);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &PlanetsListView::clickReturn));
-	w->setClickSprite(MBUTTON_LEFT, PLANET_ARCHIVE, ASSET_PLANETLIST_RETURN_BUTTON,
-		_planetAssets->palette(), 1);
+	w->setClickSprite(MBUTTON_LEFT, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_RETURN_BUTTON, pal, 1);
+}
+
+void PlanetsListView::updateList(void) {
+	unsigned i, count, star, orbit, type;
+	int colony;
+
+	for (i = 0, count = 0; i < _game->_planetCount; i++) {
+		colony = _game->_planets[i].colony;
+		star = _game->_planets[i].star;
+		orbit = _game->_planets[i].orbit;
+		type = _game->_planets[i].type;
+
+		// Ignore invalid and own planets
+		if (star >= _game->_starSystemCount ||
+			_game->_starSystems[star].planetIndex[orbit]!=(int)i ||
+			type != PlanetType::HABITABLE || (colony > 0 &&
+			_game->_colonies[colony].owner == _activePlayer)) {
+			continue;
+		}
+
+		_planets[count++] = i;
+	}
+
+	_planetCount = count;
 }
 
 void PlanetsListView::redraw(unsigned curtick) {
 	Font *fnt, *smallFnt;
-	const uint8_t *pal;
-	int x, y, displayedPlanet = 1;
+	unsigned i, y, offset = 0, color;
+	int simpleY, fullY, smallY;
+	const char *str;
 	char buf[32];
-	const int climateOffset = 5,
-			  mineralsOffset = 5,
-			  sizeOffset = 5,
-			  nameOffset = 10,
-			  rowHeight = 55,
-			  planetListMaxItems = 8,
-			  offset = 10;
-	unsigned color = FONT_COLOR_PLANET_LIST;
-
-	clearScreen();
-	// Render the planet list background
-	_planetAssets->draw(0, 0);
+	const Image *img;
+	const Planet *ptr;
+	const Star *sptr;
 
 	fnt = gameFonts->getFont(FONTSIZE_SMALL);
 	smallFnt = gameFonts->getFont(FONTSIZE_SMALLER);
+	simpleY = (50 - fnt->height()) / 2;
+	fullY = (46 - fnt->height() - smallFnt->height()) / 2;
+	smallY = fullY + fnt->height() + 4;
+	color = FONT_COLOR_PLANET_LIST;
 
-	for (uint16_t i=0; i < _game->_planetCount; i++) {
-		const Planet *planet = &_game->_planets[i];
-		if (planet->colony >= 0 && _game->_colonies[planet->colony].owner == _activePlayer) {
-			continue;
+	clearScreen();
+	_bg->draw(0, 0);
+
+	for (i = 0; i < 8 && offset + i < _planetCount; i++) {
+		ptr = _game->_planets + _planets[offset + i];
+		sptr = _game->_starSystems + ptr->star;
+		y = 36 + i * 55;
+
+		// Planet name and image
+		img = (const Image*)_planetimg[ptr->climate][ptr->size];
+		img->draw(61 - img->width() / 2, y + 21 - img->height() / 2);
+		sprintf(buf, "%s %s", sptr->name,
+			romanNumbers[sptr->planetSeq(ptr->orbit)]);
+		fnt->centerText(61, y + 29, color, buf);
+
+		if (ptr->special && ptr->special < ORION_SPECIAL) {
+			str = gameLang->estrings(ESTR_SPECIAL_NONE +
+				ptr->special);
+			smallFnt->centerText(61, y + 1, color, str);
 		}
 
 		// Planet climate
-		fnt->centerText(138, rowHeight * displayedPlanet - climateOffset, color, gameLang->estrings(planetClimateMap[planet->climate]));
-		smallFnt->centerText(138, rowHeight * displayedPlanet + offset, color, "0 Food"); // FIXME: Pull real data
+		str = gameLang->estrings(planetClimateMap[ptr->climate]);
+		fnt->centerText(138, y + fullY, color, str);
+		sprintf(buf, "%u Food", ptr->foodbase);
+		smallFnt->centerText(138, y + smallY, color, buf);
 
 		// Planet Gravity
-		fnt->centerText(220, rowHeight * displayedPlanet, color, gameLang->estrings(planetGravityMap[planet->gravity]));
+		// FIXME: add penalties
+		str = gameLang->estrings(ESTR_LGRAVITY_LOW + ptr->gravity);
+		fnt->centerText(220, y + simpleY, color, str);
 
 		// Minerals
-		fnt->centerText(306, rowHeight * displayedPlanet - mineralsOffset, color, gameLang->estrings(mineralsMap[planet->minerals]));
-		smallFnt->centerText(306, rowHeight * displayedPlanet + offset, color, "3 prod/worker"); // FIXME: Pull real data
+		str = gameLang->estrings(mineralsMap[ptr->minerals]);
+		fnt->centerText(306, y + fullY, color, str);
+		// FIXME: Pull real data
+		smallFnt->centerText(306, y + smallY, color, "3 prod/worker");
 
 		// Planet size
-		x = 50;
-		fnt->centerText(385, rowHeight * displayedPlanet - sizeOffset, color, gameLang->estrings(sizesMap[planet->size]));
-		smallFnt->centerText(385, rowHeight * displayedPlanet + offset, color, "4 max pop"); // FIXME: Pull real data
-
-		// Render the planet icon
-		_planetIcons[planet->climate * 5 + planet->size]->draw(x - planet->size, (rowHeight * displayedPlanet) - 10);
-
-		// Planet name
-		sprintf(buf, "%s %s", _game->_starSystems[planet->star].name, romanNumbers[planet->orbit]);
-		fnt->centerText(60, rowHeight * displayedPlanet + nameOffset, color, buf);
-
-		displayedPlanet++;
+		str = gameLang->estrings(sizesMap[ptr->size]);
+		fnt->centerText(385, y + fullY, color, str);
+		// FIXME: Pull real data
+		smallFnt->centerText(385, y + smallY, color, "4 max pop");
 	}
 
 	redrawWidgets(0, 0, curtick);
