@@ -25,6 +25,13 @@
 
 const unsigned galaxySizeFactors[GALAXY_ZOOM_LEVELS] = {10, 15, 20, 30};
 
+// gravityPelanties[player_homeworld][dest_planet]
+static const int gravityPenalties[GRAVITY_LEVEL_COUNT][GRAVITY_LEVEL_COUNT] = {
+	{  0, -25, -50},	// low-G homeworld
+	{-25,   0, -50},	// normal-G homeworld
+	{-50,   0,   0},	// heavy-G homeworld
+};
+
 GameConfig::GameConfig(void) {
 	version = 0;
 	memset(saveGameName, 0, SAVE_GAME_NAME_SIZE);
@@ -681,6 +688,24 @@ void Player::load(SeekableReadStream &stream) {
 	}
 
 	stream.seek(74, SEEK_CUR);
+}
+
+int Player::gravityPenalty(unsigned gravity) const {
+	unsigned homegrav;
+
+	if (gravity >= GRAVITY_LEVEL_COUNT) {
+		throw std::out_of_range("Invalid gravity level");
+	}
+
+	if (racePicks.lowG) {
+		homegrav = PlanetGravity::LOW_G;
+	} else if (racePicks.highG) {
+		homegrav = PlanetGravity::HEAVY_G;
+	} else {
+		homegrav = PlanetGravity::NORMAL_G;
+	}
+
+	return gravityPenalties[homegrav][gravity];
 }
 
 void Player::validate(void) const {

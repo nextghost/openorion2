@@ -36,6 +36,7 @@ const int PLAYER_COUNT 				= 0x08;
 const int PLAYER_NAME_SIZE 			= 0x14;
 #define PLAYER_RACE_SIZE 15
 #define RACE_COUNT 13
+#define GRAVITY_LEVEL_COUNT 3
 
 #define OBJECTIVE_HUMAN 100
 
@@ -540,6 +541,8 @@ struct Player {
 	Player(void);
 
 	void load(SeekableReadStream &stream);
+
+	int gravityPenalty(unsigned gravity) const;
 
 	void validate(void) const;
 };

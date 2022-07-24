@@ -73,12 +73,31 @@
 
 #define PLANET_ARCHIVE "plntsum.lbx"
 #define ASSET_PLANETLIST_BG 0
+#define ASSET_PLANETLIST_ENEMY_TOGGLE 4
+#define ASSET_PLANETLIST_GRAVITY_TOGGLE 5
+#define ASSET_PLANETLIST_ENV_TOGGLE 6
+#define ASSET_PLANETLIST_MINERAL_TOGGLE 7
+#define ASSET_PLANETLIST_RANGE_TOGGLE 8
+#define ASSET_PLANETLIST_SCROLL_UP_BUTTON 11
+#define ASSET_PLANETLIST_SCROLL_DOWN_BUTTON 12
 #define ASSET_PLANETLIST_RETURN_BUTTON 14
 #define ASSET_PLANETLIST_PLANET_IMAGES 26
+
+#define PLANET_LIST_SCROLL_WIDTH 9
+#define PLANET_LIST_ROWS 8
+#define PLANET_LIST_FIRST_ROW 36
+#define PLANET_LIST_ROW_HEIGHT 50
+#define PLANET_LIST_ROW_DIST 55
 
 static const uint8_t minimapStarSelColors[STARSEL_FRAMECOUNT * 3] = {
 	RGB(0x043804), RGB(0x004c00), RGB(0x006000), RGB(0x087008),
 	RGB(0x2c8024), RGB(0x489038)
+};
+
+static const uint8_t planetListScrollTexture[PLANET_LIST_SCROLL_WIDTH * 3] = {
+	RGB(0x9c9c9c), RGB(0x949898), RGB(0x949898), RGB(0x8c9090),
+	RGB(0x8c9090), RGB(0x888888), RGB(0x888888), RGB(0x808080),
+	RGB(0x808080),
 };
 
 static const unsigned galaxy_fontanim[GALAXY_ANIM_LENGTH] = {
@@ -1140,7 +1159,10 @@ void SelectPlayerView::clickPlayer(int x, int y, int arg) {
 }
 
 PlanetsListView::PlanetsListView(const GameState *game, int activePlayer) :
-	_game(game), _activePlayer(activePlayer), _planetCount(0) {
+	_game(game), _scroll(NULL), _enemyFilter(NULL), _gravityFilter(NULL),
+	_envFilter(NULL), _mineralFilter(NULL), _rangeFilter(NULL),
+	_scrollgrab(0), _curslot(-1), _activePlayer(activePlayer),
+	_planetCount(0) {
 
 	unsigned i, j, k;
 	const uint8_t *pal;
@@ -1156,69 +1178,167 @@ PlanetsListView::PlanetsListView(const GameState *game, int activePlayer) :
 	}
 
 	initWidgets();
-	updateList();
+	changeFilter(0, 0, 0);
 }
 
 void PlanetsListView::initWidgets(void) {
+	unsigned i;
 	const uint8_t *pal = _bg->palette();
 	Widget *w = NULL;
 
-	// Create the return button
+	for (i = 0; i < PLANET_LIST_ROWS; i++) {
+		w = createWidget(18, PLANET_LIST_FIRST_ROW +
+			i * PLANET_LIST_ROW_DIST, 398, PLANET_LIST_ROW_HEIGHT);
+		w->setMouseOverCallback(GuiMethod(*this,
+			&PlanetsListView::highlightSlot, i));
+		w->setMouseOutCallback(GuiMethod(*this,
+			&PlanetsListView::highlightSlot, -1));
+		w->setMouseUpCallback(MBUTTON_LEFT,
+			GuiMethod(*this, &PlanetsListView::clickSlot, i));
+		w->setMouseUpCallback(MBUTTON_RIGHT,
+			GuiMethod(*this, &PlanetsListView::showHelp,
+			HELP_PLANETLIST_SLOT));
+	}
+
+	_scroll = new ScrollBarWidget(423, 38, PLANET_LIST_SCROLL_WIDTH, 407,
+		8, 8, planetListScrollTexture);
+	addWidget(_scroll);
+	_scroll->setBeginScrollCallback(GuiMethod(*this,
+		&PlanetsListView::handleBeginScroll));
+	_scroll->setEndScrollCallback(GuiMethod(*this,
+		&PlanetsListView::handleEndScroll));
+	_scroll->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_SCROLLBAR));
+
+	w = createWidget(422, 16, 11, 19);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*_scroll, &ScrollBarWidget::scrollMinus));
+	w->setClickSprite(MBUTTON_LEFT, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_SCROLL_UP_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_SCROLLBAR));
+
+	w = createWidget(421, 448, 12, 19);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*_scroll, &ScrollBarWidget::scrollPlus));
+	w->setClickSprite(MBUTTON_LEFT, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_SCROLL_DOWN_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_SCROLLBAR));
+
+	_enemyFilter = new ToggleWidget(441, 266, 183, 21, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_ENEMY_TOGGLE, pal);
+	addWidget(_enemyFilter);
+	_enemyFilter->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &PlanetsListView::changeFilter));
+	_enemyFilter->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_ENEMY_TOGGLE));
+
+	_gravityFilter = new ToggleWidget(441, 289, 183, 22, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_GRAVITY_TOGGLE, pal);
+	addWidget(_gravityFilter);
+	_gravityFilter->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &PlanetsListView::changeFilter));
+	_gravityFilter->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_GRAVITY_TOGGLE));
+
+	_envFilter = new ToggleWidget(441, 312, 183, 22, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_ENV_TOGGLE, pal);
+	addWidget(_envFilter);
+	_envFilter->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &PlanetsListView::changeFilter));
+	_envFilter->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_ENV_TOGGLE));
+
+	_mineralFilter = new ToggleWidget(441, 335, 183, 22, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_MINERAL_TOGGLE, pal);
+	addWidget(_mineralFilter);
+	_mineralFilter->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &PlanetsListView::changeFilter));
+	_mineralFilter->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_MINERAL_TOGGLE));
+
+	// FIXME: Implement and enable by default
+	_rangeFilter = new ToggleWidget(441, 358, 183, 20, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_RANGE_TOGGLE, pal);
+	addWidget(_rangeFilter);
+	_rangeFilter->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &PlanetsListView::changeFilter));
+	_rangeFilter->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_RANGE_TOGGLE));
+
 	w = createWidget(454, 440, 156, 25);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &PlanetsListView::clickReturn));
 	w->setClickSprite(MBUTTON_LEFT, PLANET_ARCHIVE,
 		ASSET_PLANETLIST_RETURN_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_RETURN_BUTTON));
+
+	w = createWidget(18, 15, 397, 16);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_HEADER));
+
+	w = createWidget(442, 16, 180, 117);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_MINIMAP));
+
+	w = createWidget(441, 143, 182, 22);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_MINIMAP));
 }
 
-void PlanetsListView::updateList(void) {
-	unsigned i, count, star, orbit, type;
-	int colony;
+void PlanetsListView::handleBeginScroll(int x, int y, int arg) {
+	_scrollgrab = 1;
+}
 
-	for (i = 0, count = 0; i < _game->_planetCount; i++) {
-		colony = _game->_planets[i].colony;
-		star = _game->_planets[i].star;
-		orbit = _game->_planets[i].orbit;
-		type = _game->_planets[i].type;
-
-		// Ignore invalid and own planets
-		if (star >= _game->_starSystemCount ||
-			_game->_starSystems[star].planetIndex[orbit]!=(int)i ||
-			type != PlanetType::HABITABLE || (colony > 0 &&
-			_game->_colonies[colony].owner == _activePlayer)) {
-			continue;
-		}
-
-		_planets[count++] = i;
-	}
-
-	_planetCount = count;
+void PlanetsListView::handleEndScroll(int x, int y, int arg) {
+	_scrollgrab = 0;
+	handleMouseMove(x, y, 0);	// force active widget lookup
 }
 
 void PlanetsListView::redraw(unsigned curtick) {
 	Font *fnt, *smallFnt;
-	unsigned i, y, offset = 0, color;
-	int simpleY, fullY, smallY;
-	const char *str;
+	unsigned i, y, color, offset = _scroll->position();
+	int simpleY, fullY, smallY, penalty;
+	const char *str, *foodstr, *prodstr, *popstr, *penaltystr;
 	char buf[32];
 	const Image *img;
 	const Planet *ptr;
 	const Star *sptr;
+	const Player *player = _game->_players + _activePlayer;
 
 	fnt = gameFonts->getFont(FONTSIZE_SMALL);
 	smallFnt = gameFonts->getFont(FONTSIZE_SMALLER);
-	simpleY = (50 - fnt->height()) / 2;
-	fullY = (46 - fnt->height() - smallFnt->height()) / 2;
+	simpleY = (PLANET_LIST_ROW_HEIGHT - fnt->height()) / 2;
+	fullY = PLANET_LIST_ROW_HEIGHT - 4 - fnt->height() - smallFnt->height();
+	fullY /= 2;
 	smallY = fullY + fnt->height() + 4;
+	foodstr = gameLang->hstrings(HSTR_PLANET_FOOD);
+	prodstr = gameLang->hstrings(HSTR_PLANET_PRODUCTION);
+	popstr = gameLang->hstrings(HSTR_PLANET_POPULATION);
+	penaltystr = gameLang->hstrings(HSTR_PLANET_PRODUCTION_PENALTY);
 	color = FONT_COLOR_PLANET_LIST;
 
 	clearScreen();
 	_bg->draw(0, 0);
 
-	for (i = 0; i < 8 && offset + i < _planetCount; i++) {
+	for (i = 0; i < PLANET_LIST_ROWS && offset + i < _planetCount; i++) {
 		ptr = _game->_planets + _planets[offset + i];
 		sptr = _game->_starSystems + ptr->star;
-		y = 36 + i * 55;
+		y = PLANET_LIST_FIRST_ROW + i * PLANET_LIST_ROW_DIST;
 
 		// Planet name and image
 		img = (const Image*)_planetimg[ptr->climate][ptr->size];
@@ -1236,28 +1356,172 @@ void PlanetsListView::redraw(unsigned curtick) {
 		// Planet climate
 		str = gameLang->estrings(planetClimateMap[ptr->climate]);
 		fnt->centerText(138, y + fullY, color, str);
-		sprintf(buf, "%u Food", ptr->foodbase);
+		sprintf(buf, foodstr, (int)ptr->foodbase);
 		smallFnt->centerText(138, y + smallY, color, buf);
 
 		// Planet Gravity
-		// FIXME: add penalties
 		str = gameLang->estrings(ESTR_LGRAVITY_LOW + ptr->gravity);
-		fnt->centerText(220, y + simpleY, color, str);
+		penalty = player->gravityPenalty(ptr->gravity);
+
+		if (penalty) {
+			sprintf(buf, penaltystr, -penalty);
+			fnt->centerText(220, y + fullY, color, str);
+			smallFnt->centerText(220, y + smallY, color, buf);
+		} else {
+			fnt->centerText(220, y + simpleY, color, str);
+		}
 
 		// Minerals
 		str = gameLang->estrings(mineralsMap[ptr->minerals]);
 		fnt->centerText(306, y + fullY, color, str);
 		// FIXME: Pull real data
-		smallFnt->centerText(306, y + smallY, color, "3 prod/worker");
+		sprintf(buf, prodstr, 3);
+		smallFnt->centerText(306, y + smallY, color, buf);
 
 		// Planet size
 		str = gameLang->estrings(sizesMap[ptr->size]);
 		fnt->centerText(385, y + fullY, color, str);
 		// FIXME: Pull real data
-		smallFnt->centerText(385, y + smallY, color, "4 max pop");
+		sprintf(buf, popstr, 4);
+		smallFnt->centerText(385, y + smallY, color, buf);
+	}
+
+	if (_curslot >= 0) {
+		ptr = _game->_planets + _planets[offset + _curslot];
+		sptr = _game->_starSystems + ptr->star;
+		fnt->centerText(532, 143 + (22 - fnt->height()) / 2,
+			FONT_COLOR_PLANET_LIST, sptr->name);
 	}
 
 	redrawWidgets(0, 0, curtick);
+	redrawWindows(curtick);
+}
+
+void PlanetsListView::handleMouseMove(int x, int y, unsigned buttons) {
+	if (_scrollgrab) {
+		_scroll->handleMouseMove(x, y, buttons);
+		return;
+	}
+
+	GuiView::handleMouseMove(x, y, buttons);
+}
+
+void PlanetsListView::handleMouseUp(int x, int y, unsigned button) {
+	if (_scrollgrab) {
+		_scroll->handleMouseUp(x, y, button);
+		return;
+	}
+
+	GuiView::handleMouseUp(x, y, button);
+}
+
+void PlanetsListView::showHelp(int x, int y, int arg) {
+	new MessageBoxWindow(this, arg, _bg->palette());
+}
+
+void PlanetsListView::highlightSlot(int x, int y, int arg) {
+	if (arg >= 0 && arg < PLANET_LIST_ROWS &&
+		arg + _scroll->position() < _planetCount) {
+		_curslot = arg;
+	} else {
+		_curslot = -1;
+	}
+}
+
+void PlanetsListView::clickSlot(int x, int y, int arg) {
+	// FIXME: implement sending and cancelling colony/outpost ships
+}
+
+void PlanetsListView::changeFilter(int x, int y, int arg) {
+	unsigned i, j, count;
+	int f_enemy, f_gravity, f_env, f_mineral, f_range;
+	int owner;
+	const Planet *ptr;
+	const Star *sptr;
+	const Player *player = _game->_players + _activePlayer;
+	const BilistNode<Fleet> *node;
+
+	f_enemy = _enemyFilter->value();
+	f_gravity = _gravityFilter->value();
+	f_env = _envFilter->value();
+	f_mineral = _mineralFilter->value();
+	f_range = _rangeFilter->value();
+
+	if (f_range) {
+		_rangeFilter->setValue(0);
+		new MessageBoxWindow(this, "Range filter not implemented");
+	}
+
+	for (i = 0, count = 0; i < _game->_starSystemCount; i++) {
+		sptr = _game->_starSystems + i;
+		// FIXME: Skip undiscovered stars
+
+		if (f_enemy) {
+			// Hostile colony in this star system
+			if (sptr->hasColony & ~(1 << _activePlayer)) {
+				continue;
+			}
+
+			node = sptr->getOrbitingFleets();
+
+			for (; node; node = node->next()) {
+				if (!node->data) {
+					continue;
+				}
+
+				if (node->data->getOwner() != _activePlayer) {
+					break;
+				}
+			}
+
+			// Hostile fleet orbiting star
+			// FIXME: ignore hidden fleets (known but unvisited
+			// star)
+			if (node) {
+				continue;
+			}
+		}
+
+		// FIXME: Implement range filter
+
+		for (j = 0; j < MAX_ORBITS; j++) {
+			if (sptr->planetIndex[j] < 0) {
+				continue;
+			}
+
+			ptr = _game->_planets + sptr->planetIndex[j];
+			owner = -1;
+
+			if (ptr->colony >= 0) {
+				owner = _game->_colonies[ptr->colony].owner;
+			}
+
+			// Ignore invalid and own planets
+			if (ptr->type != PlanetType::HABITABLE ||
+				owner == _activePlayer) {
+				continue;
+			}
+
+			if (f_gravity &&
+				player->gravityPenalty(ptr->gravity) < 0) {
+				continue;
+			}
+
+			if (f_env && ptr->climate < PlanetClimate::DESERT) {
+				continue;
+			}
+
+			if (f_mineral &&
+				ptr->minerals < PlanetMinerals::ABUNDANT) {
+				continue;
+			}
+
+			_planets[count++] = sptr->planetIndex[j];
+		}
+	}
+
+	_planetCount = count;
+	_scroll->setRange(_planetCount);
 }
 
 void PlanetsListView::clickReturn(int x, int y, int arg) {

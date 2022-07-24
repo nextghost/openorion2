@@ -154,19 +154,31 @@ public:
 class PlanetsListView : public GuiView {
 private:
 	const GameState *_game;
-	int _activePlayer;
+	ScrollBarWidget *_scroll;
+	ToggleWidget *_enemyFilter, *_gravityFilter, *_envFilter;
+	ToggleWidget *_mineralFilter, *_rangeFilter;
+	int _scrollgrab, _curslot, _activePlayer;
 	ImageAsset _bg, _planetimg[PLANET_CLIMATE_COUNT][PLANET_SIZE_COUNT];
 	unsigned _planetCount, _planets[MAX_PLANETS];
 
 	void initWidgets(void);
 
 protected:
-	void updateList(void);
+	void handleBeginScroll(int x, int y, int arg);
+	void handleEndScroll(int x, int y, int arg);
 
 public:
 	PlanetsListView(const GameState *game, int activePlayer);
 	
 	void redraw(unsigned curtick);
+
+	void handleMouseMove(int x, int y, unsigned buttons);
+	void handleMouseUp(int x, int y, unsigned buttons);
+
+	void showHelp(int x, int y, int arg);
+	void highlightSlot(int x, int y, int arg);
+	void clickSlot(int x, int y, int arg);
+	void changeFilter(int x, int y, int arg);
 	void clickReturn(int x, int y, int arg);
 };
 
