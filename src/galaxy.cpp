@@ -134,6 +134,30 @@ const int sizesMap[PLANET_SIZE_COUNT] = {
 	ESTR_PLANET_SIZE_HUGE
 };
 
+static const unsigned planetListFontColors[MAX_PLAYERS + 1] = {
+	FONT_COLOR_PLAYER_RED4,
+	FONT_COLOR_PLAYER_YELLOW4,
+	FONT_COLOR_PLAYER_GREEN4,
+	FONT_COLOR_PLANET_LIST_SILVER,
+	FONT_COLOR_PLANET_LIST_BLUE,
+	FONT_COLOR_PLANET_LIST_BROWN,
+	FONT_COLOR_PLAYER_PURPLE4,
+	FONT_COLOR_PLAYER_ORANGE4,
+	FONT_COLOR_PLANET_LIST
+};
+
+static const unsigned planetListFontColorsBright[MAX_PLAYERS + 1] = {
+	FONT_COLOR_PLAYER_RED5,
+	FONT_COLOR_PLAYER_YELLOW5,
+	FONT_COLOR_PLAYER_GREEN5,
+	FONT_COLOR_PLANET_LIST_SILVER_BRIGHT,
+	FONT_COLOR_PLANET_LIST_BLUE_BRIGHT,
+	FONT_COLOR_PLANET_LIST_BROWN_BRIGHT,
+	FONT_COLOR_PLAYER_PURPLE5,
+	FONT_COLOR_PLAYER_ORANGE5,
+	FONT_COLOR_PLANET_LIST_BRIGHT
+};
+
 GalaxyMinimapWidget::GalaxyMinimapWidget(unsigned x, unsigned y,
 	unsigned width, unsigned height, GameState *game, int activePlayer,
 	const char *archive, unsigned starAssets, unsigned fleetAssets,
@@ -1312,7 +1336,7 @@ void PlanetsListView::handleEndScroll(int x, int y, int arg) {
 void PlanetsListView::redraw(unsigned curtick) {
 	Font *fnt, *smallFnt;
 	unsigned i, y, color, offset = _scroll->position();
-	int simpleY, fullY, smallY, penalty;
+	int simpleY, fullY, smallY, owner, penalty;
 	const char *str, *foodstr, *prodstr, *popstr, *penaltystr;
 	char buf[32];
 	const Image *img;
@@ -1330,7 +1354,6 @@ void PlanetsListView::redraw(unsigned curtick) {
 	prodstr = gameLang->hstrings(HSTR_PLANET_PRODUCTION);
 	popstr = gameLang->hstrings(HSTR_PLANET_POPULATION);
 	penaltystr = gameLang->hstrings(HSTR_PLANET_PRODUCTION_PENALTY);
-	color = FONT_COLOR_PLANET_LIST;
 
 	clearScreen();
 	_bg->draw(0, 0);
@@ -1339,6 +1362,19 @@ void PlanetsListView::redraw(unsigned curtick) {
 		ptr = _game->_planets + _planets[offset + i];
 		sptr = _game->_starSystems + ptr->star;
 		y = PLANET_LIST_FIRST_ROW + i * PLANET_LIST_ROW_DIST;
+		color = MAX_PLAYERS;
+		owner = -1;
+
+		if (ptr->colony >= 0) {
+			owner = _game->_colonies[ptr->colony].owner;
+			color = _game->_players[owner].color;
+		}
+
+		if (_curslot == (int)i) {
+			color = planetListFontColorsBright[color];
+		} else {
+			color = planetListFontColors[color];
+		}
 
 		// Planet name and image
 		img = (const Image*)_planetimg[ptr->climate][ptr->size];
@@ -1351,6 +1387,13 @@ void PlanetsListView::redraw(unsigned curtick) {
 			str = gameLang->estrings(ESTR_SPECIAL_NONE +
 				ptr->special);
 			smallFnt->centerText(61, y + 1, color, str);
+		}
+
+		if (owner >= 0) {
+			str = gameLang->estrings(ESTR_RACENAME_ALKARI +
+				_game->_players[owner].picture);
+			sprintf(buf, "(%s)", str);
+			smallFnt->centerText(61, y + 41, color, buf);
 		}
 
 		// Planet climate
@@ -1390,7 +1433,7 @@ void PlanetsListView::redraw(unsigned curtick) {
 		ptr = _game->_planets + _planets[offset + _curslot];
 		sptr = _game->_starSystems + ptr->star;
 		fnt->centerText(532, 143 + (22 - fnt->height()) / 2,
-			FONT_COLOR_PLANET_LIST, sptr->name);
+			FONT_COLOR_PLANET_LIST_BRIGHT, sptr->name);
 	}
 
 	redrawWidgets(0, 0, curtick);
