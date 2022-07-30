@@ -438,7 +438,7 @@ void FleetListView::initWidgets(void) {
 	Widget *w;
 
 	_minimap = new GalaxyMinimapWidget(15, 52, 305, 182, _game,
-		_activePlayer, FLEETLIST_ARCHIVE, ASSET_FLEET_STAR_IMAGES,
+		FLEETLIST_ARCHIVE, ASSET_FLEET_STAR_IMAGES,
 		ASSET_FLEET_SHIP_IMAGES, pal);
 	addWidget(_minimap);
 	_minimap->setStarSelectCallback(GuiMethod(*this,

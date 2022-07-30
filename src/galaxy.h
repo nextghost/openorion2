@@ -35,7 +35,7 @@ private:
 	GameState *_game;
 	Fleet *_curFleet, *_selFleet;
 	unsigned _startTick;
-	int _curStar, _selStar, _activePlayer;
+	int _curStar, _selStar;
 
 protected:
 	unsigned starX(unsigned x);
@@ -54,8 +54,8 @@ protected:
 
 public:
 	GalaxyMinimapWidget(unsigned x, unsigned y, unsigned width,
-		unsigned height, GameState *game, int activePlayer,
-		const char *archive, unsigned starAssets, unsigned fleetAssets,
+		unsigned height, GameState *game, const char *archive,
+		unsigned starAssets, unsigned fleetAssets,
 		const uint8_t *palette = NULL);
 	~GalaxyMinimapWidget(void);
 

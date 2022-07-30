@@ -159,11 +159,10 @@ static const unsigned planetListFontColorsBright[MAX_PLAYERS + 1] = {
 };
 
 GalaxyMinimapWidget::GalaxyMinimapWidget(unsigned x, unsigned y,
-	unsigned width, unsigned height, GameState *game, int activePlayer,
-	const char *archive, unsigned starAssets, unsigned fleetAssets,
-	const uint8_t *palette) : Widget(x, y, width, height), _game(game),
-	_curFleet(NULL), _selFleet(NULL), _startTick(0), _curStar(-1),
-	_selStar(-1), _activePlayer(activePlayer) {
+	unsigned width, unsigned height, GameState *game, const char *archive,
+	unsigned starAssets, unsigned fleetAssets, const uint8_t *palette) :
+	Widget(x, y, width, height), _game(game), _curFleet(NULL),
+	_selFleet(NULL), _startTick(0), _curStar(-1), _selStar(-1) {
 
 	unsigned i;
 
