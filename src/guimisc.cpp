@@ -140,19 +140,17 @@ ErrorWindow::~ErrorWindow(void) {
 }
 
 void ErrorWindow::redraw(unsigned curtick) {
-	unsigned frame, fcount;
+	unsigned frame;
 	int y;
 
 	if (!_animStart) {
 		_animStart = curtick;
 	}
 
-	fcount = _bg->frameCount();
 	// FIXME: calculate frame time from image header
 	// Original game plays 14 frames in ~1.3 seconds
-	frame = (curtick - _animStart) / 100;
-	frame %= 2 * fcount - 1;
-	_bg->draw(_x, _y, frame >= fcount ? 2 * fcount - frame - 1: frame);
+	frame = bounceFrame(curtick - _animStart, 100, _bg->frameCount());
+	_bg->draw(_x, _y, frame);
 	y = _y + (_height - _text.height()) / 2;
 	_text.redraw(_x + 53, y, curtick);
 }

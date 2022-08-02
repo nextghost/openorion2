@@ -219,4 +219,11 @@ public:
 	unsigned fontCount(void) const;
 };
 
+// Calculate frame for animation that loops from the last frame to the first
+unsigned loopFrame(unsigned ticks, unsigned frametime, unsigned framecount);
+
+// Calculate frame for animation that bounces back and forth between the first
+// and last frame
+unsigned bounceFrame(unsigned ticks, unsigned frametime, unsigned framecount);
+
 #endif

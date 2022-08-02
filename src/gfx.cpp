@@ -767,3 +767,14 @@ Font *FontManager::getFont(unsigned id) {
 unsigned FontManager::fontCount(void) const {
 	return _fontCount;
 }
+
+unsigned loopFrame(unsigned ticks, unsigned frametime, unsigned framecount) {
+	return (ticks / frametime) % framecount;
+}
+
+unsigned bounceFrame(unsigned ticks, unsigned frametime, unsigned framecount) {
+	unsigned ret;
+
+	ret = (ticks / frametime) % (2 * framecount - 1);
+	return ret < framecount ? ret : 2 * framecount - ret - 1;
+}

@@ -260,8 +260,7 @@ void GalaxyMinimapWidget::drawFleet(int x, int y, const Fleet *f,
 	const Image *img = getFleetSprite(f);
 
 	if (f == _selFleet) {
-		frame = (curtick - _startTick) / 60;
-		frame %= img->frameCount();
+		frame = loopFrame(curtick - _startTick, 60, img->frameCount());
 	}
 
 	img->draw(x + fleetX(f), y + fleetY(f), frame);
@@ -283,13 +282,8 @@ void GalaxyMinimapWidget::drawStar(int x, int y, const Star *s,
 	img->draw(x - img->width() / 2, y - img->height() / 2, frame);
 
 	if (s == selptr) {
-		frame = (curtick - _startTick) / 200;
-		frame %= 2 * STARSEL_FRAMECOUNT - 1;
-
-		if (frame >= STARSEL_FRAMECOUNT) {
-			frame = 2 * STARSEL_FRAMECOUNT - frame - 1;
-		}
-
+		frame = bounceFrame(curtick - _startTick, 200,
+			STARSEL_FRAMECOUNT);
 		color = minimapStarSelColors + frame * 3;
 		drawRect(x - 5, y - 5, 11, 11, color[0], color[1], color[2]);
 	} else if (s == curptr) {
@@ -803,9 +797,9 @@ void GalaxyView::redrawSidebar(unsigned curtick) {
 	// FIXME: Use strings from game data
 	ptr = _game->_players + _activePlayer;
 	fnt = gameFonts->getFont(FONTSIZE_SMALL);
-	negcolor = (curtick - _startTick) / GALAXY_ANIM_SPEED;
-	negcolor = galaxy_fontanim[negcolor % GALAXY_ANIM_LENGTH];
-	negcolor += FONT_COLOR_DEFICIT1;
+	negcolor = loopFrame(curtick - _startTick, GALAXY_ANIM_SPEED,
+		GALAXY_ANIM_LENGTH);
+	negcolor = FONT_COLOR_DEFICIT1 + galaxy_fontanim[negcolor];
 	stardate = _game->_gameConfig.stardate;
 	sprintf(buf, "%d.%d", stardate / 10, stardate % 10);
 	fnt->centerText(GALAXY_SIDEBAR_X, 29, FONT_COLOR_GALAXY_GUI, buf,
@@ -981,8 +975,8 @@ void GalaxyView::redraw(unsigned curtick) {
 		}
 
 		img = (Image*)_turnDoneLights[i];
-		frame = (curtick - _startTick) / GALAXY_ANIM_SPEED;
-		frame %= img->frameCount();
+		frame = loopFrame(curtick - _startTick, GALAXY_ANIM_SPEED,
+			img->frameCount());
 		img->draw(x, 5, frame);
 		x += img->width();
 	}
@@ -1156,8 +1150,9 @@ void SelectPlayerView::redraw(unsigned curtick) {
 		if (_game->_players[_humans[i]].playerDoneFlags) {
 			color = 1;
 		} else if (int(i) == _currentPlayer) {
-			color = (curtick - _animStart) / 30;
-			color = fontanim[color % PSELECT_ANIM_LENGTH];
+			color = loopFrame(curtick - _animStart, 30,
+				PSELECT_ANIM_LENGTH);
+			color = fontanim[color];
 		} else {
 			color = 3;
 		}
