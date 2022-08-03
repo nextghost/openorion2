@@ -89,6 +89,12 @@
 #define PLANET_LIST_ROW_HEIGHT 50
 #define PLANET_LIST_ROW_DIST 55
 
+static const uint8_t starmapHighlightColors[(MAX_PLAYERS + 1) * 3] {
+	RGB(0xfc0000), RGB(0xd4c418), RGB(0x209c1c), RGB(0xc8c8c8),
+	RGB(0x305ca0), RGB(0xa47050), RGB(0x8c6098), RGB(0xd0680c),
+	RGB(0x8c9090)
+};
+
 static const uint8_t minimapStarSelColors[STARSEL_FRAMECOUNT * 3] = {
 	RGB(0x043804), RGB(0x004c00), RGB(0x006000), RGB(0x087008),
 	RGB(0x2c8024), RGB(0x489038)
@@ -158,11 +164,11 @@ static const unsigned planetListFontColorsBright[MAX_PLAYERS + 1] = {
 	FONT_COLOR_PLANET_LIST_BRIGHT
 };
 
-GalaxyMinimapWidget::GalaxyMinimapWidget(unsigned x, unsigned y,
-	unsigned width, unsigned height, GameState *game, const char *archive,
-	unsigned starAssets, unsigned fleetAssets, const uint8_t *palette) :
-	Widget(x, y, width, height), _game(game), _curFleet(NULL),
-	_selFleet(NULL), _startTick(0), _curStar(-1), _selStar(-1) {
+StarmapWidget::StarmapWidget(unsigned x, unsigned y, unsigned width,
+	unsigned height, GameState *game, const char *archive,
+	unsigned starAssets, const uint8_t *palette) :
+	Widget(x, y, width, height), _curStar(-1), _selStar(-1), _startTick(0),
+	_game(game) {
 
 	unsigned i;
 
@@ -175,6 +181,178 @@ GalaxyMinimapWidget::GalaxyMinimapWidget(unsigned x, unsigned y,
 		palette);
 	_bhole = gameAssets->getImage(archive, starAssets + MAX_PLAYERS + 2,
 		palette);
+}
+
+StarmapWidget::~StarmapWidget(void) {
+
+}
+
+unsigned StarmapWidget::starX(unsigned x) const {
+	return getX() + (x * width()) / _game->_galaxy.width;
+}
+
+unsigned StarmapWidget::starY(unsigned y) const {
+	return getY() + (y * height()) / _game->_galaxy.height;
+}
+
+const Image *StarmapWidget::getStarSprite(const Star *s) {
+	unsigned color;
+
+	if (s->spectralClass == BlackHole) {
+		return (Image*)_bhole;
+	} else if (s->owner < 0) {
+		return (Image*)_freestar;
+	}
+
+	// FIXME: handle unexplored stars
+	color = _game->_players[s->owner].color;
+	return (Image*)_starimg[color];
+}
+
+void StarmapWidget::drawStar(int x, int y, const Star *s, unsigned curtick) {
+	unsigned frame = 0;
+	const Image *img = getStarSprite(s);
+
+	x += starX(s->x);
+	y += starY(s->y);
+
+	if (curtick) {
+		frame = loopFrame(curtick-_startTick, 60, img->frameCount());
+	}
+
+	img->draw(x - img->width() / 2, y - img->height() / 2, frame);
+}
+
+int StarmapWidget::findStar(int x, int y) const {
+	unsigned i, px, py;
+
+	for (i = 0; i < _game->_starSystemCount; i++) {
+		const Star *ptr = _game->_starSystems + i;
+
+		px = starX(ptr->x);
+		py = starY(ptr->y);
+
+		if (isInRect(x, y, px - 4, py - 4, 9, 9)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+void StarmapWidget::onStarHighlight(int x, int y) {
+	_onStarHighlight(x, y);
+}
+
+void StarmapWidget::onStarSelect(int x, int y) {
+	_onStarSelect(x, y);
+}
+
+int StarmapWidget::highlightedStar(void) {
+	return _curStar;
+}
+
+int StarmapWidget::selectedStar(void) {
+	return _selStar;
+}
+
+void StarmapWidget::highlightStar(int id) {
+	if (id >= _game->_starSystemCount) {
+		throw std::invalid_argument("Star ID out of range");
+	}
+
+	_curStar = id;
+	_startTick = 0;
+}
+
+void StarmapWidget::selectStar(int id) {
+	if (id >= _game->_starSystemCount) {
+		throw std::invalid_argument("Star ID out of range");
+	}
+
+	_selStar = id;
+}
+
+void StarmapWidget::setStarHighlightCallback(const GuiCallback &callback) {
+	_onStarHighlight = callback;
+}
+
+void StarmapWidget::setStarSelectCallback(const GuiCallback &callback) {
+	_onStarSelect = callback;
+}
+
+void StarmapWidget::handleMouseMove(int x, int y, unsigned buttons) {
+	int star = findStar(x, y);
+
+	if (star >= 0 && star != _curStar) {
+		highlightStar(star);
+		_onStarHighlight(x, y);
+		return;
+	}
+
+	Widget::handleMouseMove(x, y, buttons);
+}
+
+void StarmapWidget::handleMouseUp(int x, int y, unsigned button) {
+	int star = -1;
+
+	if (button != MBUTTON_LEFT) {
+		Widget::handleMouseUp(x, y, button);
+		return;
+	}
+
+	star = findStar(x, y);
+
+	if (star >= 0) {
+		selectStar(star);
+		_onStarSelect(x, y);
+		return;
+	}
+
+	Widget::handleMouseUp(x, y, button);
+}
+
+void StarmapWidget::redraw(int x, int y, unsigned curtick) {
+	unsigned i, sx, sy, color = MAX_PLAYERS;
+	const uint8_t *cdata;
+
+	if (isHidden()) {
+		return;
+	}
+
+	if (!_startTick) {
+		_startTick = curtick;
+	}
+
+	for (i = 0; i < _game->_starSystemCount; i++) {
+		const Star *ptr = _game->_starSystems + i;
+
+		if (_curStar == (int)i) {
+			sx = starX(ptr->x);
+			sy = starY(ptr->y);
+
+			// FIXME: Handle unexplored stars
+			if (ptr->owner >= 0) {
+				color = _game->_players[ptr->owner].color;
+			}
+
+			cdata = starmapHighlightColors + 3 * color;
+			drawStar(x, y, ptr, curtick);
+			drawRect(x + sx - 4, y + sy - 4, 9, 9,
+				cdata[0], cdata[1], cdata[2]);
+		} else {
+			drawStar(x, y, ptr, 0);
+		}
+	}
+}
+
+GalaxyMinimapWidget::GalaxyMinimapWidget(unsigned x, unsigned y,
+	unsigned width, unsigned height, GameState *game, const char *archive,
+	unsigned starAssets, unsigned fleetAssets, const uint8_t *palette) :
+	StarmapWidget(x, y, width, height, game, archive, starAssets, palette),
+	_curFleet(NULL), _selFleet(NULL), _startTick(0) {
+
+	unsigned i;
 
 	for (i = 0; i < MAX_FLEET_OWNERS; i++) {
 		_fleetimg[i] = gameAssets->getImage(archive, fleetAssets + i,
@@ -184,14 +362,6 @@ GalaxyMinimapWidget::GalaxyMinimapWidget(unsigned x, unsigned y,
 
 GalaxyMinimapWidget::~GalaxyMinimapWidget(void) {
 
-}
-
-unsigned GalaxyMinimapWidget::starX(unsigned x) {
-	return getX() + (x * width()) / _game->_galaxy.width;
-}
-
-unsigned GalaxyMinimapWidget::starY(unsigned y) {
-	return getY() + (y * height()) / _game->_galaxy.height;
 }
 
 unsigned GalaxyMinimapWidget::fleetX(const Fleet *f) {
@@ -239,20 +409,6 @@ const Image *GalaxyMinimapWidget::getFleetSprite(const Fleet *f) {
 	return (const Image*)_fleetimg[color];
 }
 
-const Image *GalaxyMinimapWidget::getStarSprite(const Star *s) {
-	unsigned color;
-
-	if (s->spectralClass == BlackHole) {
-		return (Image*)_bhole;
-	} else if (s->owner < 0) {
-		return (Image*)_freestar;
-	}
-
-	// FIXME: handle unexplored stars
-	color = _game->_players[s->owner].color;
-	return (Image*)_starimg[color];
-}
-
 void GalaxyMinimapWidget::drawFleet(int x, int y, const Fleet *f,
 	unsigned curtick) {
 
@@ -270,16 +426,18 @@ void GalaxyMinimapWidget::drawStar(int x, int y, const Star *s,
 	unsigned curtick) {
 
 	unsigned frame = 0;
+	int curstar, selstar;
 	const Star *selptr, *curptr;
-	const Image *img = getStarSprite(s);
 	const uint8_t *color;
 
-	selptr = _selStar < 0 ? NULL : _game->_starSystems + _selStar;
-	curptr = _curStar < 0 ? NULL : _game->_starSystems + _curStar;
+	StarmapWidget::drawStar(x, y, s, 0);
+
+	selstar = selectedStar();
+	selptr = selstar < 0 ? NULL : _game->_starSystems + selstar;
+	curstar = highlightedStar();
+	curptr = curstar < 0 ? NULL : _game->_starSystems + curstar;
 	x += starX(s->x);
 	y += starY(s->y);
-
-	img->draw(x - img->width() / 2, y - img->height() / 2, frame);
 
 	if (s == selptr) {
 		frame = bounceFrame(curtick - _startTick, 200,
@@ -362,16 +520,8 @@ Fleet *GalaxyMinimapWidget::selectedFleet(void) {
 	return _selFleet;
 }
 
-int GalaxyMinimapWidget::highlightedStar(void) {
-	return _curStar;
-}
-
-int GalaxyMinimapWidget::selectedStar(void) {
-	return _selStar;
-}
-
 void GalaxyMinimapWidget::highlightFleet(Fleet *f) {
-	_curStar = -1;
+	StarmapWidget::highlightStar(-1);
 	_curFleet = f;
 }
 
@@ -381,31 +531,13 @@ void GalaxyMinimapWidget::selectFleet(Fleet *f) {
 }
 
 void GalaxyMinimapWidget::highlightStar(int id) {
-	if (id >= _game->_starSystemCount) {
-		throw std::invalid_argument("Star ID out of range");
-	}
-
+	StarmapWidget::highlightStar(id);
 	_curFleet = NULL;
-	_curStar = id;
 }
 
 void GalaxyMinimapWidget::selectStar(int id) {
-	if (id >= _game->_starSystemCount) {
-		throw std::invalid_argument("Star ID out of range");
-	}
-
-	_selStar = id;
-	_startTick = 0;
-}
-
-void GalaxyMinimapWidget::setStarHighlightCallback(
-	const GuiCallback &callback) {
-
-	_onStarHighlight = callback;
-}
-
-void GalaxyMinimapWidget::setStarSelectCallback(const GuiCallback &callback) {
-	_onStarSelect = callback;
+       StarmapWidget::selectStar(id);
+       _startTick = 0;
 }
 
 void GalaxyMinimapWidget::setFleetHighlightCallback(
@@ -430,10 +562,10 @@ void GalaxyMinimapWidget::handleMouseMove(int x, int y, unsigned buttons) {
 		return;
 	}
 
-	if (star >= 0 && star != _curStar &&
+	if (star >= 0 && star != highlightedStar() &&
 		_game->_starSystems[star].spectralClass != BlackHole) {
 		highlightStar(star);
-		_onStarHighlight(x, y);
+		onStarHighlight(x, y);
 		return;
 	}
 
@@ -459,7 +591,7 @@ void GalaxyMinimapWidget::handleMouseUp(int x, int y, unsigned button) {
 
 	if (star >= 0) {
 		selectStar(star);
-		_onStarSelect(x, y);
+		onStarSelect(x, y);
 		return;
 	}
 

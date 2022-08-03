@@ -26,24 +26,58 @@
 #define GALAXY_ZOOM_LEVELS 4
 #define GALAXY_STAR_SIZES 6
 
-class GalaxyMinimapWidget : public Widget {
+class StarmapWidget : public Widget {
 private:
 	ImageAsset _bhole, _freestar, _starimg[MAX_PLAYERS];
-	ImageAsset _fleetimg[MAX_FLEET_OWNERS];
 	GuiCallback _onStarHighlight, _onStarSelect;
-	GuiCallback _onFleetHighlight, _onFleetSelect;
-	GameState *_game;
-	Fleet *_curFleet, *_selFleet;
-	unsigned _startTick;
 	int _curStar, _selStar;
+	unsigned _startTick;
 
 protected:
-	unsigned starX(unsigned x);
-	unsigned starY(unsigned y);
+	GameState *_game;
+
+	unsigned starX(unsigned x) const;
+	unsigned starY(unsigned y) const;
+	const Image *getStarSprite(const Star *s);
+
+	virtual void drawStar(int x, int y, const Star *s, unsigned curtick);
+	int findStar(int x, int y) const;
+
+	void onStarHighlight(int x, int y);
+	void onStarSelect(int x, int y);
+
+public:
+	StarmapWidget(unsigned x, unsigned y, unsigned width, unsigned height,
+		GameState *game, const char *archive, unsigned starAssets,
+		const uint8_t *palette = NULL);
+	~StarmapWidget(void);
+
+	int highlightedStar(void);
+	int selectedStar(void);
+
+	virtual void highlightStar(int id);
+	virtual void selectStar(int id);
+
+	void setStarHighlightCallback(const GuiCallback &callback);
+	void setStarSelectCallback(const GuiCallback &callback);
+
+	void handleMouseMove(int x, int y, unsigned buttons);
+	void handleMouseUp(int x, int y, unsigned button);
+
+	void redraw(int x, int y, unsigned curtick);
+};
+
+class GalaxyMinimapWidget : public StarmapWidget {
+private:
+	ImageAsset _fleetimg[MAX_FLEET_OWNERS];
+	GuiCallback _onFleetHighlight, _onFleetSelect;
+	Fleet *_curFleet, *_selFleet;
+	unsigned _startTick;
+
+protected:
 	unsigned fleetX(const Fleet *f);
 	unsigned fleetY(const Fleet *f);
 	const Image *getFleetSprite(const Fleet *f);
-	const Image *getStarSprite(const Star *s);
 
 	void drawFleet(int x, int y, const Fleet *f,
 		unsigned curtick);
@@ -61,16 +95,12 @@ public:
 
 	Fleet *highlightedFleet(void);
 	Fleet *selectedFleet(void);
-	int highlightedStar(void);
-	int selectedStar(void);
 
 	void highlightFleet(Fleet *f);
 	void selectFleet(Fleet *f);
 	void highlightStar(int id);
 	void selectStar(int id);
 
-	void setStarHighlightCallback(const GuiCallback &callback);
-	void setStarSelectCallback(const GuiCallback &callback);
 	void setFleetHighlightCallback(const GuiCallback &callback);
 	void setFleetSelectCallback(const GuiCallback &callback);
 
