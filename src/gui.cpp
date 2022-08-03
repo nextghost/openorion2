@@ -631,11 +631,11 @@ void ScrollBarWidget::updateSlide(void) {
 }
 
 void ScrollBarWidget::setPosition(unsigned position) {
-	if (position > _range) {
+	if (position >= _range + _pagesize) {
 		throw std::out_of_range("Position is out of range");
 	}
 
-	_position = position;
+	_position = position > _range ? _range : position;
 	updateSlide();
 }
 
