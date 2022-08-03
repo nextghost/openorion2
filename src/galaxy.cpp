@@ -81,6 +81,7 @@
 #define ASSET_PLANETLIST_SCROLL_UP_BUTTON 11
 #define ASSET_PLANETLIST_SCROLL_DOWN_BUTTON 12
 #define ASSET_PLANETLIST_RETURN_BUTTON 14
+#define ASSET_PLANETLIST_STAR_IMAGES 15
 #define ASSET_PLANETLIST_PLANET_IMAGES 26
 
 #define PLANET_LIST_SCROLL_WIDTH 9
@@ -1308,11 +1309,11 @@ void SelectPlayerView::clickPlayer(int x, int y, int arg) {
 	exitView();
 }
 
-PlanetsListView::PlanetsListView(const GameState *game, int activePlayer) :
-	_game(game), _scroll(NULL), _enemyFilter(NULL), _gravityFilter(NULL),
-	_envFilter(NULL), _mineralFilter(NULL), _rangeFilter(NULL),
-	_scrollgrab(0), _curslot(-1), _activePlayer(activePlayer),
-	_planetCount(0) {
+PlanetsListView::PlanetsListView(GameState *game, int activePlayer) :
+	_game(game), _minimap(NULL), _scroll(NULL), _enemyFilter(NULL),
+	_gravityFilter(NULL), _envFilter(NULL), _mineralFilter(NULL),
+	_rangeFilter(NULL), _scrollgrab(0), _curslot(-1),
+	_activePlayer(activePlayer), _planetCount(0) {
 
 	unsigned i, j, k;
 	const uint8_t *pal;
@@ -1349,6 +1350,16 @@ void PlanetsListView::initWidgets(void) {
 			GuiMethod(*this, &PlanetsListView::showHelp,
 			HELP_PLANETLIST_SLOT));
 	}
+
+	_minimap = new StarmapWidget(443, 17, 180, 116, _game,
+		PLANET_ARCHIVE, ASSET_PLANETLIST_STAR_IMAGES, pal);
+	addWidget(_minimap);
+	_minimap->setStarSelectCallback(GuiMethod(*this,
+		&PlanetsListView::handleSelectStar));
+	_minimap->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_MINIMAP));
+
 
 	_scroll = new ScrollBarWidget(423, 38, PLANET_LIST_SCROLL_WIDTH, 407,
 		8, 8, planetListScrollTexture);
@@ -1439,11 +1450,6 @@ void PlanetsListView::initWidgets(void) {
 		GuiMethod(*this, &PlanetsListView::showHelp,
 		HELP_PLANETLIST_HEADER));
 
-	w = createWidget(442, 16, 180, 117);
-	w->setMouseUpCallback(MBUTTON_RIGHT,
-		GuiMethod(*this, &PlanetsListView::showHelp,
-		HELP_PLANETLIST_MINIMAP));
-
 	w = createWidget(441, 143, 182, 22);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &PlanetsListView::showHelp,
@@ -1459,10 +1465,45 @@ void PlanetsListView::handleEndScroll(int x, int y, int arg) {
 	handleMouseMove(x, y, 0);	// force active widget lookup
 }
 
+void PlanetsListView::handleSelectStar(int x, int y, int arg) {
+	unsigned i;
+	int star;
+	const Planet *ptr;
+	const Star *sptr;
+	char buf[256];
+
+	star = _minimap->selectedStar();
+
+	if (star < 0) {
+		return;
+	}
+
+	sptr = _game->_starSystems + star;
+
+	if (sptr->spectralClass == SpectralClass::BlackHole) {
+		return;
+	}
+
+	// Jump to the first planet in list orbiting the selected star
+	for (i = 0; i < _planetCount; i++) {
+		ptr = _game->_planets + _planets[i];
+
+		if (ptr->star == (unsigned)star) {
+			_scroll->setPosition(i);
+			return;
+		}
+	}
+
+	// No planet found
+	sprintf(buf, gameLang->hstrings(HSTR_PLANETLIST_NO_PLANETS),
+		sptr->name);
+	new ErrorWindow(this, buf);
+}
+
 void PlanetsListView::redraw(unsigned curtick) {
 	Font *fnt, *smallFnt;
 	unsigned i, y, color, offset = _scroll->position();
-	int simpleY, fullY, smallY, owner, penalty;
+	int simpleY, fullY, smallY, owner, penalty, curstar;
 	const char *str, *foodstr, *prodstr, *popstr, *penaltystr;
 	char buf[32];
 	const Image *img;
@@ -1555,11 +1596,21 @@ void PlanetsListView::redraw(unsigned curtick) {
 		smallFnt->centerText(385, y + smallY, color, buf);
 	}
 
-	if (_curslot >= 0) {
-		ptr = _game->_planets + _planets[offset + _curslot];
-		sptr = _game->_starSystems + ptr->star;
-		fnt->centerText(532, 143 + (22 - fnt->height()) / 2,
-			FONT_COLOR_PLANET_LIST_BRIGHT, sptr->name);
+	curstar = _minimap->highlightedStar();
+
+	if (curstar >= 0) {
+		sptr = _game->_starSystems + curstar;
+
+		if (sptr->spectralClass == SpectralClass::BlackHole) {
+			color = FONT_COLOR_PLAYER_RED4;
+			str = gameLang->hstrings(HSTR_BLACK_HOLE);
+		} else {
+			color = FONT_COLOR_PLANET_LIST_BRIGHT;
+			str = sptr->name;
+		}
+
+		fnt->centerText(532, 143 + (22 - fnt->height()) / 2, color,
+			str);
 	}
 
 	redrawWidgets(0, 0, curtick);
@@ -1589,9 +1640,13 @@ void PlanetsListView::showHelp(int x, int y, int arg) {
 }
 
 void PlanetsListView::highlightSlot(int x, int y, int arg) {
-	if (arg >= 0 && arg < PLANET_LIST_ROWS &&
-		arg + _scroll->position() < _planetCount) {
+	unsigned offset = _scroll->position();
+	const Planet *ptr;
+
+	if (arg >= 0 && arg < PLANET_LIST_ROWS && offset + arg < _planetCount) {
 		_curslot = arg;
+		ptr = _game->_planets + _planets[offset + arg];
+		_minimap->highlightStar(ptr->star);
 	} else {
 		_curslot = -1;
 	}

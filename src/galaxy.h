@@ -183,7 +183,8 @@ public:
 
 class PlanetsListView : public GuiView {
 private:
-	const GameState *_game;
+	GameState *_game;
+	StarmapWidget *_minimap;
 	ScrollBarWidget *_scroll;
 	ToggleWidget *_enemyFilter, *_gravityFilter, *_envFilter;
 	ToggleWidget *_mineralFilter, *_rangeFilter;
@@ -196,9 +197,10 @@ private:
 protected:
 	void handleBeginScroll(int x, int y, int arg);
 	void handleEndScroll(int x, int y, int arg);
+	void handleSelectStar(int x, int y, int arg);
 
 public:
-	PlanetsListView(const GameState *game, int activePlayer);
+	PlanetsListView(GameState *game, int activePlayer);
 	
 	void redraw(unsigned curtick);
 
