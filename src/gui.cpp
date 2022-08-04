@@ -533,12 +533,20 @@ void Widget::redraw(int x, int y, unsigned curtick) {
 }
 
 ToggleWidget::ToggleWidget(unsigned x, unsigned y, unsigned width,
-	unsigned height, Image *img, unsigned val) :
-	Widget(x, y, width, height), _valImg(img), _value(val) {
+	unsigned height, Image *img, unsigned offFrame, unsigned onFrame,
+	unsigned val) : Widget(x, y, width, height), _valImg(img),
+	_offFrame(offFrame), _onFrame(onFrame), _value(val) {
 
-	if (img->frameCount() < 2) {
-		throw std::invalid_argument(
-			"ToggleWidget needs image with 2 frames");
+	unsigned fcount;
+
+	if (!img) {
+		throw std::invalid_argument("On/off image is required");
+	}
+
+	fcount = img->frameCount();
+
+	if (_offFrame >= fcount || _onFrame >= fcount) {
+		throw std::invalid_argument("Invalid on/off frame ID");
 	}
 
 	setValue(_value);
@@ -547,14 +555,15 @@ ToggleWidget::ToggleWidget(unsigned x, unsigned y, unsigned width,
 
 ToggleWidget::ToggleWidget(unsigned x, unsigned y, unsigned width,
 	unsigned height, const char *archive, unsigned id,
-	const uint8_t *palette, unsigned val) : Widget(x, y, width, height),
-	_valImg(NULL), _value(val) {
+	const uint8_t *palette, unsigned offFrame, unsigned onFrame,
+	unsigned val) : Widget(x, y, width, height), _valImg(NULL),
+	_offFrame(offFrame), _onFrame(onFrame), _value(val) {
 
 	ImageAsset img = gameAssets->getImage(archive, id, palette);
+	unsigned fcount = img->frameCount();
 
-	if (img->frameCount() < 2) {
-		throw std::invalid_argument(
-			"ToggleWidget needs image with 2 frames");
+	if (_offFrame >= fcount || _onFrame >= fcount) {
+		throw std::invalid_argument("Invalid on/off frame ID");
 	}
 
 	_valImg = (Image*)img;
@@ -568,7 +577,7 @@ ToggleWidget::~ToggleWidget(void) {
 
 void ToggleWidget::setValue(unsigned val) {
 	_value = !!val;
-	setIdleSprite(_valImg, _value);
+	setIdleSprite(_valImg, _value ? _onFrame : _offFrame);
 }
 
 unsigned ToggleWidget::value(void) const {

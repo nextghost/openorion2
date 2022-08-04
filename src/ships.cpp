@@ -556,7 +556,7 @@ void FleetListView::initWidgets(void) {
 		HELP_FLEET_LEADERS_BUTTON));
 
 	_supportToggle = new ToggleWidget(425, 435, 61, 19, FLEETLIST_ARCHIVE,
-		ASSET_FLEET_SUPPORT_TOGGLE, pal, 1);
+		ASSET_FLEET_SUPPORT_TOGGLE, pal, 0, 1, 1);
 	addWidget(_supportToggle);
 	_supportToggle->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &FleetListView::filterSupport));
@@ -565,7 +565,7 @@ void FleetListView::initWidgets(void) {
 		HELP_FLEET_SUPPORT_TOGGLE));
 
 	_combatToggle = new ToggleWidget(487, 435, 60, 19, FLEETLIST_ARCHIVE,
-		ASSET_FLEET_COMBAT_TOGGLE, pal, 1);
+		ASSET_FLEET_COMBAT_TOGGLE, pal, 0, 1, 1);
 	addWidget(_combatToggle);
 	_combatToggle->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &FleetListView::filterCombat));

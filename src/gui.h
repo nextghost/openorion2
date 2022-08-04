@@ -179,14 +179,16 @@ public:
 class ToggleWidget : public Widget {
 private:
 	Image *_valImg;
-	unsigned _value;
+	unsigned _offFrame, _onFrame, _value;
 
 public:
 	ToggleWidget(unsigned x, unsigned y, unsigned width, unsigned height,
-		Image *img, unsigned val = 0);
+		Image *img, unsigned offFrame = 0, unsigned onFrame = 1,
+		unsigned val = 0);
 	ToggleWidget(unsigned x, unsigned y, unsigned width, unsigned height,
 		const char *archive, unsigned id,
-		const uint8_t *palette = NULL, unsigned val = 0);
+		const uint8_t *palette = NULL, unsigned offFrame = 0,
+		unsigned onFrame = 1, unsigned val = 0);
 	~ToggleWidget(void);
 
 	void setValue(unsigned val);
