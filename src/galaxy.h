@@ -188,6 +188,7 @@ private:
 	ScrollBarWidget *_scroll;
 	ToggleWidget *_enemyFilter, *_gravityFilter, *_envFilter;
 	ToggleWidget *_mineralFilter, *_rangeFilter;
+	ToggleWidget *_colonyToggle, *_outpostToggle;
 	int _scrollgrab, _curslot, _activePlayer;
 	ImageAsset _bg, _planetimg[PLANET_CLIMATE_COUNT][PLANET_SIZE_COUNT];
 	unsigned _planetCount, _planets[MAX_PLANETS];

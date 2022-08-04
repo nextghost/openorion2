@@ -78,6 +78,8 @@
 #define ASSET_PLANETLIST_ENV_TOGGLE 6
 #define ASSET_PLANETLIST_MINERAL_TOGGLE 7
 #define ASSET_PLANETLIST_RANGE_TOGGLE 8
+#define ASSET_PLANETLIST_COLONY_TOGGLE 9
+#define ASSET_PLANETLIST_OUTPOST_TOGGLE 10
 #define ASSET_PLANETLIST_SCROLL_UP_BUTTON 11
 #define ASSET_PLANETLIST_SCROLL_DOWN_BUTTON 12
 #define ASSET_PLANETLIST_RETURN_BUTTON 14
@@ -1312,8 +1314,9 @@ void SelectPlayerView::clickPlayer(int x, int y, int arg) {
 PlanetsListView::PlanetsListView(GameState *game, int activePlayer) :
 	_game(game), _minimap(NULL), _scroll(NULL), _enemyFilter(NULL),
 	_gravityFilter(NULL), _envFilter(NULL), _mineralFilter(NULL),
-	_rangeFilter(NULL), _scrollgrab(0), _curslot(-1),
-	_activePlayer(activePlayer), _planetCount(0) {
+	_rangeFilter(NULL), _colonyToggle(NULL), _outpostToggle(NULL),
+	_scrollgrab(0), _curslot(-1), _activePlayer(activePlayer),
+	_planetCount(0) {
 
 	unsigned i, j, k;
 	const uint8_t *pal;
@@ -1435,6 +1438,28 @@ void PlanetsListView::initWidgets(void) {
 	_rangeFilter->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &PlanetsListView::showHelp,
 		HELP_PLANETLIST_RANGE_TOGGLE));
+
+	_colonyToggle = new ToggleWidget(454, 386, 156, 23, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_COLONY_TOGGLE, pal, 1, 2);
+	addWidget(_colonyToggle);
+	_colonyToggle->setDisabledSprite(PLANET_ARCHIVE,
+		ASSET_PLANETLIST_COLONY_TOGGLE, pal, 0);
+	_colonyToggle->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_COLONY_TOGGLE));
+	// FIXME: Implement sending colony ships
+	_colonyToggle->disable(1);
+
+	_outpostToggle = new ToggleWidget(454, 413, 157, 25, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_OUTPOST_TOGGLE, pal, 1, 2);
+	addWidget(_outpostToggle);
+	_outpostToggle->setDisabledSprite(PLANET_ARCHIVE,
+		ASSET_PLANETLIST_OUTPOST_TOGGLE, pal, 0);
+	_outpostToggle->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_OUTPOST_TOGGLE));
+	// FIXME: Implement sending outpost ships
+	_outpostToggle->disable(1);
 
 	w = createWidget(454, 440, 156, 25);
 	w->setMouseUpCallback(MBUTTON_LEFT,
