@@ -608,7 +608,7 @@ void FleetListView::fleetSelectionChanged(int x, int y, int arg) {
 
 	_grid->setFleet(f, select);
 
-	if (!_grid->visibleShipCount()) {
+	if (f && !_grid->visibleShipCount()) {
 		if (f->combatCount()) {
 			_combatToggle->setValue(1);
 		} else {
@@ -634,7 +634,7 @@ void FleetListView::shipSelectionChanged(int x, int y, int arg) {
 }
 
 void FleetListView::filterCombat(int x, int y, int arg) {
-	unsigned combat, support;
+	unsigned combat, support, selectable = 0;
 	Fleet *f = _minimap->selectedFleet();
 
 	combat = _combatToggle->value();
@@ -643,20 +643,20 @@ void FleetListView::filterCombat(int x, int y, int arg) {
 	if (f) {
 		combat = combat || !f->supportCount();
 		_combatToggle->setValue(combat);
+		selectable = f->getOwner() == _activePlayer;
 	}
 
 	support = support || !combat;
 	_supportToggle->setValue(support);
 	_grid->setFilter(combat, support);
-	_allButton->disable(f->getOwner() != _activePlayer ||
-		!_grid->visibleShipCount());
+	_allButton->disable(!selectable || !_grid->visibleShipCount());
 	updateScrollbar();
 	shipHighlightChanged(0, 0, 0);
 	shipSelectionChanged(0, 0, 0);
 }
 
 void FleetListView::filterSupport(int x, int y, int arg) {
-	unsigned combat, support;
+	unsigned combat, support, selectable = 0;
 	Fleet *f = _minimap->selectedFleet();
 
 	combat = _combatToggle->value();
@@ -665,13 +665,13 @@ void FleetListView::filterSupport(int x, int y, int arg) {
 	if (f) {
 		support = support || !f->combatCount();
 		_supportToggle->setValue(support);
+		selectable = f->getOwner() == _activePlayer;
 	}
 
 	combat = combat || !support;
 	_combatToggle->setValue(combat);
 	_grid->setFilter(combat, support);
-	_allButton->disable(f->getOwner() != _activePlayer ||
-		!_grid->visibleShipCount());
+	_allButton->disable(!selectable || !_grid->visibleShipCount());
 	updateScrollbar();
 	shipHighlightChanged(0, 0, 0);
 	shipSelectionChanged(0, 0, 0);
