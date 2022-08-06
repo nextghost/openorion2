@@ -20,6 +20,8 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
+#include <ctime>
+#include <cstdarg>
 #include <stdexcept>
 
 class Mutex {
@@ -72,6 +74,44 @@ public:
 	// Free all discarded objects. Only the rendering thread can call this
 	// after it has stopped using all the stale references.
 	static void flush(void);
+};
+
+class StringBuffer {
+private:
+	char *_buf;
+	size_t _length, _size;
+
+protected:
+	void resize(size_t newsize);
+	void vprintf(const char *fmt, va_list args);
+
+public:
+	explicit StringBuffer(size_t size = 256);
+	explicit StringBuffer(const char *str);
+	StringBuffer(const StringBuffer &other);
+	~StringBuffer(void);
+
+	const StringBuffer &operator=(StringBuffer &other);
+	const StringBuffer &operator=(const char *str);
+	const StringBuffer &operator+=(const StringBuffer &other);
+	const StringBuffer &operator+=(const char *str);
+
+	explicit operator const char *(void) const;
+
+	// Append to current string
+	StringBuffer &append(const char *str);
+	StringBuffer &append_printf(const char *fmt, ...);
+	StringBuffer &append_ftime(const char *fmt, const struct tm *tbuf);
+
+	// Overwrite current string
+	StringBuffer &printf(const char *fmt, ...);
+	StringBuffer &ftime(const char *fmt, const struct tm *tbuf);
+	StringBuffer &truncate(size_t len = 0);
+
+	ssize_t find(char c) const;
+	size_t length(void) const;
+	const char *c_str(void) const;
+	char *copystr(void) const;
 };
 
 template <class C> class BilistNode : public Recyclable {
