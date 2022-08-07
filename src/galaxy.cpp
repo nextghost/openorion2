@@ -1200,7 +1200,7 @@ SelectPlayerView::SelectPlayerView(const GameState *game,
 			continue;
 		}
 
-		flag_id = ptr->picture * PLAYER_COUNT + ptr->color;
+		flag_id = ptr->picture * MAX_PLAYERS + ptr->color;
 		_playerFlags[_playerCount] = gameAssets->getImage(
 			MULTIPLAYER_ARCHIVE, ASSET_PSELECT_FLAGS + flag_id,
 			pal);

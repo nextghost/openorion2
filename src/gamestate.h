@@ -23,17 +23,14 @@
 #include "utils.h"
 #include "stream.h"
 
-const int SAVE_GAME_NAME_SIZE		= 37;
-const int LEADER_COUNT 				= 67;
-const int LEADER_RECORD_SIZE		= 0x3b;
-const int LEADER_NAME_SIZE 			= 0x0f;
-const int LEADER_TITLE_SIZE			= 0x14;
+#define SAVE_GAME_NAME_SIZE 37
+#define LEADER_COUNT 67
+#define LEADER_NAME_SIZE 0x0f
+#define LEADER_TITLE_SIZE 0x14
 
-const int STARS_RECORD_SIZE 		= 113;
-const int STARS_NAME_SIZE           = 15;
+#define STARS_NAME_SIZE 15
 
-const int PLAYER_COUNT 				= 0x08;
-const int PLAYER_NAME_SIZE 			= 0x14;
+#define PLAYER_NAME_SIZE 0x14
 #define PLAYER_RACE_SIZE 15
 #define RACE_COUNT 13
 #define GRAVITY_LEVEL_COUNT 3
@@ -42,10 +39,10 @@ const int PLAYER_NAME_SIZE 			= 0x14;
 
 #define SHIP_NAME_SIZE 16
 
-const int MAX_LEADER_TECH_SKILLS	= 3;
-const int MAX_PLAYERS				= 8;
-const int MAX_TECHNOLOGIES 			= 0xcb;
-const int MAX_SETTLERS				= 25;
+#define MAX_LEADER_TECH_SKILLS 3
+#define MAX_PLAYERS 8
+#define MAX_TECHNOLOGIES 0xcb
+#define MAX_SETTLERS 25
 #define MAX_STARS 72
 #define MAX_ORBITS 5
 #define MAX_COLONIES 250
@@ -150,20 +147,20 @@ enum ColonistJob {
 };
 
 enum StarSize {
-    Large 	= 0x00,
-    Medium	= 0x01,
-    Small 	= 0x02,
-    Tiny 	= 0x03
+	Large = 0,
+	Medium = 1,
+	Small = 2,
+	Tiny = 3
 };
 
 enum SpectralClass {
-    Blue 		= 0x00,
-    White 		= 0x01,
-    Yellow		= 0x02,
-    Orange	 	= 0x03,
-    Red 		= 0x04,
-    Brown 		= 0x05,
-    BlackHole	= 0x06
+	Blue = 0,
+	White = 1,
+	Yellow = 2,
+	Orange = 3,
+	Red = 4,
+	Brown = 5,
+	BlackHole = 6
 };
 
 enum SpecialType {
@@ -181,16 +178,16 @@ enum SpecialType {
 	ORION_SPECIAL = 11
 };
 
-enum class ResearchArea: uint8_t {
-    None 			= 0x00,
-    Construction 	= 0x04,
-    ForceFields		= 0x07,
-    Sociology 		= 0x0a,
-    Biology 		= 0x12,
-    Chemistry 		= 0x16,
-    Computers 		= 0x1c,
-    Power 			= 0x37,
-    Physics			= 0x39
+enum ResearchArea {
+	None = 0x00,
+	Construction = 0x04,
+	ForceFields = 0x07,
+	Sociology = 0x0a,
+	Biology = 0x12,
+	Chemistry = 0x16,
+	Computers = 0x1c,
+	Power = 0x37,
+	Physics = 0x39
 };
 
 enum ShipState {
@@ -700,7 +697,7 @@ public:
 	Planet _planets[MAX_PLANETS];
 	struct Leader _leaders[LEADER_COUNT];
 	uint16_t _playerCount;
-	struct Player _players[PLAYER_COUNT];
+	struct Player _players[MAX_PLAYERS];
 	uint16_t _shipCount;
 	Ship _ships[MAX_SHIPS];
 

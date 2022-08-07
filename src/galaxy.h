@@ -165,9 +165,9 @@ class SelectPlayerView : public GuiView {
 private:
 	const GameState *_game;
 	GuiCallback _callback;
-	ImageAsset _playerFlags[PLAYER_COUNT];
+	ImageAsset _playerFlags[MAX_PLAYERS];
 	ImageAsset _bg, _header, _row, _footer;
-	unsigned _humans[PLAYER_COUNT], _playerCount, _animStart, _y;
+	unsigned _humans[MAX_PLAYERS], _playerCount, _animStart, _y;
 	int _currentPlayer;
 
 	void initWidgets(void);

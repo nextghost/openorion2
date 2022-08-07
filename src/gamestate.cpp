@@ -715,7 +715,7 @@ void Player::validate(void) const {
 		throw std::out_of_range("Player has invalid race ID");
 	}
 
-	if (color >= PLAYER_COUNT) {
+	if (color >= MAX_PLAYERS) {
 		throw std::out_of_range("Player has invalid color ID");
 	}
 
@@ -1180,7 +1180,7 @@ void GameState::load(SeekableReadStream &stream) {
 
 	_playerCount = stream.readUint16LE();
 
-	for (i = 0; i < PLAYER_COUNT; i++) {
+	for (i = 0; i < MAX_PLAYERS; i++) {
 		_players[i].load(stream);
 	}
 
