@@ -1239,6 +1239,11 @@ void GameState::validate(void) const {
 			throw std::out_of_range("Star outside galaxy area");
 		}
 
+		if (ptr->owner >= (int)_playerCount ||
+			(ptr->owner >= 0 && _players[ptr->owner].eliminated)) {
+			throw std::out_of_range("Invalid star owner");
+		}
+
 		if (ptr->wormhole >= _starSystemCount) {
 			throw std::out_of_range("Invalid wormhole index");
 		}
