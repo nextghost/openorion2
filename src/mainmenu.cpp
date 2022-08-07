@@ -274,12 +274,12 @@ void MainMenuView::clickContinue(int x, int y, int arg) {
 	try {
 		loadGame(saveFiles[slot].filename);
 	} catch (std::exception &e) {
-		char buf[64];
+		StringBuffer buf;
 
 		fprintf(stderr, "Error loading %s: %s\n",
 			saveFiles[slot].filename, e.what());
-		sprintf(buf, "Cannot load %s", saveFiles[slot].filename);
-		new ErrorWindow(this, buf);
+		buf.printf("Cannot load %s", saveFiles[slot].filename);
+		new ErrorWindow(this, buf.c_str());
 		delete[] saveFiles;
 		return;
 	}
@@ -370,7 +370,7 @@ void LoadGameWindow::drawSlot(unsigned slot, Font *fnt, Font *smallfnt) {
 	int y = _y + 24 + 31 * slot;
 	unsigned stardate, color = FONT_COLOR_SAVEGAME;
 	struct tm *ltime;
-	char buf[64];
+	StringBuffer buf;
 
 	if (int(slot) == _selected) {
 		color = FONT_COLOR_SAVEGAME_SEL;
@@ -390,11 +390,11 @@ void LoadGameWindow::drawSlot(unsigned slot, Font *fnt, Font *smallfnt) {
 	}
 
 	stardate = _saveFiles[slot].header.stardate;
-	sprintf(buf, "Stardate: %u.%u", stardate / 10, stardate % 10);
-	smallfnt->renderText(_x + 32, y + 14, color, buf);
+	buf.printf("Stardate: %u.%u", stardate / 10, stardate % 10);
+	smallfnt->renderText(_x + 32, y + 14, color, buf.c_str());
 	ltime = localtime(&_saveFiles[slot].mtime);
-	strftime(buf, 64, "%x   %H:%M", ltime);
-	smallfnt->renderText(_x + 122, y + 14, color, buf);
+	buf.ftime("%x   %H:%M", ltime);
+	smallfnt->renderText(_x + 122, y + 14, color, buf.c_str());
 
 	switch (_saveFiles[slot].header.multiplayer) {
 	case MultiplayerType::Single:
@@ -435,13 +435,13 @@ void LoadGameWindow::selectSlot(int x, int y, int slot) {
 }
 
 void LoadGameWindow::handleLoad(int x, int y, int arg) {
-	char buf[64];
-
 	if (_selected < 0) {
 		return;
 	} else if (!_saveFiles[_selected].filename) {
-		sprintf(buf, "SAVE%d.GAM does not exist", _selected + 1);
-		new ErrorWindow(_parent, buf);
+		StringBuffer buf;
+
+		buf.printf("SAVE%d.GAM does not exist", _selected + 1);
+		new ErrorWindow(_parent, buf.c_str());
 		return;
 	}
 
@@ -449,10 +449,12 @@ void LoadGameWindow::handleLoad(int x, int y, int arg) {
 		loadGame(_saveFiles[_selected].filename);
 		_parent->exitView();
 	} catch (std::exception &e) {
+		StringBuffer buf;
+
 		fprintf(stderr, "Error loading %s: %s\n",
 			_saveFiles[_selected].filename, e.what());
-		sprintf(buf, "Cannot load %s", _saveFiles[_selected].filename);
-		new ErrorWindow(_parent, buf);
+		buf.printf("Cannot load %s", _saveFiles[_selected].filename);
+		new ErrorWindow(_parent, buf.c_str());
 		return;
 	}
 }

@@ -920,10 +920,12 @@ void GalaxyView::setPlayer(int player, int a, int b) {
 }
 
 void GalaxyView::redrawSidebar(unsigned curtick) {
-	unsigned stardate, color, negcolor, x;
+	unsigned stardate, color, negcolor, x, len;
+	ssize_t pos;
 	Font *fnt;
 	const Player *ptr;
-	char buf[32], *str;
+	const char *str;
+	StringBuffer buf;
 
 	if (_activePlayer < 0) {
 		return;
@@ -936,59 +938,67 @@ void GalaxyView::redrawSidebar(unsigned curtick) {
 		GALAXY_ANIM_LENGTH);
 	negcolor = FONT_COLOR_DEFICIT1 + galaxy_fontanim[negcolor];
 	stardate = _game->_gameConfig.stardate;
-	sprintf(buf, "%d.%d", stardate / 10, stardate % 10);
-	fnt->centerText(GALAXY_SIDEBAR_X, 29, FONT_COLOR_GALAXY_GUI, buf,
-		OUTLINE_FULL);
+	buf.printf("%d.%d", stardate / 10, stardate % 10);
+	fnt->centerText(GALAXY_SIDEBAR_X, 29, FONT_COLOR_GALAXY_GUI,
+		buf.c_str(), OUTLINE_FULL);
 
 	// Treasury and income
-	sprintf(buf, "%'d BC", ptr->BC);
+	buf.printf("%d BC", ptr->BC);
 	color = ptr->BC < 0 ? negcolor : FONT_COLOR_GALAXY_GUI;
-	fnt->centerText(GALAXY_SIDEBAR_X, 96, color, buf, OUTLINE_FULL);
-	sprintf(buf, "%+'d BC", ptr->surplusBC);
+	fnt->centerText(GALAXY_SIDEBAR_X, 96, color, buf.c_str(), OUTLINE_FULL);
+	buf.printf("%+d BC", ptr->surplusBC);
 	color = ptr->surplusBC < 0 ? negcolor : FONT_COLOR_GALAXY_GUI;
-	fnt->centerText(GALAXY_SIDEBAR_X, 108, color, buf, OUTLINE_FULL);
+	fnt->centerText(GALAXY_SIDEBAR_X, 108, color, buf.c_str(),
+		OUTLINE_FULL);
 
 	// Fleet command points
-	sprintf(buf, "%+'d (%'u)", ptr->commandPoints - ptr->usedCommandPoints,
+	buf.printf("%+d (%u)", ptr->commandPoints - ptr->usedCommandPoints,
 		ptr->commandPoints);
-	x = GALAXY_SIDEBAR_X - fnt->textWidth(buf) / 2;
-	str = strchr(buf, ' ');
-	*str = '\0';
+	str = buf.c_str();
+	len = fnt->textWidth(str);
+	pos = buf.find('(');
+	str += pos;
+	x = GALAXY_SIDEBAR_X - len / 2;
 	color = FONT_COLOR_GALAXY_GUI;
 
 	if (ptr->usedCommandPoints > (int)ptr->commandPoints) {
 		color = negcolor;
 	}
 
-	x = fnt->renderText(x, 181, color, buf, OUTLINE_FULL);
-	*str = ' ';
-	fnt->renderText(x, 181, FONT_COLOR_GALAXY_GUI, str, OUTLINE_FULL);
+	fnt->renderText(x + len + 1 - fnt->textWidth(str), 181,
+		FONT_COLOR_GALAXY_GUI, str, OUTLINE_FULL);
+	buf.truncate(pos);
+	fnt->renderText(x, 181, color, buf.c_str(), OUTLINE_FULL);
 
 	// Food surplus
-	sprintf(buf, "%+'d", ptr->surplusFood);
+	buf.printf("%+d", ptr->surplusFood);
 	color = ptr->surplusFood < 0 ? negcolor : FONT_COLOR_GALAXY_GUI;
-	fnt->centerText(GALAXY_SIDEBAR_X, 255, color, buf, OUTLINE_FULL);
+	fnt->centerText(GALAXY_SIDEBAR_X, 255, color, buf.c_str(),
+		OUTLINE_FULL);
 
 	// Freighters status
-	sprintf(buf, "%+'d (%'u)", ptr->surplusFreighters,
-		ptr->totalFreighters);
-	x = GALAXY_SIDEBAR_X - fnt->textWidth(buf) / 2;
-	str = strchr(buf, ' ');
-	*str = '\0';
+	buf.printf("%+d (%u)", ptr->surplusFreighters, ptr->totalFreighters);
+	str = buf.c_str();
+	len = fnt->textWidth(str);
+	pos = buf.find('(');
+	str += pos;
+	x = GALAXY_SIDEBAR_X - len / 2;
 	color = (ptr->surplusFreighters < 0) ? negcolor : FONT_COLOR_GALAXY_GUI;
-	x = fnt->renderText(x, 330, color, buf, OUTLINE_FULL);
-	*str = ' ';
-	fnt->renderText(x, 330, FONT_COLOR_GALAXY_GUI, str, OUTLINE_FULL);
+
+	fnt->renderText(x + len + 1 - fnt->textWidth(str), 330,
+		FONT_COLOR_GALAXY_GUI, str, OUTLINE_FULL);
+	buf.truncate(pos);
+	fnt->renderText(x, 330, color, buf.c_str(), OUTLINE_FULL);
 
 	// Research progress
 	if (ptr->researchItem) {
 		// FIXME: draw expected time to completion
-		//sprintf(buf, "~%d turns", turns_remaining);
+		//buf.printf("~%d turns", turns_remaining);
 		//fnt->centerText(GALAXY_SIDEBAR_X, 391, FONT_COLOR_GALAXY_GUI,
-		//	buf, OUTLINE_FULL);
-		sprintf(buf, "%+'d RP", ptr->researchProduced);
+		//	buf.c_str(), OUTLINE_FULL);
+		buf.printf("%+'d RP", ptr->researchProduced);
 		fnt->centerText(GALAXY_SIDEBAR_X, 403, FONT_COLOR_GALAXY_GUI,
-			buf, OUTLINE_FULL);
+			buf.c_str(), OUTLINE_FULL);
 	} else {
 		fnt->centerText(GALAXY_SIDEBAR_X, 403, FONT_COLOR_GALAXY_GUI,
 			"none", OUTLINE_FULL);
@@ -1495,7 +1505,6 @@ void PlanetsListView::handleSelectStar(int x, int y, int arg) {
 	int star;
 	const Planet *ptr;
 	const Star *sptr;
-	char buf[256];
 
 	star = _minimap->selectedStar();
 
@@ -1520,9 +1529,10 @@ void PlanetsListView::handleSelectStar(int x, int y, int arg) {
 	}
 
 	// No planet found
-	sprintf(buf, gameLang->hstrings(HSTR_PLANETLIST_NO_PLANETS),
-		sptr->name);
-	new ErrorWindow(this, buf);
+	StringBuffer buf;
+
+	buf.printf(gameLang->hstrings(HSTR_PLANETLIST_NO_PLANETS), sptr->name);
+	new ErrorWindow(this, buf.c_str());
 }
 
 void PlanetsListView::redraw(unsigned curtick) {
@@ -1530,7 +1540,7 @@ void PlanetsListView::redraw(unsigned curtick) {
 	unsigned i, y, color, offset = _scroll->position();
 	int simpleY, fullY, smallY, owner, penalty, curstar;
 	const char *str, *foodstr, *prodstr, *popstr, *penaltystr;
-	char buf[32];
+	StringBuffer buf;
 	const Image *img;
 	const Planet *ptr;
 	const Star *sptr;
@@ -1571,9 +1581,9 @@ void PlanetsListView::redraw(unsigned curtick) {
 		// Planet name and image
 		img = (const Image*)_planetimg[ptr->climate][ptr->size];
 		img->draw(61 - img->width() / 2, y + 21 - img->height() / 2);
-		sprintf(buf, "%s %s", sptr->name,
+		buf.printf("%s %s", sptr->name,
 			romanNumbers[sptr->planetSeq(ptr->orbit)]);
-		fnt->centerText(61, y + 29, color, buf);
+		fnt->centerText(61, y + 29, color, buf.c_str());
 
 		if (ptr->special && ptr->special < ORION_SPECIAL) {
 			str = gameLang->estrings(ESTR_SPECIAL_NONE +
@@ -1584,24 +1594,25 @@ void PlanetsListView::redraw(unsigned curtick) {
 		if (owner >= 0) {
 			str = gameLang->estrings(ESTR_RACENAME_ALKARI +
 				_game->_players[owner].picture);
-			sprintf(buf, "(%s)", str);
-			smallFnt->centerText(61, y + 41, color, buf);
+			buf.printf("(%s)", str);
+			smallFnt->centerText(61, y + 41, color, buf.c_str());
 		}
 
 		// Planet climate
 		str = gameLang->estrings(planetClimateMap[ptr->climate]);
 		fnt->centerText(138, y + fullY, color, str);
-		sprintf(buf, foodstr, (int)ptr->foodbase);
-		smallFnt->centerText(138, y + smallY, color, buf);
+		buf.printf(foodstr, (int)ptr->foodbase);
+		smallFnt->centerText(138, y + smallY, color, buf.c_str());
 
 		// Planet Gravity
 		str = gameLang->estrings(ESTR_LGRAVITY_LOW + ptr->gravity);
 		penalty = player->gravityPenalty(ptr->gravity);
 
 		if (penalty) {
-			sprintf(buf, penaltystr, -penalty);
+			buf.printf(penaltystr, -penalty);
 			fnt->centerText(220, y + fullY, color, str);
-			smallFnt->centerText(220, y + smallY, color, buf);
+			smallFnt->centerText(220, y + smallY, color,
+				buf.c_str());
 		} else {
 			fnt->centerText(220, y + simpleY, color, str);
 		}
@@ -1610,15 +1621,15 @@ void PlanetsListView::redraw(unsigned curtick) {
 		str = gameLang->estrings(mineralsMap[ptr->minerals]);
 		fnt->centerText(306, y + fullY, color, str);
 		// FIXME: Pull real data
-		sprintf(buf, prodstr, 3);
-		smallFnt->centerText(306, y + smallY, color, buf);
+		buf.printf(prodstr, 3);
+		smallFnt->centerText(306, y + smallY, color, buf.c_str());
 
 		// Planet size
 		str = gameLang->estrings(sizesMap[ptr->size]);
 		fnt->centerText(385, y + fullY, color, str);
 		// FIXME: Pull real data
-		sprintf(buf, popstr, 4);
-		smallFnt->centerText(385, y + smallY, color, buf);
+		buf.printf(popstr, 4);
+		smallFnt->centerText(385, y + smallY, color, buf.c_str());
 	}
 
 	curstar = _minimap->highlightedStar();
