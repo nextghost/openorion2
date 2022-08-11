@@ -25,6 +25,36 @@
 
 const unsigned galaxySizeFactors[GALAXY_ZOOM_LEVELS] = {10, 15, 20, 30};
 
+static const unsigned mineralProductionTable[PLANET_MINERALS_COUNT] = {
+	1, 2, 3, 5, 8
+};
+
+static const unsigned climatePopFactors[PLANET_CLIMATE_COUNT] = {
+	25,	// Toxic
+	25,	// Radiated
+	25,	// Barren
+	25,	// Desert
+	25,	// Tundra
+	25,	// Ocean
+	40,	// Swamp
+	60,	// Arid
+	80,	// Terran
+	100,	// Gaia
+};
+
+static const unsigned aquaticPopFactors[PLANET_CLIMATE_COUNT] = {
+	25,	// Toxic
+	25,	// Radiated
+	25,	// Barren
+	25,	// Desert
+	80,	// Tundra
+	100,	// Ocean
+	80,	// Swamp
+	60,	// Arid
+	100,	// Terran
+	100,	// Gaia
+};
+
 // gravityPelanties[player_homeworld][dest_planet]
 static const int gravityPenalties[GRAVITY_LEVEL_COUNT][GRAVITY_LEVEL_COUNT] = {
 	{  0, -25, -50},	// low-G homeworld
@@ -367,6 +397,10 @@ void Planet::load(ReadStream &stream) {
 	max_pop = stream.readUint8();
 	special = stream.readUint8();
 	flags = stream.readUint8();
+}
+
+unsigned Planet::baseProduction(void) const {
+	return mineralProductionTable[minerals];
 }
 
 void Planet::validate(void) const {
@@ -1405,6 +1439,56 @@ BilistNode<Fleet> *GameState::getMovingFleets(void) {
 
 const BilistNode<Fleet> *GameState::getMovingFleets(void) const {
 	return _firstMovingFleet.next();
+}
+
+unsigned GameState::planetMaxPop(unsigned planet_id, unsigned player_id) const {
+	unsigned ret, climate, climateFactor;
+	const Planet *ptr;
+	const Colony *cptr = NULL;
+	const Player *pptr;
+
+	if (planet_id >= _planetCount) {
+		throw std::out_of_range("Invalid planet ID");
+	}
+
+	if (player_id >= _playerCount) {
+		throw std::out_of_range("Invalid player ID");
+	}
+
+	ptr = _planets + planet_id;
+	climate = ptr->climate;
+
+	if (ptr->colony >= 0) {
+		cptr = _colonies + ptr->colony;
+		climate = cptr->climate;
+		player_id = cptr->owner;
+	}
+
+	pptr = _players + player_id;
+
+	if (pptr->racePicks.aquatic) {
+		climateFactor = aquaticPopFactors[climate];
+	} else {
+		climateFactor = climatePopFactors[climate];
+	}
+
+	if (pptr->racePicks.tolerant) {
+		climateFactor += 25;
+	}
+
+	climateFactor = climateFactor > 100 ? 100 : climateFactor;
+	ret = ((ptr->size + 1) * 5 * climateFactor + 50) / 100;
+
+	if (pptr->racePicks.subterranean) {
+		ret += 2 * (ptr->size + 1);
+	}
+
+	if (cptr && cptr->buildings[BUILDING_BIOSPHERES]) {
+		ret += 2;
+	}
+
+	// FIXME: add +5 for Advanced City Planning tech
+	return ret;
 }
 
 void GameState::dump(void) const {

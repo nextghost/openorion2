@@ -82,6 +82,8 @@
 #define MAX_SHIPTYPES_ANTARAN 5
 #define MAX_SHIPTYPES_MONSTER 5
 
+#define BUILDING_BIOSPHERES 15
+
 enum MultiplayerType {
 	Single = 0,
 	Hotseat = 1,
@@ -394,6 +396,8 @@ struct Planet {
 	Planet(void);
 
 	void load(ReadStream &stream);
+
+	unsigned baseProduction(void) const;
 
 	void validate(void) const;
 };
@@ -712,6 +716,8 @@ public:
 	unsigned findStar(int x, int y) const;
 	BilistNode<Fleet> *getMovingFleets(void);
 	const BilistNode<Fleet> *getMovingFleets(void) const;
+
+	unsigned planetMaxPop(unsigned planet_id, unsigned player_id) const;
 };
 
 class Fleet : public Recyclable {

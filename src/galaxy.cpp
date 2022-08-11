@@ -1620,15 +1620,14 @@ void PlanetsListView::redraw(unsigned curtick) {
 		// Minerals
 		str = gameLang->estrings(mineralsMap[ptr->minerals]);
 		fnt->centerText(306, y + fullY, color, str);
-		// FIXME: Pull real data
-		buf.printf(prodstr, 3);
+		buf.printf(prodstr, (int)ptr->baseProduction());
 		smallFnt->centerText(306, y + smallY, color, buf.c_str());
 
 		// Planet size
 		str = gameLang->estrings(sizesMap[ptr->size]);
 		fnt->centerText(385, y + fullY, color, str);
-		// FIXME: Pull real data
-		buf.printf(popstr, 4);
+		buf.printf(popstr, _game->planetMaxPop(_planets[offset + i],
+			_activePlayer));
 		smallFnt->centerText(385, y + smallY, color, buf.c_str());
 	}
 
