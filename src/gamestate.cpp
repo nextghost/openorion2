@@ -489,8 +489,7 @@ void Leader::load(ReadStream &stream) {
 }
 
 void ShipWeapon::load(ReadStream &stream) {
-	type = stream.readUint8();
-	stream.readUint8(); // FIXME: unknown data (weapon type is uint16_t?)
+	type = stream.readSint16LE();
 	maxCount = stream.readUint8();
 	workingCount = stream.readUint8();
 	arc = stream.readUint8();

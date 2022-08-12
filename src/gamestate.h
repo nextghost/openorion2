@@ -428,7 +428,7 @@ struct Leader {
 };
 
 struct ShipWeapon {
-	uint8_t type;	// FIXME: uint16_t?
+	int16_t type;
 	uint8_t maxCount, workingCount;
 	uint8_t arc, beamMods, missileMods, ammo;
 
@@ -440,6 +440,9 @@ struct ShipDesign {
 	uint8_t size, type;
 	uint8_t shield, drive, speed, computer, armor;
 	uint8_t specials[(MAX_SHIP_SPECIALS + 7) / 8];
+
+	// Colony and outpost ships use weapons[0].type to store destination
+	// planet ID if sent directly to specific planet
 	ShipWeapon weapons[MAX_SHIP_WEAPONS];
 	uint8_t picture, builder;
 	uint16_t cost;
