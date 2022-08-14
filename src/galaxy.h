@@ -191,7 +191,10 @@ private:
 	ToggleWidget *_colonyToggle, *_outpostToggle;
 	int _scrollgrab, _curslot, _activePlayer;
 	ImageAsset _bg, _planetimg[PLANET_CLIMATE_COUNT][PLANET_SIZE_COUNT];
+	ImageAsset _shipimg;
 	unsigned _planetCount, _planets[MAX_PLANETS];
+	// Ships heading to a specific planet
+	int _colonyShips[MAX_PLANETS], _outpostShips[MAX_PLANETS];
 
 	void initWidgets(void);
 
@@ -212,6 +215,8 @@ public:
 	void highlightSlot(int x, int y, int arg);
 	void clickSlot(int x, int y, int arg);
 	void changeFilter(int x, int y, int arg);
+	void clickColonyToggle(int x, int y, int arg);
+	void clickOutpostToggle(int x, int y, int arg);
 	void clickReturn(int x, int y, int arg);
 };
 

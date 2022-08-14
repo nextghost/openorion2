@@ -1417,6 +1417,27 @@ void GameState::validate(void) const {
 
 			throw std::out_of_range("Ship has invalid star ID");
 		}
+
+		if (ptr->design.type == ShipType::COLONY_SHIP ||
+			ptr->design.type == ShipType::OUTPOST_SHIP) {
+
+			// Destination planet ID
+			tmp = ptr->design.weapons[0].type;
+
+			if (tmp >= _planetCount) {
+				throw std::out_of_range(
+					"Invalid destination planet");
+			}
+
+			if ((ptr->status == ShipState::LeavingOrbit ||
+				ptr->status == ShipState::InTransit) &&
+				tmp >= 0 &&
+				_planets[tmp].star != ptr->getStarID()) {
+
+				throw std::out_of_range(
+					"Invalid destination planet");
+			}
+		}
 	}
 }
 

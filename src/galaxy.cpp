@@ -85,12 +85,16 @@
 #define ASSET_PLANETLIST_RETURN_BUTTON 14
 #define ASSET_PLANETLIST_STAR_IMAGES 15
 #define ASSET_PLANETLIST_PLANET_IMAGES 26
+#define ASSET_PLANETLIST_SHIP_IMAGES 76
 
 #define PLANET_LIST_SCROLL_WIDTH 9
 #define PLANET_LIST_ROWS 8
 #define PLANET_LIST_FIRST_ROW 36
 #define PLANET_LIST_ROW_HEIGHT 50
 #define PLANET_LIST_ROW_DIST 55
+#define PLANET_LIST_SHIP_YOFF 36
+#define PLANET_LIST_COLONY_X 88
+#define PLANET_LIST_OUTPOST_X 18
 
 static const uint8_t starmapHighlightColors[(MAX_PLAYERS + 1) * 3] {
 	RGB(0xfc0000), RGB(0xd4c418), RGB(0x209c1c), RGB(0xc8c8c8),
@@ -1328,11 +1332,20 @@ PlanetsListView::PlanetsListView(GameState *game, int activePlayer) :
 	_scrollgrab(0), _curslot(-1), _activePlayer(activePlayer),
 	_planetCount(0) {
 
-	unsigned i, j, k;
+	unsigned i, j, k, color;
+	int dest, *shiplist;
+	ToggleWidget *shipToggle;
 	const uint8_t *pal;
+
+	for (i = 0; i < MAX_PLANETS; i++) {
+		_colonyShips[i] = _outpostShips[i] = -1;
+	}
 
 	_bg = gameAssets->getImage(PLANET_ARCHIVE, ASSET_PLANETLIST_BG);
 	pal = _bg->palette();
+	color = _game->_players[_activePlayer].color;
+	_shipimg = gameAssets->getImage(PLANET_ARCHIVE,
+		ASSET_PLANETLIST_SHIP_IMAGES + color, pal);
 
 	for (i = 0, k = 0; i < PLANET_CLIMATE_COUNT; i++) {
 		for (j = 0; j < PLANET_SIZE_COUNT; j++, k++) {
@@ -1343,6 +1356,34 @@ PlanetsListView::PlanetsListView(GameState *game, int activePlayer) :
 
 	initWidgets();
 	changeFilter(0, 0, 0);
+
+	for (i = 0; i < _game->_shipCount; i++) {
+		const Ship *sptr = _game->_ships + i;
+
+		if (!sptr->isActive()) {
+			continue;
+		}
+
+		if (sptr->design.type == ShipType::COLONY_SHIP) {
+			shiplist = _colonyShips;
+			shipToggle = _colonyToggle;
+		} else if (sptr->design.type == ShipType::OUTPOST_SHIP) {
+			shiplist = _outpostShips;
+			shipToggle = _outpostToggle;
+		} else {
+			continue;
+		}
+
+		// Destination planet ID for colony and outpost ships
+		dest = sptr->design.weapons[0].type;
+
+		if ((sptr->status == ShipState::LeavingOrbit ||
+			sptr->status == ShipState::InTransit) && dest >= 0) {
+			shiplist[dest] = i;
+		} else {
+			shipToggle->disable(0);
+		}
+	}
 }
 
 void PlanetsListView::initWidgets(void) {
@@ -1354,6 +1395,8 @@ void PlanetsListView::initWidgets(void) {
 		w = createWidget(18, PLANET_LIST_FIRST_ROW +
 			i * PLANET_LIST_ROW_DIST, 398, PLANET_LIST_ROW_HEIGHT);
 		w->setMouseOverCallback(GuiMethod(*this,
+			&PlanetsListView::highlightSlot, i));
+		w->setMouseMoveCallback(GuiMethod(*this,
 			&PlanetsListView::highlightSlot, i));
 		w->setMouseOutCallback(GuiMethod(*this,
 			&PlanetsListView::highlightSlot, -1));
@@ -1454,10 +1497,11 @@ void PlanetsListView::initWidgets(void) {
 	addWidget(_colonyToggle);
 	_colonyToggle->setDisabledSprite(PLANET_ARCHIVE,
 		ASSET_PLANETLIST_COLONY_TOGGLE, pal, 0);
+	_colonyToggle->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &PlanetsListView::clickColonyToggle));
 	_colonyToggle->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &PlanetsListView::showHelp,
 		HELP_PLANETLIST_COLONY_TOGGLE));
-	// FIXME: Implement sending colony ships
 	_colonyToggle->disable(1);
 
 	_outpostToggle = new ToggleWidget(454, 413, 157, 25, PLANET_ARCHIVE,
@@ -1465,10 +1509,11 @@ void PlanetsListView::initWidgets(void) {
 	addWidget(_outpostToggle);
 	_outpostToggle->setDisabledSprite(PLANET_ARCHIVE,
 		ASSET_PLANETLIST_OUTPOST_TOGGLE, pal, 0);
+	_outpostToggle->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &PlanetsListView::clickOutpostToggle));
 	_outpostToggle->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &PlanetsListView::showHelp,
 		HELP_PLANETLIST_OUTPOST_TOGGLE));
-	// FIXME: Implement sending outpost ships
 	_outpostToggle->disable(1);
 
 	w = createWidget(454, 440, 156, 25);
@@ -1598,6 +1643,16 @@ void PlanetsListView::redraw(unsigned curtick) {
 			smallFnt->centerText(61, y + 41, color, buf.c_str());
 		}
 
+		if (_outpostShips[_planets[offset + i]] >= 0) {
+			_shipimg->draw(PLANET_LIST_OUTPOST_X,
+				y + PLANET_LIST_SHIP_YOFF);
+		}
+
+		if (_colonyShips[_planets[offset + i]] >= 0) {
+			_shipimg->draw(PLANET_LIST_COLONY_X,
+				y + PLANET_LIST_SHIP_YOFF);
+		}
+
 		// Planet climate
 		str = gameLang->estrings(planetClimateMap[ptr->climate]);
 		fnt->centerText(138, y + fullY, color, str);
@@ -1675,13 +1730,26 @@ void PlanetsListView::showHelp(int x, int y, int arg) {
 }
 
 void PlanetsListView::highlightSlot(int x, int y, int arg) {
-	unsigned offset = _scroll->position();
+	unsigned pid, sy, w, h, offset = _scroll->position();
 	const Planet *ptr;
 
 	if (arg >= 0 && arg < PLANET_LIST_ROWS && offset + arg < _planetCount) {
 		_curslot = arg;
-		ptr = _game->_planets + _planets[offset + arg];
+		pid = _planets[offset + arg];
+		ptr = _game->_planets + pid;
 		_minimap->highlightStar(ptr->star);
+		sy = PLANET_LIST_FIRST_ROW + arg * PLANET_LIST_ROW_DIST +
+			PLANET_LIST_SHIP_YOFF;
+		w = _shipimg->width();
+		h = _shipimg->height();
+
+		// hide highlight if the mouse is over ship icon
+		if ((_colonyShips[pid] >= 0 &&
+			isInRect(x, y, PLANET_LIST_COLONY_X, sy, w, h)) ||
+			(_outpostShips[pid] >= 0 &&
+			isInRect(x, y, PLANET_LIST_OUTPOST_X, sy, w, h))) {
+			_curslot = -1;
+		}
 	} else {
 		_curslot = -1;
 	}
@@ -1781,6 +1849,17 @@ void PlanetsListView::changeFilter(int x, int y, int arg) {
 
 	_planetCount = count;
 	_scroll->setRange(_planetCount);
+}
+
+// FIXME: Implement sending colony and outpost ships
+void PlanetsListView::clickColonyToggle(int x, int y, int arg) {
+	_colonyToggle->setValue(0);
+	new MessageBoxWindow(this, "Not implemented yet");
+}
+
+void PlanetsListView::clickOutpostToggle(int x, int y, int arg) {
+	_outpostToggle->setValue(0);
+	new MessageBoxWindow(this, "Not implemented yet");
 }
 
 void PlanetsListView::clickReturn(int x, int y, int arg) {
