@@ -210,9 +210,14 @@ enum ShipType {
 	OUTPOST_SHIP
 };
 
+
 extern const unsigned galaxySizeFactors[GALAXY_ZOOM_LEVELS];
 
 class Fleet;
+class GameState;
+
+typedef int (*gamestate_cmp_func)(const GameState *gamestate, int player,
+	unsigned a, unsigned b);
 
 struct GameConfig {
 	uint32_t version;
@@ -726,6 +731,9 @@ public:
 
 	unsigned planetClimate(unsigned planet_id) const;
 	unsigned planetMaxPop(unsigned planet_id, unsigned player_id) const;
+
+	void sort_ids(unsigned *id_list, unsigned length, int player,
+		gamestate_cmp_func cmp);
 };
 
 class Fleet : public Recyclable {

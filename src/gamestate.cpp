@@ -1522,6 +1522,42 @@ unsigned GameState::planetMaxPop(unsigned planet_id, unsigned player_id) const {
 	return ret;
 }
 
+void GameState::sort_ids(unsigned *id_list, unsigned length, int player,
+	gamestate_cmp_func cmp) {
+
+	unsigned plist[3];
+	unsigned tmp, pivot, i, j;
+
+	if (length <= 1) {
+		return;
+	} else if (length < 6) {
+		pivot = id_list[length / 2];
+	} else {
+		plist[0] = id_list[0];
+		plist[1] = id_list[length / 2];
+		plist[2] = id_list[length - 1];
+		sort_ids(plist, 3, player, cmp);
+		pivot = plist[1];
+	}
+
+	for (i = 0, j = length - 1; i <= j; i++, j--) {
+		for (; cmp(this, player, id_list[i], pivot) < 0; i++);
+		for (; cmp(this, player, id_list[j], pivot) > 0; j--);
+
+		if (i > j) {
+			break;
+		}
+
+		tmp = id_list[i];
+		id_list[i] = id_list[j];
+		id_list[j] = tmp;
+	}
+
+	j++;
+	sort_ids(id_list, j, player, cmp);
+	sort_ids(id_list + j, length - j, player, cmp);
+}
+
 void GameState::dump(void) const {
 	fprintf(stdout, "=== Config ===\n");
 	fprintf(stdout, "Version: %d\n", _gameConfig.version);
