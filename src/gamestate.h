@@ -383,6 +383,10 @@ struct Planet {
 	uint8_t size;
 	uint8_t gravity;
 	uint8_t unknown1;
+
+	// The effective climate of colonized planets may be different
+	// from this value. Use GameState::planetClimate() to get the right
+	// value.
 	uint8_t climate;
 	uint8_t bg;
 	uint8_t minerals;
@@ -720,6 +724,7 @@ public:
 	BilistNode<Fleet> *getMovingFleets(void);
 	const BilistNode<Fleet> *getMovingFleets(void) const;
 
+	unsigned planetClimate(unsigned planet_id) const;
 	unsigned planetMaxPop(unsigned planet_id, unsigned player_id) const;
 };
 

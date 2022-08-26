@@ -1582,7 +1582,7 @@ void PlanetsListView::handleSelectStar(int x, int y, int arg) {
 
 void PlanetsListView::redraw(unsigned curtick) {
 	Font *fnt, *smallFnt;
-	unsigned i, y, color, offset = _scroll->position();
+	unsigned i, y, climate, color, offset = _scroll->position();
 	int simpleY, fullY, smallY, owner, penalty, curstar;
 	const char *str, *foodstr, *prodstr, *popstr, *penaltystr;
 	StringBuffer buf;
@@ -1611,6 +1611,7 @@ void PlanetsListView::redraw(unsigned curtick) {
 		y = PLANET_LIST_FIRST_ROW + i * PLANET_LIST_ROW_DIST;
 		color = MAX_PLAYERS;
 		owner = -1;
+		climate = _game->planetClimate(_planets[offset + i]);
 
 		if (ptr->colony >= 0) {
 			owner = _game->_colonies[ptr->colony].owner;
@@ -1624,7 +1625,7 @@ void PlanetsListView::redraw(unsigned curtick) {
 		}
 
 		// Planet name and image
-		img = (const Image*)_planetimg[ptr->climate][ptr->size];
+		img = (const Image*)_planetimg[climate][ptr->size];
 		img->draw(61 - img->width() / 2, y + 21 - img->height() / 2);
 		buf.printf("%s %s", sptr->name,
 			romanNumbers[sptr->planetSeq(ptr->orbit)]);
@@ -1654,7 +1655,7 @@ void PlanetsListView::redraw(unsigned curtick) {
 		}
 
 		// Planet climate
-		str = gameLang->estrings(planetClimateMap[ptr->climate]);
+		str = gameLang->estrings(planetClimateMap[climate]);
 		fnt->centerText(138, y + fullY, color, str);
 		buf.printf(foodstr, (int)ptr->foodbase);
 		smallFnt->centerText(138, y + smallY, color, buf.c_str());
@@ -1760,7 +1761,7 @@ void PlanetsListView::clickSlot(int x, int y, int arg) {
 }
 
 void PlanetsListView::changeFilter(int x, int y, int arg) {
-	unsigned i, j, count;
+	unsigned i, j, count, climate;
 	int f_enemy, f_gravity, f_env, f_mineral, f_range;
 	int owner;
 	const Planet *ptr;
@@ -1834,7 +1835,9 @@ void PlanetsListView::changeFilter(int x, int y, int arg) {
 				continue;
 			}
 
-			if (f_env && ptr->climate < PlanetClimate::DESERT) {
+			climate = _game->planetClimate(sptr->planetIndex[j]);
+
+			if (f_env && climate < PlanetClimate::DESERT) {
 				continue;
 			}
 

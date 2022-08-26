@@ -1461,6 +1461,18 @@ const BilistNode<Fleet> *GameState::getMovingFleets(void) const {
 	return _firstMovingFleet.next();
 }
 
+unsigned GameState::planetClimate(unsigned planet_id) const {
+	const Planet *ptr;
+
+	ptr = _planets + planet_id;
+
+	if (ptr->colony >= 0) {
+		return _colonies[ptr->colony].climate;
+	}
+
+	return ptr->climate;
+}
+
 unsigned GameState::planetMaxPop(unsigned planet_id, unsigned player_id) const {
 	unsigned ret, climate, climateFactor;
 	const Planet *ptr;
@@ -1476,11 +1488,10 @@ unsigned GameState::planetMaxPop(unsigned planet_id, unsigned player_id) const {
 	}
 
 	ptr = _planets + planet_id;
-	climate = ptr->climate;
+	climate = planetClimate(planet_id);
 
 	if (ptr->colony >= 0) {
 		cptr = _colonies + ptr->colony;
-		climate = cptr->climate;
 		player_id = cptr->owner;
 	}
 
