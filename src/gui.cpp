@@ -592,6 +592,193 @@ void ToggleWidget::handleMouseUp(int x, int y, unsigned button) {
 	Widget::handleMouseUp(x, y, button);
 }
 
+ChoiceWidget::ChoiceWidget(unsigned x, unsigned y, unsigned width,
+	unsigned height, unsigned choiceCount) : Widget(x, y, width, height),
+		_count(choiceCount), _value(0), _valSprites(NULL),
+		_buttons(NULL), _curButton(NULL) {
+
+	if (choiceCount < 1) {
+		throw std::out_of_range("ChoiceWidget needs at least 1 choice");
+	}
+
+	_valSprites = new GuiSprite*[_count];
+	memset(_valSprites, 0, _count * sizeof(GuiSprite*));
+
+	try {
+		_buttons = new Widget*[_count];
+	} catch (...) {
+		delete[] _valSprites;
+		throw;
+	}
+
+	memset(_buttons, 0, _count * sizeof(Widget*));
+}
+
+ChoiceWidget::~ChoiceWidget(void) {
+	unsigned i;
+
+	for (i = 0; i < _count; i++) {
+		delete _valSprites[i];
+		delete _buttons[i];
+	}
+
+	delete[] _valSprites;
+	delete[] _buttons;
+}
+
+int ChoiceWidget::findChoice(int x, int y) {
+	unsigned i;
+
+	for (i = 0; i < _count; i++) {
+		if (_buttons[i] && _buttons[i]->isInside(x, y)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+Widget *ChoiceWidget::findButton(int x, int y) {
+	int choice = findChoice(x, y);
+
+	return choice >= 0 ? _buttons[choice] : NULL;
+}
+
+void ChoiceWidget::setValueChangeCallback(const GuiCallback &callback) {
+	_onChange = callback;
+}
+
+void ChoiceWidget::setChoiceButton(unsigned val, unsigned x, unsigned y,
+	unsigned width, unsigned height, GuiSprite *sprite) {
+
+	if (val >= _count) {
+		throw std::out_of_range("Invalid choice button");
+	}
+
+	if (_buttons[val]) {
+		throw std::logic_error("Choice button is already defined");
+	}
+
+	_buttons[val] = new Widget(x, y, width, height);
+	_valSprites[val] = sprite;
+}
+
+void ChoiceWidget::setChoiceButton(unsigned val, unsigned x, unsigned y,
+	unsigned width, unsigned height, Image *img, int frame) {
+
+	GuiSprite *sprite = new GuiSprite(img, x, y, frame);
+
+	try {
+		setChoiceButton(val, x, y, width, height, sprite);
+	} catch (...) {
+		delete sprite;
+		throw;
+	}
+}
+
+void ChoiceWidget::setChoiceButton(unsigned val, unsigned x, unsigned y,
+	unsigned width, unsigned height, const char *archive, unsigned id,
+	const uint8_t *palette, int frame) {
+
+	ImageAsset img = gameAssets->getImage(archive, id, palette);
+
+	setChoiceButton(val, x, y, width, height, (Image*)img, frame);
+}
+
+Widget *ChoiceWidget::button(unsigned id) {
+	if (id >= _count) {
+		throw std::out_of_range("Invalid button ID");
+	}
+
+	return _buttons[id];
+}
+
+void ChoiceWidget::setValue(unsigned val) {
+	if (val >= _count) {
+		throw std::out_of_range("Invalid choice value");
+	}
+
+	_value = val;
+}
+
+unsigned ChoiceWidget::value(void) const {
+	return _value;
+}
+
+void ChoiceWidget::handleMouseMove(int x, int y, unsigned buttons) {
+	int dx = x - getX(), dy = x - getY();
+	Widget *w = findButton(dx, dy);
+
+	if (w != _curButton) {
+		if (_curButton) {
+			_curButton->handleMouseOut(dx, dy, buttons);
+		}
+
+		if (w) {
+			w->handleMouseOver(dx, dy, buttons);
+		}
+
+		_curButton = w;
+	}
+
+	if (w) {
+		w->handleMouseMove(dx, dy, buttons);
+	}
+
+	Widget::handleMouseMove(x, y, buttons);
+}
+
+void ChoiceWidget::handleMouseOut(int x, int y, unsigned buttons) {
+	if (_curButton) {
+		_curButton->handleMouseOut(x - getX(), y - getX(), buttons);
+	}
+
+	_curButton = NULL;
+	Widget::handleMouseOut(x, y, buttons);
+}
+
+void ChoiceWidget::handleMouseDown(int x, int y, unsigned button) {
+	int dx = x - getX(), dy = x - getY();
+	Widget *w = findButton(dx, dy);
+
+	if (w) {
+		w->handleMouseDown(dx, dy, button);
+	}
+
+	Widget::handleMouseDown(x, y, button);
+}
+
+void ChoiceWidget::handleMouseUp(int x, int y, unsigned button) {
+	int val, dx = x - getX(), dy = y - getY();
+
+	val = findChoice(dx, dy);
+
+	if (val >= 0) {
+		if (button == MBUTTON_LEFT && _value != (unsigned)val) {
+			_value = val;
+			_onChange(x, y);
+		}
+
+		_buttons[val]->handleMouseUp(dx, dy, button);
+	}
+
+	Widget::handleMouseUp(x, y, button);
+}
+
+void ChoiceWidget::redraw(int x, int y, unsigned curtick) {
+	unsigned i;
+
+	if (_valSprites[_value]) {
+		_valSprites[_value]->redraw(x + getX(), y + getY(), curtick);
+	}
+
+	for (i = 0; i < _count; i++) {
+		if (_buttons[i]) {
+			_buttons[i]->redraw(x + getX(), y + getY(), curtick);
+		}
+	}
+}
+
 ScrollBarWidget::ScrollBarWidget(unsigned x, unsigned y, unsigned width,
 	unsigned height, unsigned pagesize, unsigned range,
 	const uint8_t *texture) : Widget(x, y, width, height), _position(0),

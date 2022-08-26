@@ -197,6 +197,46 @@ public:
 	void handleMouseUp(int x, int y, unsigned button);
 };
 
+class ChoiceWidget : public Widget {
+private:
+	unsigned _count, _value;
+	GuiCallback _onChange;
+	GuiSprite **_valSprites;
+	Widget **_buttons, *_curButton;
+
+protected:
+	int findChoice(int x, int y);
+	Widget *findButton(int x, int y);
+
+public:
+	ChoiceWidget(unsigned x, unsigned y, unsigned width, unsigned height,
+		unsigned choiceCount);
+	~ChoiceWidget(void);
+
+	void setValueChangeCallback(const GuiCallback &callback);
+
+	virtual void setChoiceButton(unsigned val, unsigned x, unsigned y,
+		unsigned width, unsigned height, GuiSprite *sprite);
+	virtual void setChoiceButton(unsigned val, unsigned x, unsigned y,
+		unsigned width, unsigned height, Image *img,
+		int frame = ANIM_LOOP);
+	virtual void setChoiceButton(unsigned val, unsigned x, unsigned y,
+		unsigned width, unsigned height, const char *archive,
+		unsigned id, const uint8_t *palette = NULL,
+		int frame = ANIM_LOOP);
+	virtual Widget *button(unsigned id);
+
+	void setValue(unsigned val);
+	unsigned value(void) const;
+
+	void handleMouseMove(int x, int y, unsigned buttons);
+	void handleMouseOut(int x, int y, unsigned buttons);
+	void handleMouseDown(int x, int y, unsigned button);
+	void handleMouseUp(int x, int y, unsigned button);
+
+	void redraw(int x, int y, unsigned curtick);
+};
+
 class ScrollBarWidget : public Widget {
 private:
 	GuiCallback _onBeginScroll, _onScroll, _onEndScroll;
