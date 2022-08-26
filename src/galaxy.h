@@ -186,6 +186,7 @@ private:
 	GameState *_game;
 	StarmapWidget *_minimap;
 	ScrollBarWidget *_scroll;
+	ChoiceWidget *_sortChoice;
 	ToggleWidget *_enemyFilter, *_gravityFilter, *_envFilter;
 	ToggleWidget *_mineralFilter, *_rangeFilter;
 	ToggleWidget *_colonyToggle, *_outpostToggle;
@@ -215,6 +216,7 @@ public:
 	void highlightSlot(int x, int y, int arg);
 	void clickSlot(int x, int y, int arg);
 	void changeFilter(int x, int y, int arg);
+	void changeSort(int x, int y, int arg);
 	void clickColonyToggle(int x, int y, int arg);
 	void clickOutpostToggle(int x, int y, int arg);
 	void clickReturn(int x, int y, int arg);

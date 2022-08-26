@@ -1856,3 +1856,29 @@ uint16_t Fleet::getX(void) const {
 uint16_t Fleet::getY(void) const {
 	return _y;
 }
+
+int cmpPlanetClimate(const GameState *game, int player, unsigned a,
+	unsigned b) {
+
+	return int(game->planetClimate(b)) - int(game->planetClimate(a));
+}
+
+int cmpPlanetMinerals(const GameState *game, int player, unsigned a,
+	unsigned b) {
+
+	int mineralsA, mineralsB;
+
+	mineralsA = game->_planets[a].minerals;
+	mineralsB = game->_planets[b].minerals;
+	return mineralsB - mineralsA;
+}
+
+int cmpPlanetMaxPop(const GameState *game, int player, unsigned a,
+	unsigned b) {
+
+	int popA, popB;
+
+	popA = game->planetMaxPop(a, player);
+	popB = game->planetMaxPop(b, player);
+	return popB - popA;
+}

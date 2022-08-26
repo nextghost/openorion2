@@ -781,4 +781,10 @@ public:
 	uint16_t getY(void) const;
 };
 
+int cmpPlanetClimate(const GameState *game, int player, unsigned a,
+	unsigned b);
+int cmpPlanetMinerals(const GameState *game, int player, unsigned a,
+	unsigned b);
+int cmpPlanetMaxPop(const GameState *game, int player, unsigned a, unsigned b);
+
 #endif

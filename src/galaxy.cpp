@@ -73,6 +73,9 @@
 
 #define PLANET_ARCHIVE "plntsum.lbx"
 #define ASSET_PLANETLIST_BG 0
+#define ASSET_PLANETLIST_CLIMATE_SORT 1
+#define ASSET_PLANETLIST_MINERALS_SORT 2
+#define ASSET_PLANETLIST_SIZE_SORT 3
 #define ASSET_PLANETLIST_ENEMY_TOGGLE 4
 #define ASSET_PLANETLIST_GRAVITY_TOGGLE 5
 #define ASSET_PLANETLIST_ENV_TOGGLE 6
@@ -1326,11 +1329,11 @@ void SelectPlayerView::clickPlayer(int x, int y, int arg) {
 }
 
 PlanetsListView::PlanetsListView(GameState *game, int activePlayer) :
-	_game(game), _minimap(NULL), _scroll(NULL), _enemyFilter(NULL),
-	_gravityFilter(NULL), _envFilter(NULL), _mineralFilter(NULL),
-	_rangeFilter(NULL), _colonyToggle(NULL), _outpostToggle(NULL),
-	_scrollgrab(0), _curslot(-1), _activePlayer(activePlayer),
-	_planetCount(0) {
+	_game(game), _minimap(NULL), _scroll(NULL), _sortChoice(NULL),
+	_enemyFilter(NULL), _gravityFilter(NULL), _envFilter(NULL),
+	_mineralFilter(NULL), _rangeFilter(NULL), _colonyToggle(NULL),
+	_outpostToggle(NULL), _scrollgrab(0), _curslot(-1),
+	_activePlayer(activePlayer), _planetCount(0) {
 
 	unsigned i, j, k, color;
 	int dest, *shiplist;
@@ -1445,6 +1448,26 @@ void PlanetsListView::initWidgets(void) {
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &PlanetsListView::showHelp,
 		HELP_PLANETLIST_SCROLLBAR));
+
+	_sortChoice = new ChoiceWidget(441, 200, 183, 24, 3);
+	addWidget(_sortChoice);
+	_sortChoice->setChoiceButton(0, 0, 0, 60, 24, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_CLIMATE_SORT, pal, 1);
+	_sortChoice->setChoiceButton(1, 60, 0, 66, 24, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_MINERALS_SORT, pal, 1);
+	_sortChoice->setChoiceButton(2, 126, 0, 57, 24, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_SIZE_SORT, pal, 1);
+	_sortChoice->setValueChangeCallback(GuiMethod(*this,
+		&PlanetsListView::changeSort));
+	_sortChoice->button(0)->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_CLIMATE_BUTTON));
+	_sortChoice->button(1)->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_MINERALS_BUTTON));
+	_sortChoice->button(2)->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &PlanetsListView::showHelp,
+		HELP_PLANETLIST_SIZE_BUTTON));
 
 	_enemyFilter = new ToggleWidget(441, 266, 183, 21, PLANET_ARCHIVE,
 		ASSET_PLANETLIST_ENEMY_TOGGLE, pal);
@@ -1852,6 +1875,16 @@ void PlanetsListView::changeFilter(int x, int y, int arg) {
 
 	_planetCount = count;
 	_scroll->setRange(_planetCount);
+	changeSort(0, 0, 0);
+}
+
+void PlanetsListView::changeSort(int x, int y, int arg) {
+	gamestate_cmp_func cmplist[3] = {
+		cmpPlanetClimate, cmpPlanetMinerals, cmpPlanetMaxPop
+	};
+
+	_game->sort_ids(_planets, _planetCount, _activePlayer,
+		cmplist[_sortChoice->value()]);
 }
 
 // FIXME: Implement sending colony and outpost ships
