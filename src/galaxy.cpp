@@ -1261,9 +1261,10 @@ void SelectPlayerView::initWidgets(void) {
 
 void SelectPlayerView::redraw(unsigned curtick) {
 	unsigned i, x, y, h, color;
+	const char *player_fmt;
 	const Player *ptr;
 	Font *fnt;
-	char buf[PSELECT_BUFSIZE];
+	StringBuffer buf;
 	unsigned fontanim[PSELECT_ANIM_LENGTH] = {3, 4, 3, 2, 1, 0, 1, 2};
 	unsigned color_list[] = {
 		FONT_COLOR_PLAYER_RED1, FONT_COLOR_PLAYER_YELLOW1,
@@ -1276,6 +1277,7 @@ void SelectPlayerView::redraw(unsigned curtick) {
 		_animStart = curtick;
 	}
 
+	player_fmt = gameLang->hstrings(HSTR_PLAYER_SELECT_FMT);
 	fnt = gameFonts->getFont(FONTSIZE_BIG);
 	h = _row->height();
 	x = (SCREEN_WIDTH - _header->width()) / 2;
@@ -1293,11 +1295,8 @@ void SelectPlayerView::redraw(unsigned curtick) {
 
 	for (i = 0; i < _playerCount; i++) {
 		ptr = _game->_players + _humans[i];
-		// FIXME: Use strings from game data
 		// FIXME: Find and use real player score
-		snprintf(buf, PSELECT_BUFSIZE, "%s, %s, Score %d",
-			ptr->name, ptr->race, 0);
-		buf[PSELECT_BUFSIZE - 1] = '\0';
+		buf.printf(player_fmt, ptr->name, ptr->race, "0");
 
 		if (_game->_players[_humans[i]].playerDoneFlags) {
 			color = 1;
@@ -1310,7 +1309,7 @@ void SelectPlayerView::redraw(unsigned curtick) {
 		}
 
 		color += color_list[ptr->color];
-		fnt->renderText(x + 116, y + i * h - 9, color, buf);
+		fnt->renderText(x + 116, y + i * h - 9, color, buf.c_str());
 
 		if (!_game->_players[_humans[i]].playerDoneFlags) {
 			_playerFlags[i]->draw(x + 40, y + i * h - 16);

@@ -266,7 +266,10 @@ void MainMenuView::clickContinue(int x, int y, int arg) {
 	}
 
 	if (!saveFiles[slot].filename) {
-		new ErrorWindow(this, "GAME10.SAV does not exist");
+		StringBuffer buf;
+
+		buf.printf(gameLang->hstrings(HSTR_SAVEFILE_NOT_FOUND), 10);
+		new ErrorWindow(this, buf.c_str());
 		delete[] saveFiles;
 		return;
 	}
@@ -278,7 +281,7 @@ void MainMenuView::clickContinue(int x, int y, int arg) {
 
 		fprintf(stderr, "Error loading %s: %s\n",
 			saveFiles[slot].filename, e.what());
-		buf.printf("Cannot load %s", saveFiles[slot].filename);
+		buf.printf(gameLang->estrings(ESTR_SAVEFILE_BROKEN), 10);
 		new ErrorWindow(this, buf.c_str());
 		delete[] saveFiles;
 		return;
@@ -369,28 +372,32 @@ void LoadGameWindow::initWidgets(const uint8_t *pal) {
 void LoadGameWindow::drawSlot(unsigned slot, Font *fnt, Font *smallfnt) {
 	int y = _y + 24 + 31 * slot;
 	unsigned stardate, color = FONT_COLOR_SAVEGAME;
+	const char *stardate_fmt;
 	struct tm *ltime;
 	StringBuffer buf;
+
+	stardate_fmt = gameLang->hstrings(HSTR_SAVESLOT_STARDATE);
 
 	if (int(slot) == _selected) {
 		color = FONT_COLOR_SAVEGAME_SEL;
 	}
 
 	if (!_saveFiles[slot].filename) {
-		// FIXME: Use strings from game data
-		fnt->renderText(_x + 32, y, color, "... empty slot ...");
+		fnt->renderText(_x + 32, y, color,
+			gameLang->hstrings(HSTR_SAVESLOT_EMPTY));
 		return;
 	}
 
 	if (slot == SAVEGAME_SLOTS - 1) {
-		fnt->renderText(_x + 32, y, color, "(Auto Save)");
+		fnt->renderText(_x + 32, y, color,
+			gameLang->estrings(ESTR_SAVESLOT_AUTO));
 	} else {
 		fnt->renderText(_x + 32, y, color,
 			_saveFiles[slot].header.saveGameName);
 	}
 
 	stardate = _saveFiles[slot].header.stardate;
-	buf.printf("Stardate: %u.%u", stardate / 10, stardate % 10);
+	buf.printf(stardate_fmt, stardate / 10, stardate % 10);
 	smallfnt->renderText(_x + 32, y + 14, color, buf.c_str());
 	ltime = localtime(&_saveFiles[slot].mtime);
 	buf.ftime("%x   %H:%M", ltime);
@@ -440,7 +447,8 @@ void LoadGameWindow::handleLoad(int x, int y, int arg) {
 	} else if (!_saveFiles[_selected].filename) {
 		StringBuffer buf;
 
-		buf.printf("SAVE%d.GAM does not exist", _selected + 1);
+		buf.printf(gameLang->hstrings(HSTR_SAVEFILE_NOT_FOUND),
+			_selected + 1);
 		new ErrorWindow(_parent, buf.c_str());
 		return;
 	}
@@ -453,7 +461,8 @@ void LoadGameWindow::handleLoad(int x, int y, int arg) {
 
 		fprintf(stderr, "Error loading %s: %s\n",
 			_saveFiles[_selected].filename, e.what());
-		buf.printf("Cannot load %s", _saveFiles[_selected].filename);
+		buf.printf(gameLang->estrings(ESTR_SAVEFILE_BROKEN),
+			_selected + 1);
 		new ErrorWindow(_parent, buf.c_str());
 		return;
 	}
