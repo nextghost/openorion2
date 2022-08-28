@@ -148,6 +148,31 @@ void loadGame(const char *filename) {
 	delete[] path;
 }
 
+int loadGame(GuiView *view, const SaveGameInfo *files, unsigned slot) {
+	if (!files[slot].filename) {
+		StringBuffer buf;
+
+		buf.printf(gameLang->hstrings(HSTR_SAVEFILE_NOT_FOUND),
+			slot + 1);
+		new ErrorWindow(view, buf.c_str());
+		return 0;
+	}
+
+	try {
+		loadGame(files[slot].filename);
+	} catch (std::exception &e) {
+		StringBuffer buf;
+
+		fprintf(stderr, "Error loading %s: %s\n", files[slot].filename,
+			e.what());
+		buf.printf(gameLang->estrings(ESTR_SAVEFILE_BROKEN), slot + 1);
+		new ErrorWindow(view, buf.c_str());
+		return 0;
+	}
+
+	return 1;
+}
+
 MainMenuView::MainMenuView(void) {
 	_background = gameAssets->getImage(MENU_ARCHIVE, ASSET_MENU_BACKGROUND);
 
@@ -260,7 +285,7 @@ void MainMenuView::showHelp(int x, int y, int arg) {
 
 void MainMenuView::clickContinue(int x, int y, int arg) {
 	SaveGameInfo *saveFiles = NULL;
-	int slot = SAVEGAME_SLOTS - 1;
+	int ret;
 
 	try {
 		saveFiles = findSavedGames();
@@ -269,30 +294,12 @@ void MainMenuView::clickContinue(int x, int y, int arg) {
 		return;
 	}
 
-	if (!saveFiles[slot].filename) {
-		StringBuffer buf;
-
-		buf.printf(gameLang->hstrings(HSTR_SAVEFILE_NOT_FOUND), 10);
-		new ErrorWindow(this, buf.c_str());
-		delete[] saveFiles;
-		return;
-	}
-
-	try {
-		loadGame(saveFiles[slot].filename);
-	} catch (std::exception &e) {
-		StringBuffer buf;
-
-		fprintf(stderr, "Error loading %s: %s\n",
-			saveFiles[slot].filename, e.what());
-		buf.printf(gameLang->estrings(ESTR_SAVEFILE_BROKEN), 10);
-		new ErrorWindow(this, buf.c_str());
-		delete[] saveFiles;
-		return;
-	}
-
+	ret = loadGame(this, saveFiles, SAVEGAME_SLOTS - 1);
 	delete[] saveFiles;
-	exitView();
+
+	if (ret) {
+		exitView();
+	}
 }
 
 void MainMenuView::clickLoad(int x, int y, int arg) {
@@ -448,26 +455,9 @@ void LoadGameWindow::selectSlot(int x, int y, int slot) {
 void LoadGameWindow::handleLoad(int x, int y, int arg) {
 	if (_selected < 0) {
 		return;
-	} else if (!_saveFiles[_selected].filename) {
-		StringBuffer buf;
-
-		buf.printf(gameLang->hstrings(HSTR_SAVEFILE_NOT_FOUND),
-			_selected + 1);
-		new ErrorWindow(_parent, buf.c_str());
-		return;
 	}
 
-	try {
-		loadGame(_saveFiles[_selected].filename);
+	if (loadGame(_parent, _saveFiles, _selected)) {
 		_parent->exitView();
-	} catch (std::exception &e) {
-		StringBuffer buf;
-
-		fprintf(stderr, "Error loading %s: %s\n",
-			_saveFiles[_selected].filename, e.what());
-		buf.printf(gameLang->estrings(ESTR_SAVEFILE_BROKEN),
-			_selected + 1);
-		new ErrorWindow(_parent, buf.c_str());
-		return;
 	}
 }
