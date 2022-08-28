@@ -84,6 +84,11 @@ GameConfig::GameConfig(void) {
 
 void GameConfig::load(ReadStream &stream) {
 	version = stream.readUint32LE();
+
+	if (version != 0xe0) {
+		throw std::runtime_error("Invalid savegame version");
+	}
+
 	stream.read(saveGameName, SAVE_GAME_NAME_SIZE);
 	saveGameName[SAVE_GAME_NAME_SIZE - 1] = '\0';
 	stardate = stream.readUint32LE();

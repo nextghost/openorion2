@@ -60,7 +60,7 @@ SaveGameInfo::~SaveGameInfo(void) {
 SaveGameInfo *findSavedGames(void) {
 	unsigned slot;
 	int tmp;
-	char c;
+	char c, empty;
 	DIR *dptr;
 	struct dirent *entry;
 	struct stat stbuf;
@@ -84,10 +84,10 @@ SaveGameInfo *findSavedGames(void) {
 
 	while ((entry = readdir(dptr))) {
 		fname = strlower(entry->d_name);
-		tmp = sscanf(fname, "save%d.gam%c", &slot, &c);
+		tmp = sscanf(fname, "save%d.ga%c%c", &slot, &c, &empty);
 		delete[] fname;
 
-		if (tmp != 1 || slot < 1 || slot > SAVEGAME_SLOTS) {
+		if (tmp != 2 || c != 'm' || slot < 1 || slot > SAVEGAME_SLOTS) {
 			continue;
 		}
 
@@ -109,6 +109,10 @@ SaveGameInfo *findSavedGames(void) {
 		try {
 			ret[slot].header.load(fr);
 		} catch (...) {
+			continue;
+		}
+
+		if (fr.eos()) {
 			continue;
 		}
 
