@@ -134,7 +134,6 @@ void loadGame(const char *filename) {
 		path = configPath(filename);
 		game = new GameState;
 		game->load(path);
-		game->dump();
 		view = new GalaxyView(game);
 		game = NULL;
 		gui_stack->push(view);

@@ -24,6 +24,7 @@
 #include "screen.h"
 #include "gamestate.h"
 #include "mainmenu.h"
+#include "galaxy.h"
 #include "system.h"
 
 AssetManager *gameAssets = NULL;
@@ -66,21 +67,6 @@ int main(int argc, char **argv) {
 	// Honor system locale
 	setlocale(LC_ALL, "");
 
-	if (argc >= 2) {
-		GameState* game = NULL;
-
-		try {
-			game = new GameState;
-			game->load(argv[1]);
-			game->dump();
-		} catch (std::exception &e) {
-			fprintf(stderr, "Error reading saved game: %s\n",
-				e.what());
-		}
-
-		delete game;
-	}
-
 	try {
 		init_paths(argv[0]);
 		gameAssets = new AssetManager;
@@ -95,7 +81,27 @@ int main(int argc, char **argv) {
 	}
 
 	try {
-		prepare_main_menu();
+		if (argc >= 2) {
+			GameState* game = NULL;
+			GuiView *view = NULL;
+
+			try {
+				game = new GameState;
+				game->load(argv[1]);
+				game->dump();
+				view = new GalaxyView(game);
+				game = NULL;
+				gui_stack->push(view);
+			} catch (std::exception &e) {
+				delete game;
+				delete view;
+				throw;
+			}
+
+		} else {
+			prepare_main_menu();
+		}
+
 		main_loop();
 	} catch(std::exception &e) {
 		fprintf(stderr, "Error: %s\n", e.what());
