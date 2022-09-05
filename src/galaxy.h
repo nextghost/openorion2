@@ -118,8 +118,9 @@ private:
 	ImageAsset _fleetimg[MAX_FLEET_OWNERS][GALAXY_ZOOM_LEVELS];
 	ImageAsset _turnDoneLights[MAX_PLAYERS];
 	GameState *_game;
-	unsigned _zoom, _zoomX, _zoomY, _startTick;
-	int _activePlayer;
+	unsigned _zoom, _zoomX, _zoomY, _startTick, _selTick;
+	int _curStar, _activePlayer;
+	Fleet *_curFleet;
 
 	void initWidgets(void);
 
@@ -130,10 +131,19 @@ protected:
 	int transformFleetX(const Fleet *f) const;
 	int transformFleetY(const Fleet *f) const;
 	const Image *getFleetSprite(const Fleet *f) const;
+	const Image *getStarSprite(const Star *s) const;
+	int touchesFleet(unsigned x, unsigned y, const Fleet *f) const;
 
 	void selectPlayer(void);
 	void setPlayer(int player, int a, int b);
 
+	void findObject(unsigned x, unsigned y, int *rstar, Fleet **rfleet);
+	void clickGalaxyMap(int x, int y, int arg);
+	void touchGalaxyMap(int x, int y, int arg);
+	void leaveGalaxyMap(int x, int y, int arg);
+
+	void drawStar(const Star *s, Font *fnt, unsigned curtick);
+	void drawFleet(const Fleet *f, unsigned curtick);
 	void redrawSidebar(unsigned curtick);
 
 public:

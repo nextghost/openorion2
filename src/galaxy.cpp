@@ -67,6 +67,7 @@
 #define GALAXY_ANIM_LENGTH 8
 #define GALAXY_ANIM_SPEED 120
 #define GALAXY_SIDEBAR_X 579
+#define STAR_ANIM_SPEED 80
 
 #define PSELECT_BUFSIZE 128
 #define PSELECT_ANIM_LENGTH 8
@@ -172,6 +173,12 @@ static const unsigned planetListFontColorsBright[MAX_PLAYERS + 1] = {
 	FONT_COLOR_PLAYER_PURPLE5,
 	FONT_COLOR_PLAYER_ORANGE5,
 	FONT_COLOR_PLANET_LIST_BRIGHT
+};
+
+static const unsigned galaxyStarColors[MAX_PLAYERS] = {
+	FONT_COLOR_STAR_RED1, FONT_COLOR_STAR_YELLOW1, FONT_COLOR_STAR_GREEN1,
+	FONT_COLOR_STAR_SILVER1, FONT_COLOR_STAR_BLUE1, FONT_COLOR_STAR_BROWN1,
+	FONT_COLOR_STAR_PURPLE1, FONT_COLOR_STAR_ORANGE1
 };
 
 StarmapWidget::StarmapWidget(unsigned x, unsigned y, unsigned width,
@@ -649,7 +656,9 @@ void GalaxyMinimapWidget::redraw(int x, int y, unsigned curtick) {
 }
 
 GalaxyView::GalaxyView(GameState *game) : _game(game), _zoom(0), _zoomX(0),
-	_zoomY(0), _startTick(0), _activePlayer(-1) {
+	_zoomY(0), _startTick(0), _selTick(0), _curStar(-1), _activePlayer(-1),
+	_curFleet(NULL) {
+
 	uint8_t tpal[PALSIZE];
 	const uint8_t *pal;
 	const Player *plr;
@@ -730,6 +739,12 @@ GalaxyView::~GalaxyView(void) {
 void GalaxyView::initWidgets(void) {
 	Widget *w;
 	const uint8_t *pal = _gui->palette();
+
+	w = createWidget(20, 20, 507, 401);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &GalaxyView::clickGalaxyMap));
+	w->setMouseMoveCallback(GuiMethod(*this, &GalaxyView::touchGalaxyMap));
+	w->setMouseOutCallback(GuiMethod(*this, &GalaxyView::leaveGalaxyMap));
 
 	w = createWidget(249, 5, 59, 17);
 	w->setMouseUpCallback(MBUTTON_LEFT,
@@ -883,6 +898,25 @@ const Image *GalaxyView::getFleetSprite(const Fleet *f) const {
 	return (const Image*)_fleetimg[color][_zoom];
 }
 
+const Image *GalaxyView::getStarSprite(const Star *s) const {
+	if (s->spectralClass >= SpectralClass::BlackHole) {
+		return (const Image*)_bholeimg[_zoom];
+	}
+
+	return (const Image*)_starimg[s->spectralClass][_zoom + s->size];
+}
+
+int GalaxyView::touchesFleet(unsigned x, unsigned y, const Fleet *f) const {
+	int fx, fy;
+	const Image *img;
+
+	img = getFleetSprite(f);
+	fx = transformFleetX(f);
+	fy = transformFleetY(f);
+
+	return isInRect(x, y, fx, fy, img->width(), img->height());
+}
+
 void GalaxyView::selectPlayer(void) {
 	unsigned i, humans;
 	int last_human = -1;
@@ -924,6 +958,179 @@ void GalaxyView::setPlayer(int player, int a, int b) {
 	}
 
 	_activePlayer = player;
+}
+
+void GalaxyView::findObject(unsigned x, unsigned y, int *rstar,
+	Fleet **rfleet) {
+
+	unsigned i, sx, sy;
+	const Image *img;
+	const BilistNode<Fleet> *fnode;
+
+	*rstar = -1;
+	*rfleet = NULL;
+	fnode = _game->getMovingFleets();
+
+	for (; fnode; fnode = fnode->next()) {
+		if (!fnode->data) {
+			continue;
+		}
+
+		if (touchesFleet(x, y, fnode->data)) {
+			*rfleet = fnode->data;
+			return;
+		}
+	}
+
+	for (i = 0; i < _game->_starSystemCount; i++) {
+		const Star *ptr = _game->_starSystems + i;
+
+		fnode = ptr->getOrbitingFleets();
+
+		if (fnode && fnode->data && touchesFleet(x, y,
+			fnode->data)) {
+
+			*rfleet = fnode->data;
+			return;
+		}
+
+		fnode = ptr->getLeavingFleets();
+
+		if (fnode && fnode->data && touchesFleet(x, y,
+			fnode->data)) {
+
+			*rfleet = fnode->data;
+			return;
+		}
+
+		img = getStarSprite(ptr);
+		sx = transformX(ptr->x) - img->width() / 2;
+		sy = transformY(ptr->y) - img->height() / 2;
+
+		if (isInRect(x, y, sx, sy, img->width(), img->height())) {
+			*rstar = i;
+			return;
+		}
+	}
+}
+void GalaxyView::clickGalaxyMap(int x, int y, int arg) {
+	int star = -1;
+	Fleet *f = NULL;
+
+	findObject(x, y, &star, &f);
+
+	if (star >= 0) {
+		new MessageBoxWindow(this, "Not implemented yet");
+		return;
+	}
+
+	if (f) {
+		new MessageBoxWindow(this, "Not implemented yet");
+		return;
+	}
+}
+
+void GalaxyView::touchGalaxyMap(int x, int y, int arg) {
+	int star = -1;
+	Fleet *f = NULL;
+
+	findObject(x, y, &star, &f);
+
+	if (_curStar != star || _curFleet != f) {
+		_selTick = 0;
+	}
+
+	_curStar = star;
+	_curFleet = f;
+}
+
+void GalaxyView::leaveGalaxyMap(int x, int y, int arg) {
+	_curStar = -1;
+	_curFleet = NULL;
+}
+
+void GalaxyView::drawStar(const Star *s, Font *fnt, unsigned curtick) {
+	int x, y, xoff, idx;
+	unsigned i, color, width, tmp, step, total = 0, frame = 0;
+	const Image *img;
+	const Planet *pptr;
+	unsigned colony_count[MAX_PLAYERS] = {0};
+
+	x = transformX(s->x);
+	y = transformY(s->y);
+	img = getStarSprite(s);
+	y -= img->height() / 2;
+	img->draw(x - img->width() / 2, y);
+	y += img->height();
+
+	for (i = 0; i < MAX_ORBITS; i++) {
+		if (s->planetIndex[i] < 0) {
+			continue;
+		}
+
+		pptr = _game->_planets + s->planetIndex[i];
+
+		if (pptr->colony >= 0) {
+			colony_count[_game->_colonies[pptr->colony].owner]++;
+			total++;
+		}
+	}
+
+	idx = _curStar;
+
+	if (idx >= 0 && s == _game->_starSystems + idx) {
+		frame = loopFrame(curtick - _selTick, STAR_ANIM_SPEED,
+			GALAXY_ANIM_LENGTH);
+	}
+
+	// TODO: handle known but unvisited planets (name in parentheses)
+
+	if (!total) {
+		color = FONT_COLOR_STAR_NEUTRAL1 + galaxy_fontanim[frame];
+		fnt->centerText(x, y, color, s->name, OUTLINE_FULL);
+		return;
+	}
+
+	width = fnt->textWidth(s->name);
+	x -= width / 2;
+	xoff = -1;
+
+	try {
+		for (i = 0, step = 0; i < _game->_playerCount; i++) {
+			if (!colony_count[i]) {
+				continue;
+			}
+
+			color = galaxyStarColors[_game->_players[i].color];
+			color += galaxy_fontanim[frame];
+			step += colony_count[i];
+			tmp = (step * width) / total;
+
+			setClipRegion(x + xoff, y - 1, tmp + 1 - xoff,
+				fnt->height() + 2);
+			fnt->renderText(x, y, color, s->name, OUTLINE_FULL);
+			xoff = tmp;
+		}
+	} catch (...) {
+		unsetClipRegion();
+		throw;
+	}
+
+	unsetClipRegion();
+}
+
+void GalaxyView::drawFleet(const Fleet *f, unsigned curtick) {
+	unsigned frame = 0;
+	const Image *img;
+
+	img = getFleetSprite(f);
+
+	if (f == _curFleet) {
+		frame = bounceFrame(curtick - _selTick, STAR_ANIM_SPEED,
+			img->frameCount());
+	}
+
+	img->draw(transformFleetX(f), transformFleetY(f), frame);
 }
 
 void GalaxyView::redrawSidebar(unsigned curtick) {
@@ -1021,7 +1228,7 @@ void GalaxyView::open(void) {
 }
 
 void GalaxyView::redraw(unsigned curtick) {
-	unsigned i, cls, frame, bhshift = 0;
+	unsigned i, frame, bhshift = 0;
 	int x, y;
 	const Image *img;
 	Font *fnt;
@@ -1032,6 +1239,10 @@ void GalaxyView::redraw(unsigned curtick) {
 
 	if (!_startTick) {
 		_startTick = curtick;
+	}
+
+	if (!_selTick) {
+		_selTick = curtick;
 	}
 
 	fnt = gameFonts->getFont(font_sizes[_zoom]);
@@ -1066,19 +1277,13 @@ void GalaxyView::redraw(unsigned curtick) {
 	for (i = 0; i < _game->_starSystemCount; i++) {
 		Star *ptr = _game->_starSystems + i;
 
-		x = transformX(ptr->x);
-		y = transformY(ptr->y);
-
 		if (ptr->spectralClass < SpectralClass::BlackHole) {
-			cls = ptr->spectralClass;
-			img = (Image*)_starimg[cls][_zoom + ptr->size];
-			y -= img->height() / 2;
-			img->draw(x - img->width() / 2, y);
-			y += img->height();
-			fnt->centerText(x, y, FONT_COLOR_STAR_NEUTRAL2,
-				ptr->name, OUTLINE_FULL);
-		} else if (ptr->spectralClass == SpectralClass::BlackHole) {
-			img = (Image*)_bholeimg[_zoom];
+			drawStar(ptr, fnt, curtick);
+		} else {
+			x = transformX(ptr->x);
+			y = transformY(ptr->y);
+			img = getStarSprite(ptr);
+
 			// Draw different frame for each black hole
 			// using bhshift as a counter
 			frame = (curtick - _startTick) / 120 + bhshift++;
@@ -1087,21 +1292,18 @@ void GalaxyView::redraw(unsigned curtick) {
 				frame);
 		}
 
+
 		// TODO: Draw up to 3 fleets from both groups
 		fnode = ptr->getOrbitingFleets();
 
 		if (fnode && fnode->data) {
-			img = getFleetSprite(fnode->data);
-			img->draw(transformFleetX(fnode->data),
-				transformFleetY(fnode->data));
+			drawFleet(fnode->data, curtick);
 		}
 
 		fnode = ptr->getLeavingFleets();
 
 		if (fnode && fnode->data) {
-			img = getFleetSprite(fnode->data);
-			img->draw(transformFleetX(fnode->data),
-				transformFleetY(fnode->data));
+			drawFleet(fnode->data, curtick);
 		}
 	}
 
@@ -1110,9 +1312,7 @@ void GalaxyView::redraw(unsigned curtick) {
 			continue;
 		}
 
-		img = getFleetSprite(fnode->data);
-		img->draw(transformFleetX(fnode->data),
-			transformFleetY(fnode->data));
+		drawFleet(fnode->data, curtick);
 	}
 
 	_gui->draw(0, 0);
