@@ -351,3 +351,13 @@ void fillRect(int x, int y, unsigned width, unsigned height, uint8_t r,
 void clearScreen(uint8_t r, uint8_t g, uint8_t b) {
 	fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, r, g, b);
 }
+
+void setClipRegion(int x, int y, unsigned width, unsigned height) {
+	SDL_Rect rect = {x, y, (int)width, (int)height};
+
+	SDL_SetClipRect(wsurface, &rect);
+}
+
+void unsetClipRegion(void) {
+	SDL_SetClipRect(wsurface, NULL);
+}

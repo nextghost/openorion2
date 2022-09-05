@@ -55,6 +55,10 @@ void fillRect(int x, int y, unsigned width, unsigned height, uint8_t r = 0,
 	uint8_t g = 0, uint8_t b = 0);
 void clearScreen(uint8_t r = 0, uint8_t g = 0, uint8_t b = 0);
 
+// Set or remove clipping rectangle on the screen
+void setClipRegion(int x, int y, unsigned width, unsigned height);
+void unsetClipRegion(void);
+
 // Main event loop
 void main_loop(void);
 
