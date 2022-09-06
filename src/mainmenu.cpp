@@ -306,16 +306,13 @@ void MainMenuView::clickLoad(int x, int y, int arg) {
 }
 
 void MainMenuView::clickNew(int x, int y, int arg) {
-	new MessageBoxWindow(this, "New Game not implemented yet");
+	new MessageBoxWindow(this,
+		"Not implemented yet. You can load a savefile from the original game.");
 }
 
-void MainMenuView::clickMultiplayer(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Multiplayer not implemented yet");
-}
+void MainMenuView::clickMultiplayer(int x, int y, int arg) STUB(this)
 
-void MainMenuView::clickScoreboard(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Hall of Fame not implemented yet");
-}
+void MainMenuView::clickScoreboard(int x, int y, int arg) STUB(this)
 
 void MainMenuView::clickQuit(int x, int y, int arg) {
 	gui_stack->clear();

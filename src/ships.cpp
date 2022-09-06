@@ -726,13 +726,9 @@ void FleetListView::showHelp(int x, int y, int arg) {
 	new MessageBoxWindow(this, arg, _bg->palette());
 }
 
-void FleetListView::clickPrevFleet(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Not implemented");
-}
+void FleetListView::clickPrevFleet(int x, int y, int arg) STUB(this)
 
-void FleetListView::clickNextFleet(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Not implemented");
-}
+void FleetListView::clickNextFleet(int x, int y, int arg) STUB(this)
 
 void FleetListView::clickAllButton(int x, int y, int arg) {
 	Fleet *f = _minimap->selectedFleet();
@@ -750,17 +746,11 @@ void FleetListView::clickAllButton(int x, int y, int arg) {
 	shipSelectionChanged(x, y, 0);
 }
 
-void FleetListView::clickRelocate(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Not implemented");
-}
+void FleetListView::clickRelocate(int x, int y, int arg) STUB(this)
 
-void FleetListView::clickScrap(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Not implemented");
-}
+void FleetListView::clickScrap(int x, int y, int arg) STUB(this)
 
-void FleetListView::clickLeaders(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Not implemented");
-}
+void FleetListView::clickLeaders(int x, int y, int arg) STUB(this)
 
 void FleetListView::clickReturn(int x, int y, int arg) {
 	exitView();

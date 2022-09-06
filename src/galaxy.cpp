@@ -1346,41 +1346,25 @@ void GalaxyView::clickGameMenu(int x, int y, int arg) {
 	new MainMenuWindow(this, _game);
 }
 
-void GalaxyView::clickColoniesButton(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Not implemented yet");
-}
+void GalaxyView::clickColoniesButton(int x, int y, int arg) STUB(this)
 
-void GalaxyView::clickPlanetsButton(int x, int y, int arg) {
-	gui_stack->push(new PlanetsListView(_game, _activePlayer));
-}
+void GalaxyView::clickPlanetsButton(int x, int y, int arg) STUB(this)
 
 void GalaxyView::clickFleetsButton(int x, int y, int arg) {
 	gui_stack->push(new FleetListView(_game, _activePlayer));
 }
 
-void GalaxyView::clickLeadersButton(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Not implemented yet");
-}
+void GalaxyView::clickLeadersButton(int x, int y, int arg) STUB(this)
 
-void GalaxyView::clickRacesButton(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Not implemented yet");
-}
+void GalaxyView::clickRacesButton(int x, int y, int arg) STUB(this)
 
-void GalaxyView::clickInfoButton(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Not implemented yet");
-}
+void GalaxyView::clickInfoButton(int x, int y, int arg) STUB(this)
 
-void GalaxyView::clickZoomInButton(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Not implemented yet");
-}
+void GalaxyView::clickZoomInButton(int x, int y, int arg) STUB(this)
 
-void GalaxyView::clickZoomOutButton(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Not implemented yet");
-}
+void GalaxyView::clickZoomOutButton(int x, int y, int arg) STUB(this)
 
-void GalaxyView::clickTurnButton(int x, int y, int arg) {
-	new MessageBoxWindow(this, "Not implemented yet");
-}
+void GalaxyView::clickTurnButton(int x, int y, int arg) STUB(this)
 
 SelectPlayerView::SelectPlayerView(const GameState *game,
 	const GuiCallback &callback) : _game(game), _callback(callback),
@@ -2198,13 +2182,9 @@ void MainMenuWindow::showHelp(int x, int y, int arg) {
 	new MessageBoxWindow(_parent, arg, img->palette());
 }
 
-void MainMenuWindow::clickNew(int x, int y, int arg) {
-	new MessageBoxWindow(_parent, "New Game not implemented yet");
-}
+void MainMenuWindow::clickNew(int x, int y, int arg) STUB(_parent)
 
-void MainMenuWindow::clickSave(int x, int y, int arg) {
-	new MessageBoxWindow(_parent, "Save Game not implemented yet");
-}
+void MainMenuWindow::clickSave(int x, int y, int arg) STUB(_parent)
 
 void MainMenuWindow::clickLoad(int x, int y, int arg) {
 	new LoadGameWindow(_parent, 0);
@@ -2215,6 +2195,4 @@ void MainMenuWindow::clickQuit(int x, int y, int arg) {
 	gui_stack->clear();
 }
 
-void MainMenuWindow::clickSettings(int x, int y, int arg) {
-	new MessageBoxWindow(_parent, "Settings not implemented yet");
-}
+void MainMenuWindow::clickSettings(int x, int y, int arg) STUB(_parent)
