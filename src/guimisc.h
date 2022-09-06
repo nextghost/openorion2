@@ -23,6 +23,8 @@
 #include "lbx.h"
 #include "gui.h"
 
+#define STUB(view) { new MessageBoxWindow(view, "Not implemented yet"); }
+
 class MessageBoxWindow : public GuiWindow {
 private:
 	ImageAsset _header, _body, _footer;
