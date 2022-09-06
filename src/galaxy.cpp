@@ -835,6 +835,51 @@ void GalaxyView::initWidgets(void) {
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &GalaxyView::showHelp,
 		HELP_GALAXY_TURN_BUTTON));
+
+	w = createWidget(547, 52, 65, 67);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &GalaxyView::clickTreasuryInfo));
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_TREASURY_INFO));
+
+	w = createWidget(547, 124, 65, 68);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &GalaxyView::clickFleetInfo));
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_FLEET_INFO));
+
+	w = createWidget(547, 199, 65, 68);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_FOOD_INFO));
+
+	w = createWidget(547, 273, 65, 67);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &GalaxyView::clickFreighterInfo));
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_FREIGHTER_INFO));
+
+	w = createWidget(547, 347, 65, 67);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &GalaxyView::clickResearchInfo));
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_RESEARCH_INFO));
+
+	w = createWidget(549, 27, 63, 13);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &GalaxyView::showHelp,
+		HELP_GALAXY_STARDATE_BOX));
+
+	if (_game->_gameConfig.multiplayer != MultiplayerType::Single) {
+		w = createWidget(73, 5, 88, 14);
+		w->setMouseUpCallback(MBUTTON_RIGHT,
+			GuiMethod(*this, &GalaxyView::showHelp,
+			HELP_GALAXY_MULTIPLAYER_TURN_LIGHTS));
+	}
 }
 
 int GalaxyView::transformX(int x) const {
@@ -1365,6 +1410,14 @@ void GalaxyView::clickZoomInButton(int x, int y, int arg) STUB(this)
 void GalaxyView::clickZoomOutButton(int x, int y, int arg) STUB(this)
 
 void GalaxyView::clickTurnButton(int x, int y, int arg) STUB(this)
+
+void GalaxyView::clickTreasuryInfo(int x, int y, int arg) STUB(this)
+
+void GalaxyView::clickFleetInfo(int x, int y, int arg) STUB(this)
+
+void GalaxyView::clickFreighterInfo(int x, int y, int arg) STUB(this)
+
+void GalaxyView::clickResearchInfo(int x, int y, int arg) STUB(this)
 
 SelectPlayerView::SelectPlayerView(const GameState *game,
 	const GuiCallback &callback) : _game(game), _callback(callback),

@@ -169,6 +169,11 @@ public:
 	void clickZoomInButton(int x, int y, int arg);
 	void clickZoomOutButton(int x, int y, int arg);
 	void clickTurnButton(int x, int y, int arg);
+
+	void clickTreasuryInfo(int x, int y, int arg);
+	void clickFleetInfo(int x, int y, int arg);
+	void clickFreighterInfo(int x, int y, int arg);
+	void clickResearchInfo(int x, int y, int arg);
 };
 
 class SelectPlayerView : public GuiView {
