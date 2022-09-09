@@ -81,18 +81,42 @@ void main_loop(void) {
 				return;
 
 			case SDL_MOUSEMOTION:
+				if (!isInRect(ev.motion.x, ev.motion.y, 0, 0,
+					SCREEN_WIDTH, SCREEN_HEIGHT)) {
+					break;
+				}
+
 				view->handleMouseMove(ev.motion.x, ev.motion.y,
 					buttonState(ev.motion.state));
 				break;
 
 			case SDL_MOUSEBUTTONDOWN:
+				if (!isInRect(ev.button.x, ev.button.y, 0, 0,
+					SCREEN_WIDTH, SCREEN_HEIGHT)) {
+					break;
+				}
+
 				view->handleMouseDown(ev.button.x, ev.button.y,
 					convertButton(ev.button.button));
 				break;
 
 			case SDL_MOUSEBUTTONUP:
+				if (!isInRect(ev.button.x, ev.button.y, 0, 0,
+					SCREEN_WIDTH, SCREEN_HEIGHT)) {
+					break;
+				}
+
 				view->handleMouseUp(ev.button.x, ev.button.y,
 					convertButton(ev.button.button));
+				break;
+
+			case SDL_WINDOWEVENT:
+				switch (ev.window.event) {
+				case SDL_WINDOWEVENT_EXPOSED:
+					redrawScreen();
+					break;
+				}
+
 				break;
 			}
 		}

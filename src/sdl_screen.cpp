@@ -21,12 +21,16 @@
 #include <stdexcept>
 #include "screen.h"
 
+#define WINDOW_TITLE "OpenOrion2"
+
 struct Texture {
 	SDL_Surface *palsurf, *drawsurf;
 };
 
 SDL_Window *window = NULL;
-SDL_Surface *wsurface = NULL;
+SDL_Renderer *renderer = NULL;
+SDL_Texture *framebuffer = NULL;
+SDL_Surface *drawbuffer = NULL;
 Texture *textures = NULL;
 size_t texture_count = 0, texture_max = 0;
 uint32_t amask = 0, rmask = 0, gmask = 0, bmask = 0;
@@ -44,21 +48,29 @@ static void resizeTextureRegistry(void) {
 }
 
 void initScreen(void) {
+	unsigned flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN;
 	uint8_t *ptr;
 
 	SDL_Init(SDL_INIT_VIDEO);
-	window = SDL_CreateWindow("OpenOrion2", SDL_WINDOWPOS_CENTERED,
-		SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
 
-	if (!window) {
+	if (SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, flags,
+		&window, &renderer)) {
 		throw std::runtime_error("Cannot create game window");
 	}
 
-	wsurface = SDL_GetWindowSurface(window);
+	if (SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT)) {
+		throw std::runtime_error("Cannot initialize renderer");
+	}
 
-	if (!wsurface) {
-		SDL_DestroyWindow(window);
-		throw std::runtime_error("Cannot allocate rendering surface");
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+	SDL_SetWindowTitle(window, WINDOW_TITLE);
+
+	framebuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24,
+		SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+	if (!framebuffer) {
+		throw std::runtime_error("Cannot create framebuffer");
 	}
 
 	texture_max = 256;
@@ -73,6 +85,13 @@ void initScreen(void) {
 	ptr[2] = 0xff;
 	ptr = (uint8_t*)&bmask;
 	ptr[3] = 0xff;
+
+	drawbuffer = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32,
+		rmask, gmask, bmask, 0);
+
+	if (!drawbuffer) {
+		throw std::runtime_error("Cannot create draw buffer");
+	}
 }
 
 void shutdownScreen(void) {
@@ -88,6 +107,18 @@ void shutdownScreen(void) {
 		}
 	}
 
+	if (drawbuffer) {
+		SDL_FreeSurface(drawbuffer);
+	}
+
+	if (framebuffer) {
+		SDL_DestroyTexture(framebuffer);
+	}
+
+	if (renderer) {
+		SDL_DestroyRenderer(renderer);
+	}
+
 	if (window) {
 		SDL_DestroyWindow(window);
 	}
@@ -95,8 +126,41 @@ void shutdownScreen(void) {
 	SDL_Quit();
 }
 
-void updateScreen(void) {
+void redrawScreen(void) {
+	SDL_RenderClear(renderer);
+	SDL_RenderCopy(renderer, framebuffer, NULL, NULL);
+	SDL_RenderPresent(renderer);
 	SDL_UpdateWindowSurface(window);
+}
+
+void updateScreen(void) {
+	int pitch, access, width, height;
+	uint32_t format;
+	void *pixels;
+	SDL_Surface *target;
+	SDL_Rect dstpos = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+
+	if (SDL_LockTexture(framebuffer, NULL, &pixels, &pitch)) {
+		return;
+	}
+
+	if (SDL_QueryTexture(framebuffer, &format, &access, &width, &height)) {
+		SDL_UnlockTexture(framebuffer);
+		return;
+	}
+
+	target = SDL_CreateRGBSurfaceWithFormatFrom(pixels, width, height,
+		pitch / width, pitch, format);
+
+	if (!target) {
+		SDL_UnlockTexture(framebuffer);
+		return;
+	}
+
+	SDL_BlitSurface(drawbuffer, NULL, target, &dstpos);
+	SDL_FreeSurface(target);
+	SDL_UnlockTexture(framebuffer);
+	redrawScreen();
 }
 
 unsigned registerTexture(unsigned width, unsigned height, const uint32_t *data) {
@@ -261,7 +325,7 @@ void drawTexture(unsigned id, int x, int y) {
 		throw std::out_of_range("Invalid texture ID");
 	}
 
-	SDL_BlitSurface(textures[id].drawsurf, NULL, wsurface, &dst);
+	SDL_BlitSurface(textures[id].drawsurf, NULL, drawbuffer, &dst);
 }
 
 void drawTextureTile(unsigned id, int x, int y, int offsx, int offsy,
@@ -273,13 +337,13 @@ void drawTextureTile(unsigned id, int x, int y, int offsx, int offsy,
 		throw std::out_of_range("Invalid texture ID");
 	}
 
-	SDL_BlitSurface(textures[id].drawsurf, &src, wsurface, &dst);
+	SDL_BlitSurface(textures[id].drawsurf, &src, drawbuffer, &dst);
 }
 
 void drawLine(int x1, int y1, int x2, int y2, uint8_t r, uint8_t g, uint8_t b) {
 	int x, y, dx = 1, dy = 1;
 	unsigned xlen, ylen, steps, len, cur, i = 0;
-	uint32_t color = SDL_MapRGB(wsurface->format, r, g, b);
+	uint32_t color = SDL_MapRGB(drawbuffer->format, r, g, b);
 	SDL_Rect rect = {x1, y1, 1, 1};
 
 	xlen = (x1 < x2 ? x2 - x1 : x1 - x2) + 1;
@@ -313,7 +377,7 @@ void drawLine(int x1, int y1, int x2, int y2, uint8_t r, uint8_t g, uint8_t b) {
 			rect.h = dy = y + cur - rect.y;
 		}
 
-		SDL_FillRect(wsurface, &rect, color);
+		SDL_FillRect(drawbuffer, &rect, color);
 		rect.x += dx;
 		rect.y += dy;
 	}
@@ -322,7 +386,7 @@ void drawLine(int x1, int y1, int x2, int y2, uint8_t r, uint8_t g, uint8_t b) {
 void drawRect(int x, int y, unsigned width, unsigned height, uint8_t r,
 	uint8_t g, uint8_t b, unsigned thickness) {
 
-	Uint32 color = SDL_MapRGB(wsurface->format, r, g, b);
+	Uint32 color = SDL_MapRGB(drawbuffer->format, r, g, b);
 	SDL_Rect rect = {x, y, (int)width, (int)thickness};
 
 	if (width <= 2 * thickness || height <= 2 * thickness) {
@@ -330,22 +394,23 @@ void drawRect(int x, int y, unsigned width, unsigned height, uint8_t r,
 		return;
 	}
 
-	SDL_FillRect(wsurface, &rect, color);
+	SDL_FillRect(drawbuffer, &rect, color);
 	rect.y += height - thickness;
-	SDL_FillRect(wsurface, &rect, color);
+	SDL_FillRect(drawbuffer, &rect, color);
 	rect.y = y + thickness;
 	rect.w = thickness;
 	rect.h = height - 2 * thickness;
-	SDL_FillRect(wsurface, &rect, color);
+	SDL_FillRect(drawbuffer, &rect, color);
 	rect.x += width - thickness;
-	SDL_FillRect(wsurface, &rect, color);
+	SDL_FillRect(drawbuffer, &rect, color);
 }
 
 void fillRect(int x, int y, unsigned width, unsigned height, uint8_t r,
 	uint8_t g, uint8_t b) {
 	SDL_Rect rect = {x, y, (int)width, (int)height};
 
-	SDL_FillRect(wsurface, &rect, SDL_MapRGB(wsurface->format, r, g, b));
+	SDL_FillRect(drawbuffer, &rect,
+		SDL_MapRGB(drawbuffer->format, r, g, b));
 }
 
 void clearScreen(uint8_t r, uint8_t g, uint8_t b) {
@@ -355,9 +420,9 @@ void clearScreen(uint8_t r, uint8_t g, uint8_t b) {
 void setClipRegion(int x, int y, unsigned width, unsigned height) {
 	SDL_Rect rect = {x, y, (int)width, (int)height};
 
-	SDL_SetClipRect(wsurface, &rect);
+	SDL_SetClipRect(drawbuffer, &rect);
 }
 
 void unsetClipRegion(void) {
-	SDL_SetClipRect(wsurface, NULL);
+	SDL_SetClipRect(drawbuffer, NULL);
 }

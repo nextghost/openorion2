@@ -27,7 +27,8 @@
 #define SCREEN_HEIGHT 480
 
 void initScreen(void);
-void updateScreen(void);
+void redrawScreen(void); // Refresh the screen using the last frame
+void updateScreen(void); // Finish drawing a frame and copy it to screen
 void shutdownScreen(void);
 
 // registerTexture() must return (nearly) consecutive texture IDs.
