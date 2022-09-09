@@ -1851,6 +1851,7 @@ void PlanetsListView::redraw(unsigned curtick) {
 	const Planet *ptr;
 	const Star *sptr;
 	const Player *player = _game->_players + _activePlayer;
+	const BilistNode<Fleet> *node;
 
 	fnt = gameFonts->getFont(FONTSIZE_SMALL);
 	smallFnt = gameFonts->getFont(FONTSIZE_SMALLER);
@@ -1903,6 +1904,27 @@ void PlanetsListView::redraw(unsigned curtick) {
 				_game->_players[owner].picture);
 			buf.printf("(%s)", str);
 			smallFnt->centerText(61, y + 41, color, buf.c_str());
+		} else {
+			// FIXME: Check fleet visibility
+			node = sptr->getOrbitingFleets();
+
+			for (; node; node = node->next()) {
+				if (!node->data) {
+					continue;
+				}
+
+				if (node->data->getOwner() > MAX_PLAYERS) {
+					break;
+				}
+			}
+
+			if (node) {
+				owner = node->data->getOwner() - MAX_PLAYERS;
+				owner = npcFleetOwnerNames[owner];
+				buf.printf("(%s)", gameLang->estrings(owner));
+				smallFnt->centerText(61, y + 41, color,
+					buf.c_str());
+			}
 		}
 
 		if (_outpostShips[_planets[offset + i]] >= 0) {

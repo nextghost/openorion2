@@ -134,4 +134,6 @@ public:
 	void clickReturn(int x, int y, int arg);
 };
 
+extern const unsigned npcFleetOwnerNames[NPC_FLEET_OWNERS];
+
 #endif

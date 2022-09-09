@@ -70,6 +70,12 @@ static const uint8_t fleetlistScrollTexture[FLEETLIST_SCROLL_WIDTH * 3] = {
 	RGB(0x080850), RGB(0x080850)
 };
 
+const unsigned npcFleetOwnerNames[NPC_FLEET_OWNERS] = {
+	ESTR_MONSTER_ANTARANS, ESTR_MONSTER_GUARDIAN, ESTR_MONSTER_AMOEBA,
+	ESTR_MONSTER_CRYSTAL, ESTR_MONSTER_DRAGON, ESTR_MONSTER_EEL,
+	ESTR_MONSTER_HYDRA
+};
+
 ShipAssets::ShipAssets(const GameState *game) : _game(game) {
 
 }
