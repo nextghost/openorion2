@@ -1393,7 +1393,9 @@ void GalaxyView::clickGameMenu(int x, int y, int arg) {
 
 void GalaxyView::clickColoniesButton(int x, int y, int arg) STUB(this)
 
-void GalaxyView::clickPlanetsButton(int x, int y, int arg) STUB(this)
+void GalaxyView::clickPlanetsButton(int x, int y, int arg) {
+	gui_stack->push(new PlanetsListView(_game, _activePlayer));
+}
 
 void GalaxyView::clickFleetsButton(int x, int y, int arg) {
 	gui_stack->push(new FleetListView(_game, _activePlayer));
