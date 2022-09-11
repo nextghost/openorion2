@@ -109,6 +109,44 @@ public:
 	virtual void redraw(unsigned x, unsigned y, unsigned curtick);
 };
 
+class TextLayout {
+private:
+	struct TextBlock {
+		unsigned x, y, width, font, color, outline;
+		char *text;
+	};
+
+	TextBlock *_blocks;
+	GuiSprite **_sprites;
+	unsigned _height, _blockCount, _blockSize, _spriteCount, _spriteSize;
+
+	// Do NOT implement
+	TextLayout(const TextLayout &other);
+	const TextLayout &operator=(const TextLayout &other);
+
+protected:
+	TextBlock *addBlock(const char *text, ssize_t len = -1);
+	void adjustLine(unsigned lineStart, unsigned align, unsigned maxwidth);
+
+public:
+	TextLayout(void);
+	~TextLayout(void);
+
+	void appendText(const char *text, unsigned x, unsigned y,
+		unsigned maxwidth, unsigned font, unsigned color,
+		unsigned outline = OUTLINE_NONE, unsigned align = ALIGN_LEFT);
+	void addSprite(GuiSprite *sprite);
+	void addSprite(unsigned x, unsigned y, Image *img,
+		int frame = ANIM_LOOP);
+	void addSprite(unsigned x, unsigned y, const char *archive,
+		unsigned id, const uint8_t *palette = NULL,
+		int frame = ANIM_LOOP);
+
+	void redraw(unsigned x, unsigned y, unsigned curtick);
+
+	unsigned height(void) const;
+};
+
 class Widget {
 private:
 	unsigned _x, _y, _width, _height, _state;
@@ -425,44 +463,6 @@ public:
 
 	// Returns the current view. Thread safe.
 	GuiView *top(void);
-};
-
-class TextLayout {
-private:
-	struct TextBlock {
-		unsigned x, y, width, font, color, outline;
-		char *text;
-	};
-
-	TextBlock *_blocks;
-	GuiSprite **_sprites;
-	unsigned _height, _blockCount, _blockSize, _spriteCount, _spriteSize;
-
-	// Do NOT implement
-	TextLayout(const TextLayout &other);
-	const TextLayout &operator=(const TextLayout &other);
-
-protected:
-	TextBlock *addBlock(const char *text, ssize_t len = -1);
-	void adjustLine(unsigned lineStart, unsigned align, unsigned maxwidth);
-
-public:
-	TextLayout(void);
-	~TextLayout(void);
-
-	void appendText(const char *text, unsigned x, unsigned y,
-		unsigned maxwidth, unsigned font, unsigned color,
-		unsigned outline = OUTLINE_NONE, unsigned align = ALIGN_LEFT);
-	void addSprite(GuiSprite *sprite);
-	void addSprite(unsigned x, unsigned y, Image *img,
-		int frame = ANIM_LOOP);
-	void addSprite(unsigned x, unsigned y, const char *archive,
-		unsigned id, const uint8_t *palette = NULL,
-		int frame = ANIM_LOOP);
-
-	void redraw(unsigned x, unsigned y, unsigned curtick);
-
-	unsigned height(void) const;
 };
 
 // Helper function for creating GuiMethodCallbacks with type inference
