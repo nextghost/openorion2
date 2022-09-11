@@ -45,7 +45,7 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text,
 MessageBoxWindow::MessageBoxWindow(GuiView *parent, unsigned help_id,
 	const uint8_t *palette, unsigned flags) : GuiWindow(parent, flags) {
 
-	unsigned y = 0;
+	unsigned twidth, y = 0;
 	ImageAsset icon;
 	const HelpText *entry;
 
@@ -53,17 +53,19 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, unsigned help_id,
 
 	do {
 		entry = gameLang->help(help_id);
-
-		if (entry->title[0] != 0x14) {
-			_text.appendText(entry->title, 0, y, _width - 40,
-				FONTSIZE_BIG, FONT_COLOR_HELP);
-		}
+		twidth = _width - 40;
 
 		if (entry->archive) {
 			icon = gameAssets->getImage(entry->archive,
 				entry->asset_id, palette);
 			_text.addSprite(_width - 40 - icon->width(), y,
 				(Image*)icon, entry->frame);
+			twidth -= icon->width() + 10;
+		}
+
+		if (entry->title[0] != 0x14) {
+			_text.appendText(entry->title, 0, y, twidth,
+				FONTSIZE_BIG, FONT_COLOR_HELP);
 		}
 
 		y = _text.height() + 4;
