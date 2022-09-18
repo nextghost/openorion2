@@ -108,6 +108,9 @@ public:
 	StringBuffer &ftime(const char *fmt, const struct tm *tbuf);
 	StringBuffer &truncate(size_t len = 0);
 
+	StringBuffer &toLower(size_t start = 0, ssize_t length = -1);
+	StringBuffer &toUpper(size_t start = 0, ssize_t length = -1);
+
 	ssize_t find(char c) const;
 	size_t length(void) const;
 	const char *c_str(void) const;

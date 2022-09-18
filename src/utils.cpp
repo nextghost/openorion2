@@ -228,6 +228,35 @@ StringBuffer &StringBuffer::truncate(size_t len) {
 	return *this;
 }
 
+
+StringBuffer &StringBuffer::toLower(size_t start, ssize_t length) {
+	size_t i, end = length >= 0 ? start + length : _length;
+
+	if (start >= _length) {
+		return *this;
+	}
+
+	for (i = start; i < end && _buf[i]; i++) {
+		_buf[i] = tolower(_buf[i]);
+	}
+
+	return *this;
+}
+
+StringBuffer &StringBuffer::toUpper(size_t start, ssize_t length) {
+	size_t i, end = length >= 0 ? start + length : _length;
+
+	if (start >= _length) {
+		return *this;
+	}
+
+	for (i = start; i < end && _buf[i]; i++) {
+		_buf[i] = toupper(_buf[i]);
+	}
+
+	return *this;
+}
+
 ssize_t StringBuffer::find(char c) const {
 	size_t i;
 
