@@ -626,8 +626,9 @@ public:
 	uint8_t hasDimensionalPortal;
 	// Bitmask that tells whether star is stagepoint for each AI
 	uint8_t isStagepoint;
-	// Bitmask that tells whether an officer is in the system roster
-	uint8_t officerIndex[MAX_PLAYERS];
+	// ID of the leader assigned by each player to their planets
+	// in this star system. -1 = no leader.
+	int8_t officerIndex[MAX_PLAYERS];
 	int16_t planetIndex[MAX_ORBITS];
 	// Star index all the ships will be relocated TO
 	uint16_t relocateShipTo[MAX_PLAYERS];

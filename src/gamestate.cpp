@@ -802,7 +802,10 @@ Star::Star(void) {
 		planetIndex[i] = -1;
 	}
 
-	memset(officerIndex, 0, sizeof(officerIndex));
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		officerIndex[i] = -1;
+	}
+
 	memset(relocateShipTo, 0, sizeof(relocateShipTo));
 	memset(surrenderTo, 0, sizeof(surrenderTo));
 
@@ -881,7 +884,7 @@ void Star::load(ReadStream &stream) {
 	isStagepoint = stream.readUint8();
 
 	for (i = 0; i < MAX_PLAYERS; i++) {
-		officerIndex[i] = stream.readUint8();
+		officerIndex[i] = stream.readSint8();
 	}
 
 	for (i = 0; i < MAX_ORBITS; i++) {
