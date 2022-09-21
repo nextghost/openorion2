@@ -82,6 +82,8 @@
 #define SHIPSPRITE_MINIMONSTER 20
 #define MAX_SHIPTYPES_ANTARAN 5
 #define MAX_SHIPTYPES_MONSTER 5
+#define MAX_SHIP_TYPES 5
+#define MAX_COMBAT_SHIP_CLASSES 6
 
 #define BUILDING_BIOSPHERES 15
 
@@ -209,6 +211,15 @@ enum ShipType {
 	TRANSPORT_SHIP,
 	BAD_SHIP_TYPE,
 	OUTPOST_SHIP
+};
+
+enum CombatShipClass {
+	SHIP_FRIGATE = 0,
+	SHIP_DESTROYER,
+	SHIP_CRUISER,
+	SHIP_BATTLESHIP,
+	SHIP_TITAN,
+	SHIP_DOOMSTAR
 };
 
 
@@ -742,7 +753,9 @@ class Fleet : public Recyclable {
 private:
 	GameState *_parent;
 	unsigned *_ships;
-	size_t _shipCount, _combatCount, _maxShips;
+	size_t _shipCount, _maxShips;
+	size_t _shipTypeCounts[MAX_SHIP_TYPES];
+	size_t _combatCounts[MAX_COMBAT_SHIP_CLASSES];
 	int _orbitedStar, _destStar;
 	uint8_t _owner, _status;
 	uint16_t _x, _y;
@@ -773,6 +786,8 @@ public:
 	size_t shipCount(void) const;
 	size_t combatCount(void) const;
 	size_t supportCount(void) const;
+	size_t shipTypeCount(unsigned type) const;
+	size_t combatClassCount(unsigned cls) const;
 	uint8_t getOwner(void) const;
 
 	// Returns player[owner].color for player fleets, owner ID for monsters

@@ -549,8 +549,12 @@ void ShipDesign::load(ReadStream &stream) {
 void ShipDesign::validate(void) const {
 	unsigned monster;
 
-	if (type > OUTPOST_SHIP || type == BAD_SHIP_TYPE) {
+	if (type >= MAX_SHIP_TYPES || type == BAD_SHIP_TYPE) {
 		throw std::out_of_range("Invalid ship type");
+	}
+
+	if (type == COMBAT_SHIP && size >= MAX_COMBAT_SHIP_CLASSES) {
+		throw std::out_of_range("Invalid combat ship size");
 	}
 
 	if (builder >= MAX_FLEET_OWNERS) {
@@ -1665,8 +1669,7 @@ void GameState::dump(void) const {
 }
 
 Fleet::Fleet(GameState *parent, unsigned flagship) : _parent(parent),
-	_shipCount(0), _combatCount(0), _maxShips(8), _orbitedStar(-1),
-	_destStar(-1) {
+	_shipCount(0), _maxShips(8), _orbitedStar(-1), _destStar(-1) {
 
 	Ship *fs;
 
@@ -1675,6 +1678,8 @@ Fleet::Fleet(GameState *parent, unsigned flagship) : _parent(parent),
 		throw std::invalid_argument("Invalid fleet flagship");
 	}
 
+	memset(_shipTypeCounts, 0, MAX_SHIP_TYPES * sizeof(size_t));
+	memset(_combatCounts, 0, MAX_COMBAT_SHIP_CLASSES * sizeof(size_t));
 	fs = _parent->_ships + flagship;
 
 	switch (fs->status) {
@@ -1705,22 +1710,27 @@ Fleet::Fleet(GameState *parent, unsigned flagship) : _parent(parent),
 
 	_ships = new unsigned[_maxShips];
 	_ships[_shipCount++] = flagship;
+	_shipTypeCounts[fs->design.type]++;
 
 	if (fs->design.type == COMBAT_SHIP) {
-		_combatCount++;
+		_combatCounts[fs->design.size]++;
 	}
 }
 
 Fleet::Fleet(const Fleet &other) : _parent(other._parent), _ships(NULL),
-	_shipCount(other._shipCount), _combatCount(other._combatCount),
-	_orbitedStar(other._orbitedStar), _destStar(other._destStar),
-	_owner(other._owner), _status(other._status), _x(other._x),
-	_y(other._y), _hasNavigator(other._hasNavigator),
-	_warpSpeed(other._warpSpeed), _eta(other._eta) {
+	_shipCount(other._shipCount), _orbitedStar(other._orbitedStar),
+	_destStar(other._destStar), _owner(other._owner),
+	_status(other._status), _x(other._x), _y(other._y),
+	_hasNavigator(other._hasNavigator), _warpSpeed(other._warpSpeed),
+	_eta(other._eta) {
 
 	_maxShips = _shipCount > 8 ? _shipCount : 8;
 	_ships = new unsigned[_maxShips];
 	memcpy(_ships, other._ships, _shipCount * sizeof(unsigned));
+	memcpy(_shipTypeCounts, other._shipTypeCounts,
+		MAX_SHIP_TYPES * sizeof(size_t));
+	memcpy(_combatCounts, other._combatCounts,
+		MAX_COMBAT_SHIP_CLASSES * sizeof(size_t));
 }
 
 Fleet::~Fleet(void) {
@@ -1776,28 +1786,33 @@ void Fleet::addShip(unsigned ship_id) {
 	_ships[pos] = ship_id;
 
 	if (s->design.type == COMBAT_SHIP) {
-		_combatCount++;
+		_combatCounts[s->design.size]++;
 	}
 
 	_shipCount++;
+	_shipTypeCounts[s->design.type]++;
 	// FIXME: update _hasNavigator, recalculate speed, eta and update ships
 }
 
 void Fleet::removeShip(size_t pos) {
 	size_t i;
+	const Ship *s;
 
 	if (pos >= _shipCount) {
 		throw std::out_of_range("Invalid ship index");
 	}
+
+	s = _parent->_ships + _ships[i];
 
 	for (i = pos; i < _shipCount - 1; i++) {
 		_ships[i] = _ships[i + 1];
 	}
 
 	_shipCount--;
+	_shipTypeCounts[s->design.type]--;
 
-	if (pos < _combatCount) {
-		_combatCount--;
+	if (s->design.type == COMBAT_SHIP) {
+		_combatCounts[s->design.size]--;
 	}
 }
 
@@ -1838,11 +1853,27 @@ size_t Fleet::shipCount(void) const {
 }
 
 size_t Fleet::combatCount(void) const {
-	return _combatCount;
+	return _shipTypeCounts[COMBAT_SHIP];
 }
 
 size_t Fleet::supportCount(void) const {
-	return _shipCount - _combatCount;
+	return _shipCount - _shipTypeCounts[COMBAT_SHIP];
+}
+
+size_t Fleet::shipTypeCount(unsigned type) const {
+	if (type >= MAX_SHIP_TYPES || type == BAD_SHIP_TYPE) {
+		throw std::runtime_error("Invalid ship type");
+	}
+
+	return _shipTypeCounts[type];
+}
+
+size_t Fleet::combatClassCount(unsigned cls) const {
+	if (cls >= MAX_COMBAT_SHIP_CLASSES) {
+		throw std::runtime_error("Invalid combat ship class");
+	}
+
+	return _combatCounts[cls];
 }
 
 uint8_t Fleet::getOwner(void) const {
