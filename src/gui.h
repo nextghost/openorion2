@@ -109,7 +109,7 @@ public:
 	virtual void redraw(unsigned x, unsigned y, unsigned curtick);
 };
 
-class TextLayout {
+class TextLayout : public Recyclable {
 private:
 	struct TextBlock {
 		unsigned x, y, width, font, color, outline;
