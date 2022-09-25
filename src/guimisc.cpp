@@ -68,11 +68,11 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, unsigned help_id,
 				FONTSIZE_BIG, FONT_COLOR_HELP);
 		}
 
-		y = _text.height() + 4;
+		y = _text.height() + 6;
 		y = y < 30 ? 30 : y;
 		_text.appendText(entry->text, 0, y, _width - 40,
 			FONTSIZE_SMALL, FONT_COLOR_HELP);
-		y = _text.height() + 5;
+		y = _text.height() + 7;
 		help_id = entry->nextParagraph;
 	} while (help_id);
 

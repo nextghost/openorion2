@@ -38,8 +38,6 @@
 #define SCROLLBAR_MIN_WIDTH 2
 #define SCROLLBAR_MIN_LENGTH 10
 
-#define LINE_SPACING 3
-
 ViewStack *gui_stack = NULL;
 
 GuiCallback::GuiCallback(void) : _callback(NULL) {
@@ -1582,10 +1580,13 @@ void TextLayout::appendText(const char *text, unsigned x, unsigned y,
 	unsigned align) {
 
 	unsigned i = 0, tmp, wordStart, width, curx = 0, lineStart = 0;
+	unsigned line_height;
 	int ret;
 	char c;
 	TextBlock *blk;
 	Font *fnt = gameFonts->getFont(font);
+
+	line_height = fnt->height() + 1;
 
 	while (text[i]) {
 		for (; text[i] && text[i] <= ' '; i++) {
@@ -1597,7 +1598,7 @@ void TextLayout::appendText(const char *text, unsigned x, unsigned y,
 
 				lineStart = _blockCount;
 				curx = 0;
-				y += fnt->height() + LINE_SPACING;
+				y += line_height;
 				break;
 
 			// Absolute text position
@@ -1630,7 +1631,7 @@ void TextLayout::appendText(const char *text, unsigned x, unsigned y,
 			adjustLine(lineStart, align, maxwidth);
 			lineStart = _blockCount;
 			curx = 0;
-			y += fnt->height() + LINE_SPACING;
+			y += line_height;
 		}
 
 		blk = addBlock(text + wordStart, i - wordStart);
@@ -1648,7 +1649,7 @@ void TextLayout::appendText(const char *text, unsigned x, unsigned y,
 	}
 
 	if (_blockCount) {
-		tmp = _blocks[_blockCount - 1].y + fnt->height() + LINE_SPACING;
+		tmp = _blocks[_blockCount - 1].y + line_height;
 		_height = _height < tmp ? tmp : _height;
 	}
 
