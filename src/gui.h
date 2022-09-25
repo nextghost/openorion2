@@ -319,6 +319,23 @@ public:
 	void redraw(int x, int y, unsigned curtick);
 };
 
+class LabelWidget : public Widget {
+private:
+	TextLayout *_layout;
+	char *_text;
+
+public:
+	LabelWidget(unsigned x, unsigned y, unsigned width, unsigned height);
+	~LabelWidget(void);
+
+	void clear(void);
+	void setText(const char *text, unsigned font, unsigned color,
+		unsigned outline = OUTLINE_NONE, unsigned align = ALIGN_LEFT);
+	const char *text(void) const;
+
+	void redraw(int x, int y, unsigned curtick);
+};
+
 class WidgetContainer : public Recyclable {
 private:
 	Widget **_widgets;

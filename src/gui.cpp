@@ -993,6 +993,88 @@ void ScrollBarWidget::redraw(int x, int y, unsigned curtick) {
 		color[0], color[1], color[2]);
 }
 
+LabelWidget::LabelWidget(unsigned x, unsigned y, unsigned width,
+	unsigned height) : Widget(x, y, width, height), _layout(NULL),
+	_text(NULL) {
+
+}
+
+LabelWidget::~LabelWidget(void) {
+	delete _layout;
+	delete[] _text;
+}
+
+void LabelWidget::clear(void) {
+	TextLayout *oldLayout = _layout;
+	char *oldText = _text;
+
+	_text = NULL;
+	_layout = NULL;
+	delete[] oldText;
+
+	if (oldLayout) {
+		oldLayout->discard();
+	}
+}
+
+void LabelWidget::setText(const char *text, unsigned font, unsigned color,
+	unsigned outline, unsigned align) {
+
+	TextLayout *newLayout = NULL, *oldLayout = _layout;
+	char *oldText = _text;
+
+	if (!text) {
+		clear();
+		return;
+	}
+
+	font++;
+
+	do {
+		delete newLayout;
+		newLayout = new TextLayout;
+		font--;
+
+		try {
+			newLayout->appendText(text, 0, 0, width() - 2,
+				font, color, outline, align);
+		} catch (...) {
+			delete newLayout;
+			throw;
+		}
+	} while (font > 0 && newLayout->height() > height());
+
+	try {
+		_text = copystr(text);
+	} catch (...) {
+		delete newLayout;
+		throw;
+	}
+
+	_layout = newLayout;
+	delete[] oldText;
+
+	if (oldLayout) {
+		oldLayout->discard();
+	}
+}
+
+const char *LabelWidget::text(void) const {
+	return _text;
+}
+
+void LabelWidget::redraw(int x, int y, unsigned curtick) {
+	unsigned yoff = 1;
+
+	if (_layout) {
+		if (height() > _layout->height()) {
+			yoff += (height() - _layout->height()) / 2;
+		}
+
+		_layout->redraw(x + getX() + 1, y + getY() + yoff, curtick);
+	}
+}
+
 WidgetContainer::WidgetContainer(void) : _widgets(NULL), _widgetCount(0),
 	_widgetMax(32), _currentWidget(NULL) {
 	_widgets = new Widget*[_widgetMax];
