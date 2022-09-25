@@ -422,7 +422,8 @@ void ShipGridWidget::redraw(int x, int y, unsigned curtick) {
 FleetListView::FleetListView(GameState *game, int activePlayer) :
 	_game(game), _minimap(NULL), _grid(NULL), _scroll(NULL),
 	_allButton(NULL), _scrapButton(NULL), _supportToggle(NULL),
-	_combatToggle(NULL), _scrollgrab(0), _activePlayer(activePlayer) {
+	_combatToggle(NULL), _minimapLabel(NULL), _scrollgrab(0),
+	_activePlayer(activePlayer) {
 
 	ImageAsset palimg;
 	const uint8_t *pal;
@@ -447,8 +448,12 @@ void FleetListView::initWidgets(void) {
 		FLEETLIST_ARCHIVE, ASSET_FLEET_STAR_IMAGES,
 		ASSET_FLEET_SHIP_IMAGES, pal);
 	addWidget(_minimap);
+	_minimap->setStarHighlightCallback(GuiMethod(*this,
+		&FleetListView::starHighlightChanged));
 	_minimap->setStarSelectCallback(GuiMethod(*this,
 		&FleetListView::starSelectionChanged));
+	_minimap->setFleetHighlightCallback(GuiMethod(*this,
+		&FleetListView::fleetHighlightChanged));
 	_minimap->setFleetSelectCallback(GuiMethod(*this,
 		&FleetListView::fleetSelectionChanged));
 	_minimap->setMouseUpCallback(MBUTTON_RIGHT,
@@ -588,8 +593,9 @@ void FleetListView::initWidgets(void) {
 		GuiMethod(*this, &FleetListView::showHelp,
 		HELP_FLEET_RETURN_BUTTON));
 
-	w = createWidget(66, 247, 202, 23);
-	w->setMouseUpCallback(MBUTTON_RIGHT,
+	_minimapLabel = new LabelWidget(66, 247, 202, 23);
+	addWidget(_minimapLabel);
+	_minimapLabel->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &FleetListView::showHelp,
 		HELP_FLEET_NAME_BAR));
 
@@ -599,9 +605,122 @@ void FleetListView::initWidgets(void) {
 		HELP_FLEET_SHIP_INFO));
 }
 
+void FleetListView::starHighlightChanged(int x, int y, int arg) {
+	int star;
+	unsigned color = FONT_COLOR_FLEETLIST_STAR_NEUTRAL;
+	const Star *sptr;
+
+	star = _minimap->highlightedStar();
+
+	if (star < 0) {
+		_minimapLabel->clear();
+		return;
+	}
+
+	sptr = _game->_starSystems + star;
+
+	if (sptr->spectralClass >= SpectralClass::BlackHole) {
+		_minimapLabel->clear();
+		return;
+	}
+
+	// FIXME: handle unexplored stars
+	if (sptr->owner >= 0) {
+		color = FONT_COLOR_FLEETLIST_STAR_RED;
+		color += _game->_players[sptr->owner].color;
+	}
+
+	if (sptr->officerIndex[_activePlayer] >= 0) {
+		unsigned idx = sptr->officerIndex[_activePlayer];
+		StringBuffer buf;
+
+		buf.printf("%s (%s)", sptr->name, _game->_leaders[idx].name);
+		_minimapLabel->setText(buf.c_str(), FONTSIZE_MEDIUM, color,
+			OUTLINE_FULL, ALIGN_CENTER);
+	} else {
+		_minimapLabel->setText(sptr->name, FONTSIZE_MEDIUM, color,
+			OUTLINE_FULL, ALIGN_CENTER);
+	}
+}
+
 void FleetListView::starSelectionChanged(int x, int y, int arg) {
 	// TODO: implement movement and relocation commands
 	_minimap->selectStar(-1);
+}
+
+void FleetListView::fleetHighlightChanged(int x, int y, int arg) {
+	unsigned owner, color, i, tmp, total = 0;
+	const char *str;
+	const Fleet *f = _minimap->highlightedFleet();
+	StringBuffer buf;
+	int shipTypes[] = {COLONY_SHIP, TRANSPORT_SHIP, OUTPOST_SHIP, -1};
+	unsigned shipTypeNames[] = {
+		HSTR_SHIPCLASS_COLONY, HSTR_SHIPCLASS_TRANSPORT,
+		HSTR_SHIPCLASS_OUTPOST
+	};
+
+	if (!f) {
+		_minimapLabel->clear();
+		return;
+	}
+
+	owner = f->getOwner();
+
+	if (owner > MAX_PLAYERS) {
+		buf = gameLang->estrings(npcFleetOwnerNames[owner-MAX_PLAYERS]);
+		buf.toUpper();
+		_minimapLabel->setText(buf.c_str(), FONTSIZE_BIG,
+			FONT_COLOR_FLEETLIST_FLEET_MONSTER, OUTLINE_FULL,
+			ALIGN_CENTER);
+		return;
+	}
+
+	if (owner < MAX_PLAYERS) {
+		str = _game->_players[owner].race;
+		color = FONT_COLOR_FLEETLIST_FLEET_RED + f->getColor();
+	} else {
+		str = gameLang->estrings(npcFleetOwnerNames[owner-MAX_PLAYERS]);
+		color = FONT_COLOR_FLEETLIST_FLEET_RED;
+	}
+
+	buf.printf(gameLang->hstrings(HSTR_FLEET_RACE_DETAIL_FMT), str);
+	buf.toUpper();
+
+	for (i = 0; shipTypes[i] >= 0; i++) {
+		tmp = f->shipTypeCount(shipTypes[i]);
+
+		if (!tmp) {
+			continue;
+		}
+
+		str = gameLang->hstrings(shipTypeNames[i] + (tmp > 1 ? 1 : 0));
+		buf.append_printf(str, (int)tmp);
+	}
+
+	for (i = 0; i < MAX_COMBAT_SHIP_CLASSES; i++) {
+		tmp = f->combatClassCount(i);
+
+		if (!tmp) {
+			continue;
+		}
+
+		if (tmp == 1) {
+			str = gameLang->techname(TNAME_SHIPCLASS_FRIGATE + i);
+		} else {
+			str = gameLang->techname(TNAME_SHIPCLASS_FRIGATE_PLURAL
+				+ i);
+		}
+
+		buf.append_printf("%u %s, ", tmp, str);
+		total += tmp;
+	}
+
+	str = buf.c_str();
+	i = buf.length() - 1;
+	for (; i > 0 && (str[i] == ',' || str[i] == ' '); i--);
+	buf.truncate(i + 1);
+	_minimapLabel->setText(buf.c_str(), FONTSIZE_SMALLER, color,
+		OUTLINE_FULL, ALIGN_CENTER);
 }
 
 void FleetListView::fleetSelectionChanged(int x, int y, int arg) {
@@ -632,6 +751,7 @@ void FleetListView::fleetSelectionChanged(int x, int y, int arg) {
 }
 
 void FleetListView::shipHighlightChanged(int x, int y, int arg) {
+	_minimapLabel->clear();
 	// TODO: show ship info
 }
 

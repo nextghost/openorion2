@@ -96,12 +96,15 @@ private:
 	ScrollBarWidget *_scroll;
 	Widget *_allButton, *_scrapButton;
 	ToggleWidget *_supportToggle, *_combatToggle;
+	LabelWidget *_minimapLabel;
 	int _scrollgrab, _activePlayer;
 
 	void initWidgets(void);
 
 protected:
+	void starHighlightChanged(int x, int y, int arg);
 	void starSelectionChanged(int x, int y, int arg);
+	void fleetHighlightChanged(int x, int y, int arg);
 	void fleetSelectionChanged(int x, int y, int arg);
 
 	void shipHighlightChanged(int x, int y, int arg);
