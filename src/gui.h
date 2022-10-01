@@ -396,11 +396,14 @@ public:
 	void handleMouseMove(int x, int y, unsigned buttons);
 	void handleMouseDown(int x, int y, unsigned button);
 	void handleMouseUp(int x, int y, unsigned button);
+	virtual void handleMouseOver(int x, int y, unsigned buttons);
+	virtual void handleMouseOut(int x, int y, unsigned buttons);
 };
 
 class GuiView : public WidgetContainer {
 private:
 	BilistNode<GuiWindow> _firstWindow, _lastWindow;
+	GuiWindow *_currentWindow;
 
 protected:
 	void addWindow(GuiWindow *window);
@@ -412,6 +415,8 @@ protected:
 	void focusWindow(BilistNode<GuiWindow> *node);
 	BilistNode<GuiWindow> *findWindowAt(int x, int y, int ignore_modal = 0);
 	BilistNode<GuiWindow> *findModalWindow(void);
+	BilistNode<GuiWindow> *selectCurrentWindow(int x, int y,
+		unsigned buttons);
 	void redrawWindows(unsigned curtick);
 
 public:

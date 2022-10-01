@@ -1269,7 +1269,16 @@ void GuiWindow::handleMouseUp(int x, int y, unsigned button) {
 	}
 }
 
-GuiView::GuiView(void) {
+void GuiWindow::handleMouseOver(int x, int y, unsigned buttons) {
+	selectCurrentWidget(x, y, buttons);
+}
+
+void GuiWindow::handleMouseOut(int x, int y, unsigned buttons) {
+	leaveCurrentWidget(x, y, buttons);
+	_grabx = _graby = -1;
+}
+
+GuiView::GuiView(void) : _currentWindow(NULL) {
 	// Initialize window list
 	_firstWindow.insert_before(&_lastWindow);
 }
@@ -1293,6 +1302,10 @@ void GuiView::addWindow(GuiWindow *window) {
 
 void GuiView::removeWindow(GuiWindow *window) {
 	BilistNode<GuiWindow> *node = _firstWindow.next();
+
+	if (window == _currentWindow) {
+		_currentWindow = NULL;
+	}
 
 	for (; node && node != &_lastWindow; node = node->next()) {
 		if (window != node->data) {
@@ -1347,6 +1360,28 @@ BilistNode<GuiWindow> *GuiView::findModalWindow(void) {
 	return NULL;
 }
 
+BilistNode<GuiWindow> *GuiView::selectCurrentWindow(int x, int y,
+	unsigned buttons) {
+
+	BilistNode<GuiWindow> *node = findWindowAt(x, y);
+	GuiWindow *win = node ? node->data : NULL;
+
+	if (_currentWindow != win) {
+		if (_currentWindow) {
+			_currentWindow->handleMouseOut(x, y, buttons);
+		}
+
+		_currentWindow = win;
+
+		if (win) {
+			leaveCurrentWidget(x, y, buttons);
+			win->handleMouseOver(x, y, buttons);
+		}
+	}
+
+	return node;
+}
+
 void GuiView::redrawWindows(unsigned curtick) {
 	BilistNode<GuiWindow> *node = _lastWindow.prev();
 
@@ -1368,21 +1403,19 @@ void GuiView::close(void) {
 }
 
 void GuiView::handleMouseMove(int x, int y, unsigned buttons) {
+	GuiWindow *win = NULL;
 	BilistNode<GuiWindow> *node = _firstWindow.next();
 
 	node = (node == &_lastWindow) ? NULL : node;
 
 	if (node && !node->data->isGrabbed()) {
-		node = findWindowAt(x, y);
+		node = selectCurrentWindow(x, y, buttons);
 	}
 
-	if (node) {
-		if (_currentWidget) {
-			_currentWidget->handleMouseOut(x, y, buttons);
-		}
+	win = node ? node->data : NULL;
 
-		_currentWidget = NULL;
-		node->data->handleMouseMove(x, y, buttons);
+	if (win) {
+		win->handleMouseMove(x, y, buttons);
 		return;
 	}
 
@@ -1394,7 +1427,7 @@ void GuiView::handleMouseMove(int x, int y, unsigned buttons) {
 }
 
 void GuiView::handleMouseDown(int x, int y, unsigned button) {
-	BilistNode<GuiWindow> *node = findWindowAt(x, y);
+	BilistNode<GuiWindow> *node = selectCurrentWindow(x, y, 0);
 
 	if (node) {
 		GuiWindow *w = node->data;
@@ -1412,7 +1445,7 @@ void GuiView::handleMouseDown(int x, int y, unsigned button) {
 }
 
 void GuiView::handleMouseUp(int x, int y, unsigned button) {
-	BilistNode<GuiWindow> *node = findWindowAt(x, y);
+	BilistNode<GuiWindow> *node = selectCurrentWindow(x, y, 1 << button);
 
 	if (node) {
 		node->data->handleMouseUp(x, y, button);
