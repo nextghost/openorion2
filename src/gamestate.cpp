@@ -1802,7 +1802,7 @@ void Fleet::removeShip(size_t pos) {
 		throw std::out_of_range("Invalid ship index");
 	}
 
-	s = _parent->_ships + _ships[i];
+	s = _parent->_ships + _ships[pos];
 
 	for (i = pos; i < _shipCount - 1; i++) {
 		_ships[i] = _ships[i + 1];
