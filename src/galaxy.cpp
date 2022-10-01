@@ -1803,7 +1803,7 @@ void PlanetsListView::handleBeginScroll(int x, int y, int arg) {
 
 void PlanetsListView::handleEndScroll(int x, int y, int arg) {
 	_scrollgrab = 0;
-	handleMouseMove(x, y, 0);	// force active widget lookup
+	selectCurrentWidget(x, y, 0);
 }
 
 void PlanetsListView::handleSelectStar(int x, int y, int arg) {

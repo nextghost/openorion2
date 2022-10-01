@@ -813,7 +813,7 @@ void FleetListView::handleScroll(int x, int y, int arg) {
 
 void FleetListView::handleEndScroll(int x, int y, int arg) {
 	_scrollgrab = 0;
-	handleMouseMove(x, y, 0);	// force active widget lookup
+	selectCurrentWidget(x, y, 0);
 }
 
 void FleetListView::updateScrollbar(void) {

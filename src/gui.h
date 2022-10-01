@@ -356,6 +356,9 @@ protected:
 	void addWidget(Widget *w);
 
 	Widget *findWidget(int x, int y);
+	void selectCurrentWidget(int x, int y, unsigned buttons);
+	void leaveCurrentWidget(int x, int y, unsigned buttons);
+
 	void redrawWidgets(int x, int y, unsigned curtick);
 	void clearWidgets(void);
 

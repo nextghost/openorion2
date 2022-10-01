@@ -1134,6 +1134,28 @@ Widget *WidgetContainer::findWidget(int x, int y) {
 	return NULL;
 }
 
+void WidgetContainer::selectCurrentWidget(int x, int y, unsigned buttons) {
+	Widget *w = findWidget(x, y);
+
+	if (_currentWidget != w) {
+		leaveCurrentWidget(x, y, buttons);
+
+		if (w) {
+			w->handleMouseOver(x, y, buttons);
+		}
+
+		_currentWidget = w;
+	}
+}
+
+void WidgetContainer::leaveCurrentWidget(int x, int y, unsigned buttons) {
+	if (_currentWidget) {
+		_currentWidget->handleMouseOut(x, y, buttons);
+	}
+
+	_currentWidget = NULL;
+}
+
 void WidgetContainer::redrawWidgets(int x, int y, unsigned curtick) {
 	size_t i;
 
@@ -1157,29 +1179,15 @@ void WidgetContainer::clearWidgets(void) {
 }
 
 void WidgetContainer::handleMouseMove(int x, int y, unsigned buttons) {
-	Widget *w = findWidget(x, y);
+	selectCurrentWidget(x, y, buttons);
 
-	if (_currentWidget != w) {
-		if (_currentWidget) {
-			_currentWidget->handleMouseOut(x, y, buttons);
-		}
-
-		if (w) {
-			w->handleMouseOver(x, y, buttons);
-		}
-
-		_currentWidget = w;
-	}
-
-	if (w) {
-		w->handleMouseMove(x, y, buttons);
+	if (_currentWidget) {
+		_currentWidget->handleMouseMove(x, y, buttons);
 	}
 }
 
 void WidgetContainer::handleMouseDown(int x, int y, unsigned button) {
-	if (!_currentWidget) {
-		_currentWidget = findWidget(x, y);
-	}
+	selectCurrentWidget(x, y, 0);
 
 	if (_currentWidget) {
 		_currentWidget->handleMouseDown(x, y, button);
@@ -1187,9 +1195,7 @@ void WidgetContainer::handleMouseDown(int x, int y, unsigned button) {
 }
 
 void WidgetContainer::handleMouseUp(int x, int y, unsigned button) {
-	if (!_currentWidget) {
-		_currentWidget = findWidget(x, y);
-	}
+	selectCurrentWidget(x, y, 1 << button);
 
 	if (_currentWidget) {
 		_currentWidget->handleMouseUp(x, y, button);
