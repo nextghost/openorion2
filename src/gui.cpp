@@ -1700,8 +1700,8 @@ void TextLayout::appendText(const char *text, unsigned x, unsigned y,
 	unsigned maxwidth, unsigned font, unsigned color, unsigned outline,
 	unsigned align) {
 
-	unsigned i = 0, tmp, wordStart, width, curx = 0, lineStart = 0;
-	unsigned line_height;
+	unsigned i = 0, tmp, wordStart, width, curx = x;
+	unsigned line_height, lineStart = _blockCount;
 	int ret;
 	char c;
 	TextBlock *blk;
