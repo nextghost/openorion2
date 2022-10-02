@@ -547,7 +547,7 @@ void ShipDesign::load(ReadStream &stream) {
 }
 
 void ShipDesign::validate(void) const {
-	unsigned monster;
+	unsigned i, monster;
 
 	if (type >= MAX_SHIP_TYPES || type == BAD_SHIP_TYPE) {
 		throw std::out_of_range("Invalid ship type");
@@ -555,6 +555,28 @@ void ShipDesign::validate(void) const {
 
 	if (type == COMBAT_SHIP && size >= MAX_COMBAT_SHIP_CLASSES) {
 		throw std::out_of_range("Invalid combat ship size");
+	}
+
+	if (shield >= MAX_SHIP_SHIELD_TYPES) {
+		throw std::out_of_range("Invalid ship shield type");
+	}
+
+	if (drive >= MAX_SHIP_DRIVE_TYPES) {
+		throw std::out_of_range("Invalid ship drive type");
+	}
+
+	if (computer >= MAX_SHIP_COMPUTER_TYPES) {
+		throw std::out_of_range("Invalid ship computer type");
+	}
+
+	if (armor >= MAX_SHIP_ARMOR_TYPES) {
+		throw std::out_of_range("Invalid ship armor type");
+	}
+
+	for (i = 0; i < MAX_SHIP_WEAPONS; i++) {
+		if (weapons[i].type >= MAX_SHIP_WEAPON_TYPES) {
+			throw std::out_of_range("Invalid ship weapon type");
+		}
 	}
 
 	if (builder >= MAX_FLEET_OWNERS) {
@@ -1071,6 +1093,10 @@ void Ship::validate(void) const {
 
 	if (status > ShipState::UnderConstruction) {
 		throw std::out_of_range("Invalid ship status");
+	}
+
+	if (crewLevel >= MAX_SHIP_CREW_LEVELS) {
+		throw std::out_of_range("Invalid ship crew level");
 	}
 
 	if (officer >= LEADER_COUNT) {
