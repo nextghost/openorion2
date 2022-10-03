@@ -1036,8 +1036,8 @@ void LabelWidget::setText(const char *text, unsigned font, unsigned color,
 		font--;
 
 		try {
-			newLayout->appendText(text, 0, 0, width() - 2,
-				font, color, outline, align);
+			newLayout->setFont(font, color, 1, outline);
+			newLayout->appendText(text, 0, 0, width() - 2, align);
 		} catch (...) {
 			delete newLayout;
 			throw;
@@ -1601,7 +1601,9 @@ GuiView *ViewStack::top(void) {
 }
 
 TextLayout::TextLayout(void) : _blocks(NULL), _sprites(NULL), _height(0),
-	_blockCount(0), _blockSize(0), _spriteCount(0), _spriteSize(0) {
+	_blockCount(0), _blockSize(0), _spriteCount(0), _spriteSize(0),
+	_fontSize(FONTSIZE_MEDIUM), _fontColor(FONT_COLOR_DEFAULT),
+	_fontOutline(OUTLINE_NONE), _lineSpacing(1) {
 
 }
 
@@ -1696,18 +1698,26 @@ void TextLayout::adjustLine(unsigned lineStart, unsigned align,
 	}
 }
 
+void TextLayout::setFont(unsigned font, unsigned color, unsigned lineSpacing,
+	unsigned outline) {
+
+	_fontSize = font;
+	_fontColor = color;
+	_fontOutline = outline;
+	_lineSpacing = lineSpacing;
+}
+
 void TextLayout::appendText(const char *text, unsigned x, unsigned y,
-	unsigned maxwidth, unsigned font, unsigned color, unsigned outline,
-	unsigned align) {
+	unsigned maxwidth, unsigned align) {
 
 	unsigned i = 0, tmp, wordStart, width, curx = x;
 	unsigned line_height, lineStart = _blockCount;
 	int ret;
 	char c;
 	TextBlock *blk;
-	Font *fnt = gameFonts->getFont(font);
+	Font *fnt = gameFonts->getFont(_fontSize);
 
-	line_height = fnt->height() + 1;
+	line_height = fnt->height() + _lineSpacing;
 
 	while (text[i]) {
 		for (; text[i] && text[i] <= ' '; i++) {
@@ -1759,9 +1769,9 @@ void TextLayout::appendText(const char *text, unsigned x, unsigned y,
 		blk->x = curx;
 		blk->y = y;
 		blk->width = width - 1;
-		blk->font = font;
-		blk->color = color;
-		blk->outline = outline;
+		blk->font = _fontSize;
+		blk->color = _fontColor;
+		blk->outline = _fontOutline;
 		curx += width;
 	}
 

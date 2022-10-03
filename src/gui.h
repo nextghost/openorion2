@@ -119,6 +119,7 @@ private:
 	TextBlock *_blocks;
 	GuiSprite **_sprites;
 	unsigned _height, _blockCount, _blockSize, _spriteCount, _spriteSize;
+	unsigned _fontSize, _fontColor, _fontOutline, _lineSpacing;
 
 	// Do NOT implement
 	TextLayout(const TextLayout &other);
@@ -132,9 +133,11 @@ public:
 	TextLayout(void);
 	~TextLayout(void);
 
+	void setFont(unsigned font, unsigned color, unsigned lineSpacing = 1,
+		unsigned outline = OUTLINE_NONE);
+
 	void appendText(const char *text, unsigned x, unsigned y,
-		unsigned maxwidth, unsigned font, unsigned color,
-		unsigned outline = OUTLINE_NONE, unsigned align = ALIGN_LEFT);
+		unsigned maxwidth, unsigned align = ALIGN_LEFT);
 	void addSprite(GuiSprite *sprite);
 	void addSprite(unsigned x, unsigned y, Image *img,
 		int frame = ANIM_LOOP);

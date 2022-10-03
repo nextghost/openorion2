@@ -34,8 +34,8 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text,
 	unsigned flags) : GuiWindow(parent, flags) {
 
 	initAssets();
-	_text.appendText(text, 0, 19, _width - 40, FONTSIZE_MEDIUM,
-		FONT_COLOR_DEFAULT);
+	_text.setFont(FONTSIZE_MEDIUM, FONT_COLOR_DEFAULT);
+	_text.appendText(text, 0, 19, _width - 40);
 	_height += _text.height() >= 20 ? _text.height() - 20 : 0;
 	_y = (SCREEN_HEIGHT - _height) / 2;
 
@@ -64,14 +64,14 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, unsigned help_id,
 		}
 
 		if (entry->title[0] != 0x14) {
-			_text.appendText(entry->title, 0, y, twidth,
-				FONTSIZE_BIG, FONT_COLOR_HELP);
+			_text.setFont(FONTSIZE_BIG, FONT_COLOR_HELP);
+			_text.appendText(entry->title, 0, y, twidth);
 		}
 
 		y = _text.height() + 6;
 		y = y < 30 ? 30 : y;
-		_text.appendText(entry->text, 0, y, _width - 40,
-			FONTSIZE_SMALL, FONT_COLOR_HELP);
+		_text.setFont(FONTSIZE_SMALL, FONT_COLOR_HELP);
+		_text.appendText(entry->text, 0, y, _width - 40);
 		y = _text.height() + 7;
 		help_id = entry->nextParagraph;
 	} while (help_id);
@@ -133,8 +133,8 @@ ErrorWindow::ErrorWindow(GuiView *parent, const char *text) :
 	_x = (SCREEN_WIDTH - _width) / 2;
 	_y = (SCREEN_HEIGHT - _height) / 2;
 
-	_text.appendText(text, 0, 0, 227, FONTSIZE_BIG, FONT_COLOR_ERROR,
-		OUTLINE_NONE, ALIGN_CENTER);
+	_text.setFont(FONTSIZE_BIG, FONT_COLOR_ERROR);
+	_text.appendText(text, 0, 0, 227, ALIGN_CENTER);
 }
 
 ErrorWindow::~ErrorWindow(void) {
