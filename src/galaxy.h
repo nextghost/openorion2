@@ -23,6 +23,9 @@
 #include "gui.h"
 #include "gamestate.h"
 
+#define GALAXY_ARCHIVE "buffer0.lbx"
+#define ASSET_GALAXY_GUI 0
+
 #define GALAXY_ZOOM_LEVELS 4
 #define GALAXY_STAR_SIZES 6
 
