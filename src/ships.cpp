@@ -22,6 +22,7 @@
 #include "screen.h"
 #include "guimisc.h"
 #include "lang.h"
+#include "galaxy.h"
 #include "ships.h"
 
 #define FLEETLIST_ARCHIVE "fleet.lbx"
@@ -428,7 +429,10 @@ FleetListView::FleetListView(GameState *game, int activePlayer) :
 	ImageAsset palimg;
 	const uint8_t *pal;
 
-	palimg = gameAssets->getImage(FLEETLIST_ARCHIVE, ASSET_FLEET_PALETTE);
+	// Fleet list view uses 80 colors from galaxy view palette
+	palimg = gameAssets->getImage(GALAXY_ARCHIVE, ASSET_GALAXY_GUI);
+	palimg = gameAssets->getImage(FLEETLIST_ARCHIVE, ASSET_FLEET_PALETTE,
+		palimg->palette());
 	pal = palimg->palette();
 	_bg = gameAssets->getImage(FLEETLIST_ARCHIVE, ASSET_FLEET_GUI, pal);
 
