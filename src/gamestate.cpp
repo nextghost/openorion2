@@ -639,7 +639,8 @@ void ShipDesign::validate(void) const {
 		throw std::out_of_range("Invalid ship armor type");
 	}
 
-	for (i = 0; i < MAX_SHIP_WEAPONS; i++) {
+	// Non-combat ships use weapon attributes to store special data
+	for (i = 0; type == COMBAT_SHIP && i < MAX_SHIP_WEAPONS; i++) {
 		if (weapons[i].type >= MAX_SHIP_WEAPON_TYPES) {
 			throw std::out_of_range("Invalid ship weapon type");
 		}
