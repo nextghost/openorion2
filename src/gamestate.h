@@ -87,6 +87,7 @@
 
 #define MAX_SHIP_CREW_LEVELS 5
 #define MAX_SHIP_WEAPON_TYPES 46
+#define MAX_SHIP_WEAPON_ARCS 5
 #define MAX_SHIP_SHIELD_TYPES 6
 #define MAX_SHIP_DRIVE_TYPES 7
 #define MAX_SHIP_COMPUTER_TYPES 6
@@ -227,6 +228,15 @@ enum CombatShipClass {
 	SHIP_BATTLESHIP,
 	SHIP_TITAN,
 	SHIP_DOOMSTAR
+};
+
+enum WeaponArc {
+	ARC_FWD = 0x1,
+	ARC_FWD_EXT = 0x2,
+	ARC_BACK_EXT = 0x4,
+	ARC_BACK = 0x8,
+	ARC_MONSTER_360 = 0xf,
+	ARC_360 = 0x10
 };
 
 
@@ -463,6 +473,9 @@ struct ShipWeapon {
 	uint8_t ammo;
 
 	void load(ReadStream &stream);
+
+	unsigned arcID(void) const;
+	const char *arcAbbr(void) const;
 };
 
 struct ShipDesign {

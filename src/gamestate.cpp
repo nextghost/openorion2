@@ -19,6 +19,8 @@
 
 #include <cstring>
 #include <stdexcept>
+#include "lang.h"
+#include "lbx.h"
 #include "gamestate.h"
 
 #define COLONY_COUNT_OFFSET 0x25b
@@ -502,6 +504,31 @@ void ShipWeapon::load(ReadStream &stream) {
 	ammo = stream.readUint8();
 }
 
+unsigned ShipWeapon::arcID(void) const {
+	unsigned i;
+
+	if (arc == WeaponArc::ARC_MONSTER_360) {
+		return 4;
+	}
+
+	for (i = 0; i < MAX_SHIP_WEAPON_ARCS; i++) {
+		if (arc == (1 << i)) {
+			return i;
+		}
+	}
+
+	throw std::runtime_error("Invalid weapon arc");
+}
+
+const char *ShipWeapon::arcAbbr(void) const {
+	if (arc == WeaponArc::ARC_360 || arc == WeaponArc::ARC_MONSTER_360) {
+		return gameLang->hstrings(HSTR_WEAPON_ARC_360);
+	}
+
+	return gameLang->misctext(TXT_MISC_KENTEXT,
+		KEN_WEAPON_ARC_FWD + arcID());
+}
+
 ShipDesign::ShipDesign(void) {
 	memset(name, 0, SHIP_NAME_SIZE);
 	size = 0;
@@ -575,6 +602,11 @@ void ShipDesign::validate(void) const {
 	for (i = 0; i < MAX_SHIP_WEAPONS; i++) {
 		if (weapons[i].type >= MAX_SHIP_WEAPON_TYPES) {
 			throw std::out_of_range("Invalid ship weapon type");
+		}
+
+		if (weapons[i].type > 0) {
+			// arcID() also validates arc value
+			weapons[i].arcID();
 		}
 	}
 
