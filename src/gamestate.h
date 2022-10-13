@@ -463,6 +463,9 @@ struct Leader {
 	Leader(void);
 
 	void load(ReadStream &stream);
+
+	unsigned expLevel(void) const;
+	const char *rank(void) const;
 };
 
 struct ShipWeapon {

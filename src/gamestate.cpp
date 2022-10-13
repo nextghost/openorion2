@@ -64,6 +64,8 @@ static const int gravityPenalties[GRAVITY_LEVEL_COUNT][GRAVITY_LEVEL_COUNT] = {
 	{-50,   0,   0},	// heavy-G homeworld
 };
 
+static const unsigned leaderExpThresholds[] = {60, 150, 300, 500, 0};
+
 GameConfig::GameConfig(void) {
 	version = 0;
 	memset(saveGameName, 0, SAVE_GAME_NAME_SIZE);
@@ -493,6 +495,30 @@ void Leader::load(ReadStream &stream) {
 	displayLevelUp = stream.readUint8();
 	status = stream.readUint8();
 	playerIndex = stream.readUint8();
+}
+
+unsigned Leader::expLevel(void) const {
+	unsigned i;
+
+	for (i = 0; leaderExpThresholds[i]; i++) {
+		if (experience < leaderExpThresholds[i]) {
+			break;
+		}
+	}
+
+	return i;
+}
+
+const char *Leader::rank(void) const {
+	unsigned base;
+
+	if (type) {
+		base = ESTR_LEADER_LEVEL_ADMIN;
+	} else {
+		base = ESTR_LEADER_LEVEL_COMMANDER;
+	}
+
+	return gameLang->estrings(base + expLevel());
 }
 
 void ShipWeapon::load(ReadStream &stream) {
