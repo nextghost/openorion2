@@ -157,6 +157,8 @@ char *strupper(const char *str);
 
 int isInRect(int x, int y, int rx, int ry, unsigned width, unsigned height);
 
+int checkBitfield(const uint8_t *bitfield, unsigned bit);
+
 template <class C>
 BilistNode<C>::BilistNode(void) : _prev(NULL), _next(NULL), _discarded(0),
 	data(NULL) {

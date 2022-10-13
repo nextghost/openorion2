@@ -239,6 +239,47 @@ enum WeaponArc {
 	ARC_360 = 0x10
 };
 
+enum SpecialDevices {
+	SPEC_ACHILLES_TARGETING_UNIT = 1,
+	SPEC_AUGMENTED_ENGINES,
+	SPEC_AUTOMATED_REPAIR_UNIT,
+	SPEC_BATTLE_PODS,
+	SPEC_BATTLE_SCANNER,
+	SPEC_CLOAKING_DEVICE,
+	SPEC_DAMPER_FIELD,
+	SPEC_DISPLACEMENT_DEVICE,
+	SPEC_ECM_JAMMER,
+	SPEC_ENERGY_ABSORBER,
+	SPEC_EXTENDED_FUEL_TANKS,
+	SPEC_FAST_MISSILE_RACKS,
+	SPEC_HARD_SHIELDS,
+	SPEC_HEAVY_ARMOR,
+	SPEC_HIGH_ENERGY_FOCUS,
+	SPEC_HYPERX_CAPACITORS,
+	SPEC_INERTIAL_NULLIFIER,
+	SPEC_INERTIAL_STABILIZER,
+	SPEC_LIGHTNING_FIELD,
+	SPEC_MULTIPHASED_SHIELDS,
+	SPEC_MULTIWAVE_ECM_JAMMER,
+	SPEC_PHASE_SHIFTER,
+	SPEC_PHASING_CLOAK,
+	SPEC_QUANTUM_DETONATOR,
+	SPEC_RANGEMASTER_UNIT,
+	SPEC_REFLECTION_FIELD,
+	SPEC_REINFORCED_HULL,
+	SPEC_SCOUT_LAB,
+	SPEC_SECURITY_STATIONS,
+	SPEC_SHIELD_CAPACITOR,
+	SPEC_STEALTH_FIELD,
+	SPEC_STRUCTURAL_ANALYZER,
+	SPEC_SUB_SPACE_TELEPORTER,
+	SPEC_TIME_WARP_FACILITATOR,
+	SPEC_TRANSPORTERS,
+	SPEC_TROOP_PODS,
+	SPEC_WARP_DISSIPATOR,
+	SPEC_WIDE_AREA_JAMMER,
+	SPEC_REGENERATION
+};
 
 extern const unsigned galaxySizeFactors[GALAXY_ZOOM_LEVELS];
 
@@ -499,6 +540,9 @@ struct ShipDesign {
 
 	void load(ReadStream &stream);
 
+	int hasSpecial(unsigned id) const;
+	int hasWorkingSpecial(unsigned id, const uint8_t* specDamage) const;
+
 	void validate(void) const;
 };
 
@@ -720,6 +764,9 @@ struct Ship {
 	unsigned getStarID(void) const;
 	int isActive(void) const;
 	int exists(void) const;
+	int hasSpecial(unsigned id) const;
+	int hasWorkingSpecial(unsigned id) const;
+	int isSpecialDamaged(unsigned id) const;
 
 	void validate(void) const;
 };

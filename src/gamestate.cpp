@@ -598,6 +598,20 @@ void ShipDesign::load(ReadStream &stream) {
 	buildDate = stream.readUint16LE();
 }
 
+int ShipDesign::hasSpecial(unsigned id) const {
+	if (id >= MAX_SHIP_SPECIALS) {
+		throw std::out_of_range("Invalid ship special device ID");
+	}
+
+	return checkBitfield(specials, id);
+}
+
+int ShipDesign::hasWorkingSpecial(unsigned id,
+	const uint8_t *specDamage) const {
+
+	return hasSpecial(id) && !checkBitfield(specDamage, id);
+}
+
 void ShipDesign::validate(void) const {
 	unsigned i, monster;
 
@@ -1143,6 +1157,22 @@ int Ship::isActive(void) const {
 int Ship::exists(void) const {
 	return status <= ShipState::UnderConstruction &&
 		status != ShipState::Unknown && status != ShipState::Destroyed;
+}
+
+int Ship::hasSpecial(unsigned id) const {
+	return design.hasSpecial(id);
+}
+
+int Ship::hasWorkingSpecial(unsigned id) const {
+	return design.hasWorkingSpecial(id, damagedSpecials);
+}
+
+int Ship::isSpecialDamaged(unsigned id) const {
+	if (id >= MAX_SHIP_SPECIALS) {
+		throw std::out_of_range("Invalid ship special device ID");
+	}
+
+	return checkBitfield(damagedSpecials, id);
 }
 
 void Ship::validate(void) const {

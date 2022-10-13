@@ -319,3 +319,7 @@ int isInRect(int x, int y, int rx, int ry, unsigned width, unsigned height) {
 	return x >= rx && y >= ry && x < rx + (int)width &&
 		y < ry + (int)height;
 }
+
+int checkBitfield(const uint8_t *bitfield, unsigned bit) {
+	return bitfield && (bitfield[bit / 8] & (1 << (bit % 8)));
+}
