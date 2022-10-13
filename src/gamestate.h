@@ -87,8 +87,6 @@
 
 #define MAX_SHIP_CREW_LEVELS 5
 #define MAX_SHIP_WEAPON_TYPES 46
-#define MAX_SHIP_BEAM_MODS 8
-#define MAX_SHIP_MISSILE_MODS 7
 #define MAX_SHIP_SHIELD_TYPES 6
 #define MAX_SHIP_DRIVE_TYPES 7
 #define MAX_SHIP_COMPUTER_TYPES 6
@@ -460,7 +458,9 @@ struct Leader {
 struct ShipWeapon {
 	int16_t type;
 	uint8_t maxCount, workingCount;
-	uint8_t arc, beamMods, missileMods, ammo;
+	uint8_t arc;
+	uint16_t mods;
+	uint8_t ammo;
 
 	void load(ReadStream &stream);
 };

@@ -498,8 +498,7 @@ void ShipWeapon::load(ReadStream &stream) {
 	maxCount = stream.readUint8();
 	workingCount = stream.readUint8();
 	arc = stream.readUint8();
-	beamMods = stream.readUint8();
-	missileMods = stream.readUint8();
+	mods = stream.readUint16LE();
 	ammo = stream.readUint8();
 }
 
