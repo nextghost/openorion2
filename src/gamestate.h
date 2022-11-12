@@ -546,7 +546,7 @@ struct ShipDesign {
 	void validate(void) const;
 };
 
-struct RacePicks {
+struct RaceTraits {
 	uint8_t government;
 	int8_t population;
 	int8_t farming;
@@ -629,7 +629,7 @@ struct Player {
 	ResearchArea researchArea;
 	uint16_t researchItem;
 	ShipDesign blueprints[MAX_PLAYER_BLUEPRINTS], selectedBlueprint;
-	RacePicks racePicks;
+	RaceTraits traits;
 	uint8_t spies[MAX_PLAYERS];
 
 	Player(void);

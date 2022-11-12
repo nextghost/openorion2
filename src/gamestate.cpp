@@ -673,7 +673,7 @@ void ShipDesign::validate(void) const {
 	}
 }
 
-void RacePicks::load(ReadStream &stream) {
+void RaceTraits::load(ReadStream &stream) {
 	government = stream.readUint8();
 	population = stream.readSint8();
 	farming = stream.readSint8();
@@ -816,7 +816,7 @@ void Player::load(SeekableReadStream &stream) {
 
 	selectedBlueprint.load(stream);
 	stream.seek(0x327, SEEK_CUR);
-	racePicks.load(stream);
+	traits.load(stream);
 	stream.seek(0x599, SEEK_CUR);
 
 	for (i = 0; i < MAX_PLAYERS; i++) {
@@ -833,9 +833,9 @@ int Player::gravityPenalty(unsigned gravity) const {
 		throw std::out_of_range("Invalid gravity level");
 	}
 
-	if (racePicks.lowG) {
+	if (traits.lowG) {
 		homegrav = PlanetGravity::LOW_G;
-	} else if (racePicks.highG) {
+	} else if (traits.highG) {
 		homegrav = PlanetGravity::HEAVY_G;
 	} else {
 		homegrav = PlanetGravity::NORMAL_G;
@@ -1623,20 +1623,20 @@ unsigned GameState::planetMaxPop(unsigned planet_id, unsigned player_id) const {
 
 	pptr = _players + player_id;
 
-	if (pptr->racePicks.aquatic) {
+	if (pptr->traits.aquatic) {
 		climateFactor = aquaticPopFactors[climate];
 	} else {
 		climateFactor = climatePopFactors[climate];
 	}
 
-	if (pptr->racePicks.tolerant) {
+	if (pptr->traits.tolerant) {
 		climateFactor += 25;
 	}
 
 	climateFactor = climateFactor > 100 ? 100 : climateFactor;
 	ret = ((ptr->size + 1) * 5 * climateFactor + 50) / 100;
 
-	if (pptr->racePicks.subterranean) {
+	if (pptr->traits.subterranean) {
 		ret += 2 * (ptr->size + 1);
 	}
 
@@ -1746,30 +1746,30 @@ void GameState::dump(void) const {
 		fprintf(stdout, "Research Item:\t\t%d\n",
 			_players[i].researchItem);
 
-		fprintf(stdout, "--- Racepicks ---\n");
+		fprintf(stdout, "--- Traits ---\n");
 		fprintf(stdout, "Government:\t\t%d\tPopulation:\t\t%d\tFarming:\t\t%d\tScience:\t\t%d\n",
-			_players[i].racePicks.government, _players[i].racePicks.population,
-			_players[i].racePicks.farming, _players[i].racePicks.science);
+			_players[i].traits.government, _players[i].traits.population,
+			_players[i].traits.farming, _players[i].traits.science);
 		fprintf(stdout, "Money:\t\t\t%d\tShip defense:\t\t%d\tShip attack:\t\t%d\tGround combat:\t\t%d\n",
-			_players[i].racePicks.money, _players[i].racePicks.shipDefense,
-			_players[i].racePicks.shipAttack, _players[i].racePicks.groundCombat);
+			_players[i].traits.money, _players[i].traits.shipDefense,
+			_players[i].traits.shipAttack, _players[i].traits.groundCombat);
 		fprintf(stdout, "Spying:\t\t\t%d\tLow G:\t\t\t%d\tHigh G:\t\t\t%d\tAquatic:\t\t%d\n",
-			_players[i].racePicks.spying, _players[i].racePicks.lowG,
-			_players[i].racePicks.highG, _players[i].racePicks.aquatic);
+			_players[i].traits.spying, _players[i].traits.lowG,
+			_players[i].traits.highG, _players[i].traits.aquatic);
 		fprintf(stdout, "Subterranian:\t\t%d\tLarge homeworld:\t%d\tRich/Poor homeworld:\t%d\tArtifacts homeworld:\t%d\n",
-			_players[i].racePicks.subterranean, _players[i].racePicks.largeHomeworld,
-			_players[i].racePicks.richHomeworld, _players[i].racePicks.artifactsHomeworld);
+			_players[i].traits.subterranean, _players[i].traits.largeHomeworld,
+			_players[i].traits.richHomeworld, _players[i].traits.artifactsHomeworld);
 		fprintf(stdout, "Cybernetic:\t\t%d\tLithovore:\t\t%d\tRepulsive:\t\t%d\tCharismatic:\t\t%d\n",
-			_players[i].racePicks.cybernetic, _players[i].racePicks.lithovore,
-			_players[i].racePicks.repulsive, _players[i].racePicks.charismatic);
+			_players[i].traits.cybernetic, _players[i].traits.lithovore,
+			_players[i].traits.repulsive, _players[i].traits.charismatic);
 		fprintf(stdout, "Uncreative:\t\t%d\tCreative:\t\t%d\tTolerant:\t\t%d\tFantastic traders:\t%d\n",
-			_players[i].racePicks.uncreative, _players[i].racePicks.creative,
-			_players[i].racePicks.tolerant, _players[i].racePicks.fantasticTraders);
+			_players[i].traits.uncreative, _players[i].traits.creative,
+			_players[i].traits.tolerant, _players[i].traits.fantasticTraders);
 		fprintf(stdout, "Telepathic:\t\t%d\tLucky:\t\t\t%d\tOmniscience:\t\t%d\tStealthy ships:\t\t%d\n",
-			_players[i].racePicks.telepathic, _players[i].racePicks.lucky,
-			_players[i].racePicks.omniscience, _players[i].racePicks.stealthyShips);
+			_players[i].traits.telepathic, _players[i].traits.lucky,
+			_players[i].traits.omniscience, _players[i].traits.stealthyShips);
 		fprintf(stdout, "Transdimensional:\t%d\tWarlord:\t\t%d\n\n",
-			_players[i].racePicks.transDimensional, _players[i].racePicks.warlord);
+			_players[i].traits.transDimensional, _players[i].traits.warlord);
 	}
 
 	fprintf(stdout, "Number of stars: %d\n", _starSystemCount);
