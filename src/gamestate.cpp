@@ -66,6 +66,17 @@ static const int gravityPenalties[GRAVITY_LEVEL_COUNT][GRAVITY_LEVEL_COUNT] = {
 
 static const unsigned leaderExpThresholds[] = {60, 150, 300, 500, 0};
 
+static const int navigatorSkillValues[][MAX_LEADER_LEVELS] = {
+	{1, 1, 2, 2, 3},
+	{1, 1, 3, 3, 4}
+};
+
+static const int baseSkillValues[MAX_SKILL_TYPES][MAX_COMMON_SKILLS] = {
+	{2, 2, 10, -60, 10, 2, 5, 2, 2, 10},
+	{2, 5, 5, 5, 1, 5, 2, 5},
+	{-10, 10, 10, 1, 10, 10, 10, 5, 2}
+};
+
 GameConfig::GameConfig(void) {
 	version = 0;
 	memset(saveGameName, 0, SAVE_GAME_NAME_SIZE);
@@ -519,6 +530,69 @@ const char *Leader::rank(void) const {
 	}
 
 	return gameLang->estrings(base + expLevel());
+}
+
+int Leader::hasSkill(unsigned id) const {
+       uint32_t skills = 0;
+       unsigned max, skillnum;
+
+       switch (id & SKILLTYPE_MASK) {
+       case COMMON_SKILLS_TYPE:
+               skills = commonSkills;
+               max = MAX_COMMON_SKILLS;
+               break;
+
+       case CAPTAIN_SKILLS_TYPE:
+               skills = (type == LEADER_TYPE_CAPTAIN) ? specialSkills : 0;
+               max = MAX_CAPTAIN_SKILLS;
+               break;
+
+       case ADMIN_SKILLS_TYPE:
+               skills = (type == LEADER_TYPE_ADMIN) ? specialSkills : 0;
+               max = MAX_ADMIN_SKILLS;
+               break;
+
+       default:
+               throw std::invalid_argument("Invalid skill ID");
+       }
+
+       skillnum = id & SKILLCODE_MASK;
+
+       if (skillnum >= max) {
+               return 0;
+       }
+
+       return (skills >> (2 * skillnum)) & 0x3;
+}
+
+int Leader::skillBonus(unsigned id) const {
+       unsigned tier;
+       int ret;
+
+       tier = hasSkill(id);
+
+       if (!tier) {
+               return 0;
+       }
+
+       // Navigator skill has special tier/level progression
+       if (id == SKILL_NAVIGATOR) {
+               return navigatorSkillValues[(tier > 1) ? 1 : 0][expLevel()];
+       }
+
+       ret = baseSkillValues[SKILLTYPE(id)][id & SKILLCODE_MASK];
+
+       // Megawealth bonus is the same for all levels
+       if (id != SKILL_MEGAWEALTH) {
+               ret *= (expLevel() + 1);
+       }
+
+       // +50% bonus for advanced skill
+       if (tier > 1) {
+               ret += ret / 2;
+       }
+
+       return ret;
 }
 
 void Leader::validate(void) const {

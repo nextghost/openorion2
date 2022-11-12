@@ -27,6 +27,19 @@
 #define LEADER_COUNT 67
 #define LEADER_NAME_SIZE 0x0f
 #define LEADER_TITLE_SIZE 0x14
+#define LEADER_TYPE_CAPTAIN 0
+#define LEADER_TYPE_ADMIN 1
+#define MAX_LEADER_LEVELS 5
+#define MAX_SKILL_TYPES 3
+#define MAX_COMMON_SKILLS 10
+#define MAX_CAPTAIN_SKILLS 8
+#define MAX_ADMIN_SKILLS 9
+#define COMMON_SKILLS_TYPE 0x0
+#define CAPTAIN_SKILLS_TYPE 0x10
+#define ADMIN_SKILLS_TYPE 0x20
+#define SKILLTYPE_MASK 0x30
+#define SKILLCODE_MASK 0x0f
+#define SKILLTYPE(id) (((id) & SKILLTYPE_MASK) >> 4)
 
 #define STARS_NAME_SIZE 15
 
@@ -201,6 +214,38 @@ enum ResearchArea {
 	Computers = 0x1c,
 	Power = 0x37,
 	Physics = 0x39
+};
+
+enum LeaderSkills {
+	SKILL_ASSASSIN = COMMON_SKILLS_TYPE,
+	SKILL_COMMANDO,
+	SKILL_DIPLOMAT,
+	SKILL_FAMOUS,
+	SKILL_MEGAWEALTH,
+	SKILL_OPERATIONS,
+	SKILL_RESEARCHER,
+	SKILL_SPYMASTER,
+	SKILL_TELEPATH,
+	SKILL_TRADER,
+
+	SKILL_ENGINEER = CAPTAIN_SKILLS_TYPE,
+	SKILL_FIGHTER_PILOT,
+	SKILL_GALACTIC_LORE,
+	SKILL_HELMSMAN,
+	SKILL_NAVIGATOR,
+	SKILL_ORDNANCE,
+	SKILL_SECURITY,
+	SKILL_WEAPONRY,
+
+	SKILL_ENVIRONMENTALIST = ADMIN_SKILLS_TYPE,
+	SKILL_FARMING_LEADER,
+	SKILL_FINANCIAL_LEADER,
+	SKILL_INSTRUCTOR,
+	SKILL_LABOR_LEADER,
+	SKILL_MEDICINE,
+	SKILL_SCIENCE_LEADER,
+	SKILL_SPIRITUAL_LEADER,
+	SKILL_TACTICS
 };
 
 enum ShipState {
@@ -507,6 +552,13 @@ struct Leader {
 
 	unsigned expLevel(void) const;
 	const char *rank(void) const;
+
+	// returns 1 if the leader has normal skill
+	// returns 2 if the leader has advanced skill (usually +50% value)
+	int hasSkill(unsigned id) const;
+
+	// 0 if the leader doesn't have it
+	int skillBonus(unsigned id) const;
 
 	void validate(void) const;
 };
