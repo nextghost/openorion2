@@ -468,7 +468,7 @@ Leader::Leader(void) {
 	eta = 0;
 	displayLevelUp = 0;
 	status = 0;
-	playerIndex = 0;
+	playerIndex = -1;
 }
 
 void Leader::load(ReadStream &stream) {
@@ -494,7 +494,7 @@ void Leader::load(ReadStream &stream) {
 	eta = stream.readUint8();
 	displayLevelUp = stream.readUint8();
 	status = stream.readUint8();
-	playerIndex = stream.readUint8();
+	playerIndex = stream.readSint8();
 }
 
 unsigned Leader::expLevel(void) const {
@@ -519,6 +519,12 @@ const char *Leader::rank(void) const {
 	}
 
 	return gameLang->estrings(base + expLevel());
+}
+
+void Leader::validate(void) const {
+	if (picture >= LEADER_COUNT) {
+		throw std::out_of_range("Invalid leader picture");
+	}
 }
 
 void ShipWeapon::load(ReadStream &stream) {
@@ -1430,6 +1436,14 @@ void GameState::validate(void) const {
 			if (planet->orbit != j) {
 				throw std::logic_error("Planet is on wrong orbit");
 			}
+		}
+	}
+
+	for (i = 0; i < LEADER_COUNT; i++) {
+		_leaders[i].validate();
+
+		if (_leaders[i].playerIndex >= _playerCount) {
+			throw std::out_of_range("Leader is at invalid player");
 		}
 	}
 

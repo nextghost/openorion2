@@ -499,7 +499,7 @@ struct Leader {
 	// if true show level up popup for the leader
 	uint8_t displayLevelUp;
 	uint8_t status;
-	uint8_t playerIndex;
+	int8_t playerIndex;
 
 	Leader(void);
 
@@ -507,6 +507,8 @@ struct Leader {
 
 	unsigned expLevel(void) const;
 	const char *rank(void) const;
+
+	void validate(void) const;
 };
 
 struct ShipWeapon {
