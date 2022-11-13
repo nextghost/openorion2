@@ -77,6 +77,26 @@ static const int baseSkillValues[MAX_SKILL_TYPES][MAX_COMMON_SKILLS] = {
 	{-10, 10, 10, 1, 10, 10, 10, 5, 2}
 };
 
+static const unsigned computerHPTable[MAX_COMBAT_SHIP_CLASSES] = {
+	1, 2, 5, 7, 10, 20
+};
+
+static const unsigned driveHPTable[MAX_COMBAT_SHIP_CLASSES] = {
+	2, 5, 10, 15, 20, 40
+};
+
+static const unsigned computerBonusTable[MAX_SHIP_COMPUTER_TYPES] = {
+	0, 25, 50, 75, 100, 125
+};
+
+static const int shipCrewOffenseBonuses[MAX_SHIP_CREW_LEVELS] = {
+	0, 15, 30, 50, 75
+};
+
+static const int shipCrewDefenseBonuses[MAX_SHIP_CREW_LEVELS] = {
+	0, 15, 30, 50, 75
+};
+
 GameConfig::GameConfig(void) {
 	version = 0;
 	memset(saveGameName, 0, SAVE_GAME_NAME_SIZE);
@@ -649,7 +669,7 @@ ShipDesign::ShipDesign(void) {
 	picture = 0;
 	builder = 0;
 	cost = 0;
-	combatSpeed = 0;
+	baseCombatSpeed = 0;
 	buildDate = 0;
 }
 
@@ -674,7 +694,7 @@ void ShipDesign::load(ReadStream &stream) {
 	picture = stream.readUint8();
 	builder = stream.readUint8();
 	cost = stream.readUint16LE();
-	combatSpeed = stream.readUint8();
+	baseCombatSpeed = stream.readUint8();
 	buildDate = stream.readUint16LE();
 }
 
@@ -690,6 +710,99 @@ int ShipDesign::hasWorkingSpecial(unsigned id,
 	const uint8_t *specDamage) const {
 
 	return hasSpecial(id) && !checkBitfield(specDamage, id);
+}
+
+unsigned ShipDesign::maxComputerHP(void) const {
+	return computerHPTable[size];
+}
+
+unsigned ShipDesign::computerHP(unsigned compDamage) const {
+	unsigned maxHP = maxComputerHP();
+
+	return compDamage < maxHP ? maxHP - compDamage : 0;
+}
+
+unsigned ShipDesign::maxDriveHP(const uint8_t *specDamage) const {
+	unsigned ret = driveHPTable[size];
+
+	if (hasWorkingSpecial(SPEC_REINFORCED_HULL, specDamage)) {
+		ret *= 3;
+	}
+
+	return ret;
+}
+
+unsigned ShipDesign::driveHP(unsigned driveDamage,
+	const uint8_t *specDamage) const {
+
+	if (driveDamage >= 100) {
+		return 0;
+	}
+
+	return (maxDriveHP(specDamage) * (100 - driveDamage)) / 100;
+}
+
+unsigned ShipDesign::combatSpeed(int transDimensional, unsigned driveDamage,
+	const uint8_t *specDamage) const {
+
+	unsigned hp, minHP, maxHP, ret = baseCombatSpeed;
+
+	if (hasWorkingSpecial(SPEC_AUGMENTED_ENGINES, specDamage)) {
+		ret += 5;
+	}
+
+	// drive damage higher than 33% will disable the ship in combat
+	// driveDamage value is percentage (0-100%) but damage penalty
+	// is recalculated from hitpoints, not the direct percentage value
+	maxHP = maxDriveHP(specDamage);
+	hp = driveHP(driveDamage, specDamage);
+	minHP = (2 * maxHP) / 3;
+
+	if (minHP < hp) {
+		hp -= minHP;
+		maxHP -= minHP;
+		ret = (ret * hp) / maxHP;
+	} else {
+		ret = 0;
+	}
+
+	// transdimensional bonus applies regardless of damage
+	if (transDimensional) {
+		ret += 4;
+	}
+
+	return ret;
+}
+
+int ShipDesign::beamOffense(unsigned compDamage,
+	const uint8_t *specDamage) const {
+	int ret = 0;
+
+	if (compDamage < maxComputerHP()) {
+		ret += computerBonusTable[computer];
+	}
+
+	if (hasWorkingSpecial(SPEC_BATTLE_SCANNER, specDamage)) {
+		ret += 50;
+	}
+
+	return ret;
+}
+
+int ShipDesign::beamDefense(int transDimensional, unsigned driveDamage,
+	const uint8_t *specDamage) const {
+
+	int ret = combatSpeed(transDimensional, driveDamage, specDamage) * 5;
+
+	if (hasWorkingSpecial(SPEC_INERTIAL_NULLIFIER, specDamage)) {
+		ret += 100;
+	}
+
+	if (hasWorkingSpecial(SPEC_INERTIAL_STABILIZER, specDamage)) {
+		ret += 50;
+	}
+
+	return ret;
 }
 
 void ShipDesign::validate(void) const {
@@ -922,6 +1035,44 @@ int Player::gravityPenalty(unsigned gravity) const {
 	}
 
 	return gravityPenalties[homegrav][gravity];
+}
+
+unsigned Player::blueprintCombatSpeed(unsigned id) const {
+	if (id >= MAX_PLAYER_BLUEPRINTS) {
+		throw std::out_of_range("Invalid ship ID");
+	}
+
+	return blueprintCombatSpeed(blueprints + id);
+}
+
+unsigned Player::blueprintCombatSpeed(const ShipDesign *design) const {
+	return design->combatSpeed(traits.transDimensional);
+}
+
+int Player::blueprintBeamOffense(unsigned id) const {
+	if (id >= MAX_PLAYER_BLUEPRINTS) {
+		throw std::out_of_range("Invalid ship ID");
+	}
+
+	return blueprintBeamOffense(blueprints + id);
+}
+
+int Player::blueprintBeamOffense(const ShipDesign *design) const {
+	return design->beamOffense() + traits.shipAttack;
+}
+
+int Player::blueprintBeamDefense(unsigned id) const {
+	if (id >= MAX_PLAYER_BLUEPRINTS) {
+		throw std::out_of_range("Invalid ship ID");
+	}
+
+	return blueprintBeamDefense(blueprints + id);
+}
+
+int Player::blueprintBeamDefense(const ShipDesign *design) const {
+	int ret = design->beamDefense(traits.transDimensional);
+
+	return ret + traits.shipDefense;
 }
 
 void Player::validate(void) const {
@@ -1254,6 +1405,56 @@ int Ship::isSpecialDamaged(unsigned id) const {
 	}
 
 	return checkBitfield(damagedSpecials, id);
+}
+
+unsigned Ship::maxComputerHP(void) const {
+	return design.maxComputerHP();
+}
+
+unsigned Ship::computerHP(void) const {
+	return design.computerHP(computerDamage);
+}
+
+unsigned Ship::maxDriveHP(void) const {
+	return design.maxDriveHP(damagedSpecials);
+}
+
+unsigned Ship::driveHP(void) const {
+	return design.driveHP(driveDamage, damagedSpecials);
+}
+
+int Ship::combatSpeed(int transDimensional, int ignoreDamage) const {
+	if (ignoreDamage) {
+		return design.combatSpeed(transDimensional);
+	} else {
+		return design.combatSpeed(transDimensional, driveDamage,
+			damagedSpecials);
+	}
+}
+
+int Ship::beamOffense(int ignoreDamage) const {
+	int ret;
+
+	if (ignoreDamage) {
+		ret = design.beamOffense();
+	} else {
+		ret = design.beamOffense(computerDamage, damagedSpecials);
+	}
+
+	return ret + shipCrewOffenseBonuses[crewLevel];
+}
+
+int Ship::beamDefense(int transDimensional, int ignoreDamage) const {
+	int ret;
+
+	if (ignoreDamage) {
+		ret = design.beamDefense(transDimensional);
+	} else {
+		ret = design.beamDefense(transDimensional, driveDamage,
+			damagedSpecials);
+	}
+
+	return ret + shipCrewDefenseBonuses[crewLevel];
 }
 
 void Ship::validate(void) const {
@@ -1733,6 +1934,73 @@ unsigned GameState::planetMaxPop(unsigned planet_id, unsigned player_id) const {
 	}
 
 	// FIXME: add +5 for Advanced City Planning tech
+	return ret;
+}
+
+unsigned GameState::shipCombatSpeed(unsigned ship_id, int ignoreDamage) const {
+	if (ship_id >= _shipCount) {
+		throw std::out_of_range("Invalid ship ID");
+	}
+
+	return shipCombatSpeed(_ships + ship_id, ignoreDamage);
+}
+unsigned GameState::shipCombatSpeed(const Ship *sptr, int ignoreDamage) const {
+	int td = 0;
+
+	if (sptr->owner < _playerCount) {
+		td = _players[sptr->owner].traits.transDimensional;
+	}
+
+	return sptr->combatSpeed(td, ignoreDamage);
+}
+
+int GameState::shipBeamOffense(unsigned ship_id, int ignoreDamage) const {
+	if (ship_id >= _shipCount) {
+		throw std::out_of_range("Invalid ship ID");
+	}
+
+	return shipBeamOffense(_ships + ship_id, ignoreDamage);
+}
+
+int GameState::shipBeamOffense(const Ship *sptr, int ignoreDamage) const {
+	int ret = sptr->beamOffense(ignoreDamage);
+
+	if (sptr->owner < _playerCount) {
+		ret += _players[sptr->owner].traits.shipAttack;
+	}
+
+	if (sptr->officer >= 0) {
+		ret += _leaders[sptr->officer].skillBonus(SKILL_WEAPONRY);
+	}
+
+	return ret;
+}
+
+int GameState::shipBeamDefense(unsigned ship_id, int ignoreDamage) const {
+	if (ship_id >= _shipCount) {
+		throw std::out_of_range("Invalid ship ID");
+	}
+
+	return shipBeamDefense(_ships + ship_id, ignoreDamage);
+}
+
+int GameState::shipBeamDefense(const Ship *sptr, int ignoreDamage) const {
+	int ret;
+
+	if (sptr->owner < _playerCount) {
+		const Player *owner = _players + sptr->owner;
+
+		ret = sptr->beamDefense(owner->traits.transDimensional,
+			ignoreDamage);
+		ret += owner->traits.shipDefense;
+	} else {
+		ret = sptr->beamDefense(0, ignoreDamage);
+	}
+
+	if (sptr->officer >= 0) {
+		ret += _leaders[sptr->officer].skillBonus(SKILL_HELMSMAN);
+	}
+
 	return ret;
 }
 

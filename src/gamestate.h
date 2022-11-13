@@ -587,7 +587,7 @@ struct ShipDesign {
 	ShipWeapon weapons[MAX_SHIP_WEAPONS];
 	uint8_t picture, builder;
 	uint16_t cost;
-	uint8_t combatSpeed;
+	uint8_t baseCombatSpeed;
 	uint16_t buildDate;
 
 	ShipDesign(void);
@@ -596,6 +596,20 @@ struct ShipDesign {
 
 	int hasSpecial(unsigned id) const;
 	int hasWorkingSpecial(unsigned id, const uint8_t* specDamage) const;
+
+	unsigned maxComputerHP(void) const;
+	unsigned computerHP(unsigned compDamage) const;
+	unsigned maxDriveHP(const uint8_t *specDamage = NULL) const;
+	unsigned driveHP(unsigned driveDamage,
+		const uint8_t *specDamage = NULL) const;
+
+	unsigned combatSpeed(int transDimensional, unsigned driveDamage = 0,
+		const uint8_t *specDamage = NULL) const;
+	int beamOffense(unsigned compDamage = 0,
+		const uint8_t *specDamage = NULL) const;
+	// Cloaking device not included
+	int beamDefense(int transDimensional, unsigned driveDamage = 0,
+		const uint8_t *specDamage = NULL) const;
 
 	void validate(void) const;
 };
@@ -691,6 +705,13 @@ struct Player {
 	void load(SeekableReadStream &stream);
 
 	int gravityPenalty(unsigned gravity) const;
+
+	unsigned blueprintCombatSpeed(unsigned id) const;
+	unsigned blueprintCombatSpeed(const ShipDesign *design) const;
+	int blueprintBeamOffense(unsigned id) const;
+	int blueprintBeamOffense(const ShipDesign *design) const;
+	int blueprintBeamDefense(unsigned id) const;
+	int blueprintBeamDefense(const ShipDesign *design) const;
 
 	void validate(void) const;
 };
@@ -822,6 +843,16 @@ struct Ship {
 	int hasWorkingSpecial(unsigned id) const;
 	int isSpecialDamaged(unsigned id) const;
 
+	unsigned maxComputerHP(void) const;
+	unsigned computerHP(void) const;
+	unsigned maxDriveHP(void) const;
+	unsigned driveHP(void) const;
+
+	int combatSpeed(int transDimensional, int ignoreDamage) const;
+	int beamOffense(int ignoreDamage) const;
+	// Cloaking Device not included
+	int beamDefense(int transDimensional, int ignoreDamage) const;
+
 	void validate(void) const;
 };
 
@@ -870,6 +901,13 @@ public:
 
 	unsigned planetClimate(unsigned planet_id) const;
 	unsigned planetMaxPop(unsigned planet_id, unsigned player_id) const;
+
+	unsigned shipCombatSpeed(unsigned ship_id, int ignoreDamage) const;
+	unsigned shipCombatSpeed(const Ship *sptr, int ignoreDamage) const;
+	int shipBeamOffense(unsigned ship_id, int ignoreDamage) const;
+	int shipBeamOffense(const Ship *sptr, int ignoreDamage) const;
+	int shipBeamDefense(unsigned ship_id, int ignoreDamage) const;
+	int shipBeamDefense(const Ship *sptr, int ignoreDamage) const;
 
 	void sort_ids(unsigned *id_list, unsigned length, int player,
 		gamestate_cmp_func cmp);
