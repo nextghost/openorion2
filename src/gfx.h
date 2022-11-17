@@ -242,17 +242,18 @@ public:
 
 	unsigned height(void) const;
 	unsigned charWidth(char ch) const;
-	unsigned textWidth(const char *str) const;
+	unsigned textWidth(const char *str, unsigned charSpacing = 1) const;
 
 	// Draw single character or entire string. X,Y are coordinates of
 	// upper left corner of the text. Color is predefined font palette ID.
-	// Both functions return X coordinate for drawing more text.
+	// All font drawing methods return X coordinate for drawing more text
+	// but renderChar() does not add any character spacing.
 	int renderChar(int x, int y, unsigned color, char ch,
 		unsigned outline = OUTLINE_NONE);
 	int renderText(int x, int y, unsigned color, const char *str,
-		unsigned outline = OUTLINE_NONE);
+		unsigned outline = OUTLINE_NONE, unsigned charSpacing = 1);
 	int centerText(int x, int y, unsigned color, const char *str,
-		unsigned outline = OUTLINE_NONE);
+		unsigned outline = OUTLINE_NONE, unsigned charSpacing = 1);
 
 	friend class FontManager;
 };

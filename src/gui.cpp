@@ -1603,7 +1603,7 @@ GuiView *ViewStack::top(void) {
 TextLayout::TextLayout(void) : _blocks(NULL), _sprites(NULL), _height(0),
 	_blockCount(0), _blockSize(0), _spriteCount(0), _spriteSize(0),
 	_fontSize(FONTSIZE_MEDIUM), _fontColor(FONT_COLOR_DEFAULT),
-	_fontOutline(OUTLINE_NONE), _lineSpacing(1) {
+	_fontOutline(OUTLINE_NONE), _lineSpacing(1), _charSpacing(1) {
 
 }
 
@@ -1699,12 +1699,13 @@ void TextLayout::adjustLine(unsigned lineStart, unsigned align,
 }
 
 void TextLayout::setFont(unsigned font, unsigned color, unsigned lineSpacing,
-	unsigned outline) {
+	unsigned outline, unsigned charSpacing) {
 
 	_fontSize = font;
 	_fontColor = color;
 	_fontOutline = outline;
 	_lineSpacing = lineSpacing;
+	_charSpacing = charSpacing;
 }
 
 void TextLayout::appendText(const char *text, unsigned x, unsigned y,
@@ -1745,7 +1746,7 @@ void TextLayout::appendText(const char *text, unsigned x, unsigned y,
 				break;
 
 			default:
-				curx += fnt->charWidth(text[i]) + 1;
+				curx += fnt->charWidth(text[i]) + _charSpacing;
 				break;
 			}
 		}
@@ -1755,10 +1756,12 @@ void TextLayout::appendText(const char *text, unsigned x, unsigned y,
 		}
 
 		for (width = 0, wordStart = i; text[i] > ' '; i++) {
-			width += fnt->charWidth(text[i]) + 1;
+			width += fnt->charWidth(text[i]) + _charSpacing;
 		}
 
-		if (curx + width > maxwidth + 1 && lineStart < _blockCount) {
+		if (curx + width > maxwidth + _charSpacing &&
+			lineStart < _blockCount) {
+
 			adjustLine(lineStart, align, maxwidth);
 			lineStart = _blockCount;
 			curx = 0;
@@ -1768,10 +1771,11 @@ void TextLayout::appendText(const char *text, unsigned x, unsigned y,
 		blk = addBlock(text + wordStart, i - wordStart);
 		blk->x = curx;
 		blk->y = y;
-		blk->width = width - 1;
+		blk->width = width - _charSpacing;
 		blk->font = _fontSize;
 		blk->color = _fontColor;
 		blk->outline = _fontOutline;
+		blk->spacing = _charSpacing;
 		curx += width;
 	}
 
@@ -1852,7 +1856,7 @@ void TextLayout::redraw(unsigned x, unsigned y, unsigned curtick) {
 		}
 
 		fnt->renderText(x + block->x, y + block->y, block->color,
-			block->text, block->outline);
+			block->text, block->outline, block->spacing);
 	}
 }
 

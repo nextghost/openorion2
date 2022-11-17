@@ -608,7 +608,7 @@ unsigned Font::charWidth(char ch) const {
 	return _glyphs[idx].width;
 }
 
-unsigned Font::textWidth(const char *str) const {
+unsigned Font::textWidth(const char *str, unsigned charSpacing) const {
 	unsigned idx, ret = 0;
 
 	while ((idx = (unsigned char)*str++)) {
@@ -616,10 +616,10 @@ unsigned Font::textWidth(const char *str) const {
 			continue;
 		}
 
-		ret += _glyphs[idx].width + 1;
+		ret += _glyphs[idx].width + charSpacing;
 	}
 
-	return ret ? ret - 1 : 0;
+	return ret ? ret - charSpacing : 0;
 }
 
 int Font::renderChar(int x, int y, unsigned color, char ch, unsigned outline) {
@@ -656,21 +656,22 @@ int Font::renderChar(int x, int y, unsigned color, char ch, unsigned outline) {
 
 	drawTextureTile(_textureIDs[color], x, y, _glyphs[idx].offset, 0,
 		_glyphs[idx].width, _height);
-	return x + _glyphs[idx].width + 1;
+	return x + _glyphs[idx].width;
 }
 
 int Font::renderText(int x, int y, unsigned color, const char *str,
-	unsigned outline) {
+	unsigned outline, unsigned charSpacing) {
 	for (; *str; str++) {
-		x = renderChar(x, y, color, *str, outline);
+		x = renderChar(x, y, color, *str, outline) + charSpacing;
 	}
 
 	return x;
 }
 
 int Font::centerText(int x, int y, unsigned color, const char *str,
-	unsigned outline) {
-	return renderText(x - textWidth(str) / 2, y, color, str, outline);
+	unsigned outline, unsigned charSpacing) {
+	return renderText(x - textWidth(str) / 2, y, color, str, outline,
+		charSpacing);
 }
 
 FontManager::FontManager(unsigned lang_id) : _fontCount(0) {

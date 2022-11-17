@@ -112,7 +112,7 @@ public:
 class TextLayout : public Recyclable {
 private:
 	struct TextBlock {
-		unsigned x, y, width, font, color, outline;
+		unsigned x, y, width, font, color, outline, spacing;
 		char *text;
 	};
 
@@ -120,6 +120,7 @@ private:
 	GuiSprite **_sprites;
 	unsigned _height, _blockCount, _blockSize, _spriteCount, _spriteSize;
 	unsigned _fontSize, _fontColor, _fontOutline, _lineSpacing;
+	unsigned _charSpacing;
 
 	// Do NOT implement
 	TextLayout(const TextLayout &other);
@@ -134,7 +135,7 @@ public:
 	~TextLayout(void);
 
 	void setFont(unsigned font, unsigned color, unsigned lineSpacing = 1,
-		unsigned outline = OUTLINE_NONE);
+		unsigned outline = OUTLINE_NONE, unsigned charSpacing = 1);
 
 	void appendText(const char *text, unsigned x, unsigned y,
 		unsigned maxwidth, unsigned align = ALIGN_LEFT);
