@@ -59,6 +59,9 @@
 #define PALSPRITE_GUARDIAN 419
 
 #define FLEETLIST_SCROLL_WIDTH 10
+#define FLEETLIST_SHIPINFO_WIDTH 299
+#define FLEETLIST_SHIPINFO_HEIGHT 175
+#define FLEETLIST_SHIPINFO_COL2 155
 
 static const unsigned monster_palettes[MAX_SHIPTYPES_MONSTER] = {
 	PALSPRITE_AMOEBA, PALSPRITE_CRYSTAL, PALSPRITE_DRAGON, PALSPRITE_EEL,
@@ -69,6 +72,19 @@ static const uint8_t fleetlistScrollTexture[FLEETLIST_SCROLL_WIDTH * 3] = {
 	RGB(0x0000dc), RGB(0x0000dc), RGB(0x0000b4), RGB(0x0000b4),
 	RGB(0x0c0888), RGB(0x0c0888), RGB(0x00006c), RGB(0x00006c),
 	RGB(0x080850), RGB(0x080850)
+};
+
+static const uint8_t fleetlistOfficerBlueFrame[] = {
+	RGB(0x5c7ca0), RGB(0x506c90), RGB(0x384c6c), RGB(0x445c80)
+};
+
+static const uint8_t fleetlistOfficerRedFrame[] = {
+	RGB(0x9c302c), RGB(0x882020), RGB(0x641010), RGB(0x741818)
+};
+
+static const unsigned shipTypeHelpEntry[MAX_SHIP_TYPES] = {
+	0, HELP_TECH_COLONY_SHIP, HELP_TECH_TRANSPORT, 0,
+	HELP_TECH_OUTPOST_SHIP
 };
 
 const unsigned npcFleetOwnerNames[NPC_FLEET_OWNERS] = {
@@ -262,6 +278,16 @@ void ShipGridWidget::selectNone(void) {
 	_supportSelCount = 0;
 }
 
+void ShipGridWidget::highlight(int slot) {
+	int count;
+
+	count = visibleShipCount();
+
+	if (slot < 0 || (slot < count && _fleet->getOwner() == _activePlayer)) {
+		_curSlot = slot;
+	}
+}
+
 unsigned ShipGridWidget::rows(void) const {
 	return _rows;
 }
@@ -423,8 +449,9 @@ void ShipGridWidget::redraw(int x, int y, unsigned curtick) {
 FleetListView::FleetListView(GameState *game, int activePlayer) :
 	_game(game), _minimap(NULL), _grid(NULL), _scroll(NULL),
 	_allButton(NULL), _scrapButton(NULL), _supportToggle(NULL),
-	_combatToggle(NULL), _minimapLabel(NULL), _scrollgrab(0),
-	_activePlayer(activePlayer) {
+	_combatToggle(NULL), _minimapLabel(NULL), _shipInfo(NULL),
+	_shipOfficer(NULL), _scrollgrab(0), _activePlayer(activePlayer),
+	_infoOffset(0), _officerETA(0) {
 
 	ImageAsset palimg;
 	const uint8_t *pal;
@@ -440,7 +467,7 @@ FleetListView::FleetListView(GameState *game, int activePlayer) :
 }
 
 FleetListView::~FleetListView(void) {
-
+	delete _shipInfo;
 }
 
 void FleetListView::initWidgets(void) {
@@ -756,7 +783,7 @@ void FleetListView::fleetSelectionChanged(int x, int y, int arg) {
 
 void FleetListView::shipHighlightChanged(int x, int y, int arg) {
 	_minimapLabel->clear();
-	// TODO: show ship info
+	generateShipInfo(_grid->currentShip());
 }
 
 void FleetListView::shipSelectionChanged(int x, int y, int arg) {
@@ -826,12 +853,268 @@ void FleetListView::updateScrollbar(void) {
 	_scroll->setRange((_grid->visibleShipCount() + cols - 1) / cols);
 }
 
+void FleetListView::clearShipInfo(void) {
+	TextLayout *info = _shipInfo;
+	GuiSprite *sprite = _shipOfficer;
+
+	_shipInfo = NULL;
+	_shipOfficer = NULL;
+	_officerETA = 0;
+
+	if (info) {
+		info->discard();
+	}
+
+	if (sprite) {
+		sprite->discard();
+	}
+}
+
+void FleetListView::generateShipInfo(const Ship *sptr) {
+	unsigned i, x1, x2, y, idx, count, lineheight, eta = 0;
+	TextLayout *newInfo;
+	GuiSprite *sprite = NULL;
+	Font *fnt;
+	const ShipWeapon *wpn;
+	const char *str;
+
+	if (!sptr) {
+		clearShipInfo();
+		return;
+	}
+
+	newInfo = new TextLayout;
+
+	if (sptr->design.type != ShipType::COMBAT_SHIP) {
+		const struct HelpText *help;
+
+		help = gameLang->help(shipTypeHelpEntry[sptr->design.type]);
+		newInfo->setFont(FONTSIZE_MEDIUM, FONT_COLOR_HELP, 2,
+			OUTLINE_NONE, 2);
+		newInfo->appendText(help->text, 0, 0, FLEETLIST_SHIPINFO_WIDTH);
+
+		clearShipInfo();
+		_infoOffset = (FLEETLIST_SHIPINFO_HEIGHT-newInfo->height())/2;
+		_shipInfo = newInfo;
+		return;
+	}
+
+	StringBuffer buf;
+
+	fnt = gameFonts->getFont(FONTSIZE_SMALLER);
+	lineheight = fnt->height() + 1;
+
+	newInfo->setFont(FONTSIZE_MEDIUM, FONT_COLOR_HELP, 1, OUTLINE_NONE, 2);
+	newInfo->appendText(sptr->design.name, 0, 0, FLEETLIST_SHIPINFO_WIDTH);
+	str = gameLang->misctext(TXT_MISC_KENTEXT,
+		KEN_SHIPCREW_GREEN + sptr->crewLevel);
+	buf.printf(str, (int)sptr->crewExp);
+	newInfo->setFont(FONTSIZE_SMALL, FONT_COLOR_HELP, 2);
+	newInfo->appendText(buf.c_str(), 0, newInfo->height(),
+		FLEETLIST_SHIPINFO_WIDTH);
+	str = gameLang->techname(TNAME_SHIELDTYPE_NONE + sptr->design.shield);
+	newInfo->appendText(str, 0, newInfo->height(),
+		FLEETLIST_SHIPINFO_WIDTH);
+	x1 = 0;
+	x2 = 115;
+	y = newInfo->height();
+	newInfo->appendText(gameLang->hstrings(HSTR_SHIPINFO_BEAM_OCV), 0, y,
+		FLEETLIST_SHIPINFO_WIDTH);
+	buf.printf("%+d", _game->shipBeamOffense(sptr, 1));
+	newInfo->appendText(buf.c_str(), 0, y, x2, ALIGN_RIGHT);
+
+	if (sptr->officer >= 0) {
+		y = newInfo->height();
+	} else {
+		x1 = FLEETLIST_SHIPINFO_COL2;
+		x2 = FLEETLIST_SHIPINFO_WIDTH - 10;
+	}
+
+	newInfo->appendText(gameLang->hstrings(HSTR_SHIPINFO_BEAM_DCV), x1, y,
+		FLEETLIST_SHIPINFO_WIDTH);
+	buf.printf("%+d", _game->shipBeamDefense(sptr, 1));
+	newInfo->appendText(buf.c_str(), x1, y, x2, ALIGN_RIGHT);
+
+	if (sptr->status == InTransit || sptr->status == LeavingOrbit) {
+		// FIXME: handle unexplored stars
+		str = gameLang->hstrings(HSTR_SHIPINFO_DESTINATION_KNOWN);
+		buf.printf(str, _game->_starSystems[sptr->getStarID()].name);
+		newInfo->setFont(FONTSIZE_SMALL,
+			FONT_COLOR_FLEETLIST_SHIPINFO_DESTINATION, 2);
+		newInfo->appendText(buf.c_str(), 0, newInfo->height(),
+			FLEETLIST_SHIPINFO_WIDTH);
+	} else {
+		newInfo->appendText("\n", 0, newInfo->height(),
+			FLEETLIST_SHIPINFO_WIDTH);
+	}
+
+	y = newInfo->height();
+	newInfo->setFont(FONTSIZE_SMALL, FONT_COLOR_HELP);
+	newInfo->appendText(gameLang->hstrings(HSTR_SHIPINFO_WEAPONS), 0, y,
+		FLEETLIST_SHIPINFO_WIDTH);
+	newInfo->appendText(gameLang->hstrings(HSTR_SHIPINFO_SPECIALS),
+		FLEETLIST_SHIPINFO_COL2, y, FLEETLIST_SHIPINFO_WIDTH);
+
+	y = newInfo->height();
+	newInfo->setFont(FONTSIZE_SMALLER, FONT_COLOR_HELP);
+
+	for (i = 0, count = 0; i < MAX_SHIP_WEAPONS; i++) {
+		wpn = sptr->design.weapons + i;
+
+		if (wpn->type <= 0 || wpn->maxCount <= 0) {
+			continue;
+		}
+
+		if (wpn->maxCount == 1) {
+			idx = TNAME_WEAPONTYPE_NONE;
+		} else {
+			idx = TNAME_WEAPONTYPE_NONE_PLURAL;
+		}
+
+		str = gameLang->techname(idx + wpn->type);
+		buf.printf("%d %s (%s)", wpn->maxCount, str, wpn->arcAbbr());
+		newInfo->appendText(buf.c_str(), 5, y + count * lineheight,
+			FLEETLIST_SHIPINFO_WIDTH);
+		count++;
+	}
+
+	if (!count) {
+		str = gameLang->techname(HSTR_SHIPINFO_NONE);
+		newInfo->appendText(str, 5, y, FLEETLIST_SHIPINFO_WIDTH);
+	}
+
+	for (i = 1, count = 0; i < MAX_SHIP_SPECIALS; i++) {
+		if (!sptr->hasSpecial(i)) {
+			continue;
+		}
+
+		if (sptr->isSpecialDamaged(i)) {
+			newInfo->setFont(FONTSIZE_SMALLER,
+				FONT_COLOR_FLEETLIST_SPECDAMAGE);
+		} else {
+			newInfo->setFont(FONTSIZE_SMALLER, FONT_COLOR_HELP);
+		}
+
+		str = gameLang->techname(TNAME_SPECIALTYPE_NONE + i);
+		newInfo->appendText(str, FLEETLIST_SHIPINFO_COL2 + 15,
+			y + count * lineheight, FLEETLIST_SHIPINFO_WIDTH);
+		count++;
+	}
+
+	if (!count) {
+		str = gameLang->techname(HSTR_SHIPINFO_NONE);
+		newInfo->setFont(FONTSIZE_SMALLER, FONT_COLOR_HELP);
+		newInfo->appendText(str, FLEETLIST_SHIPINFO_COL2 + 15,
+			y, FLEETLIST_SHIPINFO_WIDTH);
+	}
+
+	if (sptr->officer >= 0) {
+		idx = sptr->officer;
+		x2 = FLEETLIST_SHIPINFO_WIDTH - 84;
+		y = 38;
+		eta = _game->_leaders[idx].eta;
+		fnt = gameFonts->getFont(FONTSIZE_TINY);
+		newInfo->setFont(FONTSIZE_TINY, FONT_COLOR_HELP);
+		buf.printf("%s %s,", _game->_leaders[idx].rank(),
+			_game->_leaders[idx].name);
+		newInfo->appendText(buf.c_str(), 0, y, x2, ALIGN_RIGHT);
+		y += fnt->height() + 1;
+		str = gameLang->misctext(TXT_MISC_JIMTEXT2,
+			JIM2_DEFINITE_ARTICLE);
+		buf.printf("%s%s", str, _game->_leaders[idx].title);
+		newInfo->appendText(buf.c_str(), 0, y, x2, ALIGN_RIGHT);
+		sprite = new GuiSprite(FLEETLIST_ARCHIVE,
+			ASSET_FLEET_LEADER_IMAGES+_game->_leaders[idx].picture,
+			_bg->palette(), 0, 0, 0);
+	}
+
+	clearShipInfo();
+	_infoOffset = 0;
+	_shipInfo = newInfo;
+	_shipOfficer = sprite;
+	_officerETA = eta;
+}
+
+void FleetListView::redrawShipInfo(unsigned curtick) {
+	unsigned eta, x, y, w, h, offset = _infoOffset;
+	const char *str;
+	TextLayout *info = _shipInfo;
+	GuiSprite *img = _shipOfficer;
+
+	eta = _officerETA;
+
+	if (!info) {
+		return;
+	}
+
+	if (img) {
+		const uint8_t *frm;
+
+		x = 16 + FLEETLIST_SHIPINFO_WIDTH - img->width();
+		y = 284;
+		w = img->width();
+		h = img->height();
+		img->redraw(x, y, curtick);
+
+		if (eta) {
+			frm = fleetlistOfficerRedFrame;
+		} else {
+			frm = fleetlistOfficerBlueFrame;
+		}
+
+		fillRect(x - 2, y - 2, w + 4, 1, frm[0], frm[1], frm[2]);
+		fillRect(x + w + 1, y - 1, 1, h + 2, frm[0], frm[1], frm[2]);
+		frm += 3;
+		fillRect(x, y - 1, w + 1, 1, frm[0], frm[1], frm[2]);
+		fillRect(x + w, y, 1, h, frm[0], frm[1], frm[2]);
+		frm += 3;
+		fillRect(x - 2, y - 1, 1, h + 3, frm[0], frm[1], frm[2]);
+		fillRect(x - 1, y + h + 1, w + 3, 1, frm[0], frm[1], frm[2]);
+		frm += 3;
+		fillRect(x - 1, y - 1, 1, h + 2, frm[0], frm[1], frm[2]);
+		fillRect(x, y + h, w + 1, 1, frm[0], frm[1], frm[2]);
+
+		if (eta) {
+			StringBuffer buf;
+			Font *fnt;
+
+			fnt = gameFonts->getFont(FONTSIZE_SMALL);
+			x += w / 2;
+			y += 1 + (h - fnt->height()) / 2;
+			str = gameLang->hstrings(HSTR_FLEET_OFFICER_ETA);
+			buf.printf(str, eta);
+			w = fnt->textWidth(buf.c_str(), 2);
+			x -= w / 2;
+
+			// double outline
+			fnt->renderText(x + 1, y + 1,
+				FONT_COLOR_FLEETLIST_SPECDAMAGE, buf.c_str(),
+				OUTLINE_FULL, 2);
+			fnt->renderText(x, y, FONT_COLOR_FLEETLIST_SPECDAMAGE,
+				buf.c_str(), OUTLINE_FULL, 2);
+			fillRect(x - 1, y - 4, w + 3, 1, 0xc4, 0, 0);
+			fillRect(x - 1, y - 3, w + 3, 1, 0x50, 0x0c, 0x0c);
+			y += fnt->height();
+			fillRect(x - 1, y, w + 3, 1, 0x50, 0x0c, 0x0c);
+			fillRect(x - 1, y + 1, w + 3, 1, 0xc4, 0, 0);
+		}
+	}
+
+	info->redraw(18, 287 + offset, curtick);
+}
+
 void FleetListView::redraw(unsigned curtick) {
 	clearScreen();
 	_bg->draw(0, 0);
 
 	redrawWidgets(0, 0, curtick);
+	redrawShipInfo(curtick);
 	redrawWindows(curtick);
+}
+
+void FleetListView::open(void) {
+	_grid->highlight(-1);
+	shipHighlightChanged(0, 0, 0);
 }
 
 void FleetListView::handleMouseMove(int x, int y, unsigned buttons) {

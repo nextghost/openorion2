@@ -67,6 +67,7 @@ public:
 	void setScroll(unsigned pos);
 	void selectAll(void);
 	void selectNone(void);
+	void highlight(int slot);
 
 	unsigned rows(void) const;
 	unsigned cols(void) const;
@@ -97,7 +98,10 @@ private:
 	Widget *_allButton, *_scrapButton;
 	ToggleWidget *_supportToggle, *_combatToggle;
 	LabelWidget *_minimapLabel;
+	TextLayout *_shipInfo;
+	GuiSprite *_shipOfficer;
 	int _scrollgrab, _activePlayer;
+	unsigned _infoOffset, _officerETA;
 
 	void initWidgets(void);
 
@@ -118,11 +122,17 @@ protected:
 	void handleEndScroll(int x, int y, int arg);
 	void updateScrollbar(void);
 
+	void clearShipInfo(void);
+	void generateShipInfo(const Ship *sptr);
+	void redrawShipInfo(unsigned curtick);
+
 public:
 	FleetListView(GameState *game, int activePlayer);
 	~FleetListView(void);
 
 	void redraw(unsigned curtick);
+
+	void open(void);
 
 	void handleMouseMove(int x, int y, unsigned buttons);
 	void handleMouseUp(int x, int y, unsigned buttons);
