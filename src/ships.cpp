@@ -468,6 +468,7 @@ FleetListView::FleetListView(GameState *game, int activePlayer) :
 
 FleetListView::~FleetListView(void) {
 	delete _shipInfo;
+	delete _shipOfficer;
 }
 
 void FleetListView::initWidgets(void) {
