@@ -946,6 +946,11 @@ Player::Player(void) {
 	researchArea = ResearchArea::None;
 	researchItem = 0;
 
+	memset(playerContacts, 0, MAX_PLAYERS * sizeof(uint8_t));
+	memset(playerRelations, 0, MAX_PLAYERS * sizeof(int8_t));
+	memset(foreignPolicies, 0, MAX_PLAYERS * sizeof(uint8_t));
+	memset(tradeTreaties, 0, MAX_PLAYERS * sizeof(uint8_t));
+	memset(researchTreaties, 0, MAX_PLAYERS * sizeof(uint8_t));
 	memset(spies, 0, MAX_PLAYERS * sizeof(uint8_t));
 }
 
@@ -1008,7 +1013,35 @@ void Player::load(SeekableReadStream &stream) {
 	}
 
 	selectedBlueprint.load(stream);
-	stream.seek(0x327, SEEK_CUR);
+
+	stream.seek(12, SEEK_CUR);
+
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		playerContacts[i] = stream.readUint8();
+	}
+
+	stream.seek(139, SEEK_CUR);
+
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		playerRelations[i] = stream.readSint8();
+	}
+
+	stream.seek(8, SEEK_CUR);
+
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		foreignPolicies[i] = stream.readUint8();
+	}
+
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		tradeTreaties[i] = stream.readUint8();
+	}
+
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		researchTreaties[i] = stream.readUint8();
+	}
+
+	stream.seek(608, SEEK_CUR);
+
 	traits.load(stream);
 	stream.seek(0x599, SEEK_CUR);
 
@@ -1740,6 +1773,37 @@ void GameState::validate(void) const {
 
 			fprintf(stderr, "%s spying on invalid player %d\n",
 				_players[i].name, j);
+		}
+
+		for (j = i + 1; j < _playerCount; j++) {
+			if (_players[i].playerContacts[j] !=
+				_players[j].playerContacts[i]) {
+				throw std::runtime_error("Player contact mismatch");
+			}
+
+			if (!_players[i].playerContacts[j]) {
+				break;
+			}
+
+			if (_players[i].playerRelations[j] !=
+				_players[j].playerRelations[i]) {
+				throw std::runtime_error("Player relations mismatch");
+			}
+
+			if (_players[i].foreignPolicies[j] !=
+				_players[j].foreignPolicies[i]) {
+				throw std::runtime_error("Player diplomatic state mismatch");
+			}
+
+			if (_players[i].tradeTreaties[j] !=
+				_players[j].tradeTreaties[i]) {
+				throw std::runtime_error("Player trade treaty mismatch");
+			}
+
+			if (_players[i].researchTreaties[j] !=
+				_players[j].researchTreaties[i]) {
+				throw std::runtime_error("Player research treaty mismatch");
+			}
 		}
 	}
 

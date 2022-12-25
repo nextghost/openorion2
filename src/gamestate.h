@@ -216,6 +216,15 @@ enum ResearchArea {
 	Physics = 0x39
 };
 
+enum ForeignPolicy {
+	DIPLO_NONE = 0,
+	DIPLO_NON_AGGRESSION = 1,
+	DIPLO_ALLIANCE = 2,
+	DIPLO_PEACE = 3,
+	DIPLO_LIMITED_WAR = 4,
+	DIPLO_WAR = 5	// also values >5 => war
+};
+
 enum LeaderSkills {
 	SKILL_ASSASSIN = COMMON_SKILLS_TYPE,
 	SKILL_COMMANDO,
@@ -697,6 +706,11 @@ struct Player {
 	ResearchArea researchArea;
 	uint16_t researchItem;
 	ShipDesign blueprints[MAX_PLAYER_BLUEPRINTS], selectedBlueprint;
+	uint8_t playerContacts[MAX_PLAYERS];
+	int8_t playerRelations[MAX_PLAYERS];
+	uint8_t foreignPolicies[MAX_PLAYERS];	// ForeignPolicy enum
+	uint8_t tradeTreaties[MAX_PLAYERS];
+	uint8_t researchTreaties[MAX_PLAYERS];
 	RaceTraits traits;
 	uint8_t spies[MAX_PLAYERS];
 
