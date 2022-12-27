@@ -952,6 +952,8 @@ Player::Player(void) {
 	memset(tradeTreaties, 0, MAX_PLAYERS * sizeof(uint8_t));
 	memset(researchTreaties, 0, MAX_PLAYERS * sizeof(uint8_t));
 	memset(spies, 0, MAX_PLAYERS * sizeof(uint8_t));
+
+	galaxyCharted = 0;
 }
 
 void Player::load(SeekableReadStream &stream) {
@@ -1049,7 +1051,11 @@ void Player::load(SeekableReadStream &stream) {
 		spies[i] = stream.readUint8();
 	}
 
-	stream.seek(74, SEEK_CUR);
+	stream.seek(22, SEEK_CUR);
+
+	galaxyCharted = stream.readUint8();
+
+	stream.seek(51, SEEK_CUR);
 }
 
 int Player::gravityPenalty(unsigned gravity) const {
@@ -1323,6 +1329,10 @@ void Star::validate(void) const {
 	if (special == BAD_SPECIAL1 || special == BAD_SPECIAL2 ||
 		special > ORION_SPECIAL) {
 		throw std::out_of_range("Star has invalid special treasure");
+	}
+
+	if ((visited & hasColony) != hasColony) {
+		throw std::runtime_error("Player who hasn't visited star has colony?!");
 	}
 }
 
@@ -1938,6 +1948,42 @@ BilistNode<Fleet> *GameState::getMovingFleets(void) {
 
 const BilistNode<Fleet> *GameState::getMovingFleets(void) const {
 	return _firstMovingFleet.next();
+}
+
+StarKnowledge GameState::isStarExplored(unsigned star_id,
+	unsigned player_id) const {
+
+	if (star_id >= _starSystemCount) {
+		throw std::out_of_range("Invalid star ID");
+	}
+
+	return isStarExplored(_starSystems + star_id, player_id);
+}
+
+StarKnowledge GameState::isStarExplored(const Star *s,
+	unsigned player_id) const {
+
+	const Player *p;
+
+	if (s->visited & (1 << player_id)) {
+		return STAR_VISITED;
+	}
+
+	if (player_id >= _playerCount) {
+		throw std::out_of_range("Invalid player ID");
+	}
+
+	p = _players + player_id;
+
+	if (p->galaxyCharted || p->traits.omniscience) {
+		return STAR_CHARTED;
+	}
+
+	if (s->owner >= 0 && p->playerContacts[s->owner]) {
+		return STAR_VISITED;
+	}
+
+	return STAR_UNEXPLORED;
 }
 
 unsigned GameState::planetClimate(unsigned planet_id) const {

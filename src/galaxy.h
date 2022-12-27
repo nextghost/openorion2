@@ -38,6 +38,7 @@ private:
 
 protected:
 	GameState *_game;
+	unsigned _activePlayer;
 
 	unsigned starX(unsigned x) const;
 	unsigned starY(unsigned y) const;
@@ -51,8 +52,8 @@ protected:
 
 public:
 	StarmapWidget(unsigned x, unsigned y, unsigned width, unsigned height,
-		GameState *game, const char *archive, unsigned starAssets,
-		const uint8_t *palette = NULL);
+		GameState *game, unsigned activePlayer, const char *archive,
+		unsigned starAssets, const uint8_t *palette = NULL);
 	~StarmapWidget(void);
 
 	int highlightedStar(void);
@@ -91,8 +92,8 @@ protected:
 
 public:
 	GalaxyMinimapWidget(unsigned x, unsigned y, unsigned width,
-		unsigned height, GameState *game, const char *archive,
-		unsigned starAssets, unsigned fleetAssets,
+		unsigned height, GameState *game, unsigned activePlayer,
+		const char *archive, unsigned starAssets, unsigned fleetAssets,
 		const uint8_t *palette = NULL);
 	~GalaxyMinimapWidget(void);
 

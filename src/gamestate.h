@@ -189,6 +189,12 @@ enum SpectralClass {
 	BlackHole = 6
 };
 
+enum StarKnowledge {
+	STAR_UNEXPLORED = 0,
+	STAR_CHARTED,	// partial knowledge from galactic lore skill, etc.
+	STAR_VISITED	// full star system knowledge
+};
+
 enum SpecialType {
 	NO_SPECIAL = 0,
 	BAD_SPECIAL1 = 1,
@@ -713,6 +719,7 @@ struct Player {
 	uint8_t researchTreaties[MAX_PLAYERS];
 	RaceTraits traits;
 	uint8_t spies[MAX_PLAYERS];
+	uint8_t galaxyCharted;
 
 	Player(void);
 
@@ -912,6 +919,10 @@ public:
 	unsigned findStar(int x, int y) const;
 	BilistNode<Fleet> *getMovingFleets(void);
 	const BilistNode<Fleet> *getMovingFleets(void) const;
+
+	StarKnowledge isStarExplored(unsigned star_id,
+		unsigned player_id) const;
+	StarKnowledge isStarExplored(const Star *s, unsigned player_id) const;
 
 	unsigned planetClimate(unsigned planet_id) const;
 	unsigned planetMaxPop(unsigned planet_id, unsigned player_id) const;

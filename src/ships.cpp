@@ -477,7 +477,7 @@ void FleetListView::initWidgets(void) {
 	Widget *w;
 
 	_minimap = new GalaxyMinimapWidget(15, 52, 305, 182, _game,
-		FLEETLIST_ARCHIVE, ASSET_FLEET_STAR_IMAGES,
+		_activePlayer, FLEETLIST_ARCHIVE, ASSET_FLEET_STAR_IMAGES,
 		ASSET_FLEET_SHIP_IMAGES, pal);
 	addWidget(_minimap);
 	_minimap->setStarHighlightCallback(GuiMethod(*this,
@@ -656,7 +656,14 @@ void FleetListView::starHighlightChanged(int x, int y, int arg) {
 		return;
 	}
 
-	// FIXME: handle unexplored stars
+	if (!_game->isStarExplored(sptr, _activePlayer)) {
+		const char *str = gameLang->hstrings(HSTR_STAR_UNEXPLORED);
+
+		_minimapLabel->setText(str, FONTSIZE_MEDIUM, color,
+			OUTLINE_FULL, ALIGN_CENTER);
+		return;
+	}
+
 	if (sptr->owner >= 0) {
 		color = FONT_COLOR_FLEETLIST_STAR_RED;
 		color += _game->_players[sptr->owner].color;
@@ -937,12 +944,21 @@ void FleetListView::generateShipInfo(const Ship *sptr) {
 	newInfo->appendText(buf.c_str(), x1, y, x2, ALIGN_RIGHT);
 
 	if (sptr->status == InTransit || sptr->status == LeavingOrbit) {
-		// FIXME: handle unexplored stars
-		str = gameLang->hstrings(HSTR_SHIPINFO_DESTINATION_KNOWN);
-		buf.printf(str, _game->_starSystems[sptr->getStarID()].name);
+		i = sptr->getStarID();
+
+		if (_game->isStarExplored(i, _activePlayer)) {
+			idx = HSTR_SHIPINFO_DESTINATION_KNOWN;
+			str = gameLang->hstrings(idx);
+			buf.printf(str, _game->_starSystems[i].name);
+			str = buf.c_str();
+		} else {
+			idx = HSTR_SHIPINFO_DESTINATION_UNKNOWN;
+			str = gameLang->hstrings(idx);
+		}
+
 		newInfo->setFont(FONTSIZE_SMALL,
 			FONT_COLOR_FLEETLIST_SHIPINFO_DESTINATION, 2);
-		newInfo->appendText(buf.c_str(), 0, newInfo->height(),
+		newInfo->appendText(str, 0, newInfo->height(),
 			FLEETLIST_SHIPINFO_WIDTH);
 	} else {
 		newInfo->appendText("\n", 0, newInfo->height(),

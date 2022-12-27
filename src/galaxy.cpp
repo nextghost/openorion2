@@ -180,10 +180,10 @@ static const unsigned galaxyStarColors[MAX_PLAYERS] = {
 };
 
 StarmapWidget::StarmapWidget(unsigned x, unsigned y, unsigned width,
-	unsigned height, GameState *game, const char *archive,
-	unsigned starAssets, const uint8_t *palette) :
+	unsigned height, GameState *game, unsigned activePlayer,
+	const char *archive, unsigned starAssets, const uint8_t *palette) :
 	Widget(x, y, width, height), _curStar(-1), _selStar(-1), _startTick(0),
-	_game(game) {
+	_game(game), _activePlayer(activePlayer) {
 
 	unsigned i;
 
@@ -215,11 +215,10 @@ const Image *StarmapWidget::getStarSprite(const Star *s) {
 
 	if (s->spectralClass == BlackHole) {
 		return (Image*)_bhole;
-	} else if (s->owner < 0) {
+	} else if (!_game->isStarExplored(s, _activePlayer) || s->owner < 0) {
 		return (Image*)_freestar;
 	}
 
-	// FIXME: handle unexplored stars
 	color = _game->_players[s->owner].color;
 	return (Image*)_starimg[color];
 }
@@ -346,8 +345,9 @@ void StarmapWidget::redraw(int x, int y, unsigned curtick) {
 			sx = starX(ptr->x);
 			sy = starY(ptr->y);
 
-			// FIXME: Handle unexplored stars
-			if (ptr->owner >= 0) {
+			if (_game->isStarExplored(ptr, _activePlayer) &&
+				ptr->owner >= 0) {
+
 				color = _game->_players[ptr->owner].color;
 			}
 
@@ -362,10 +362,11 @@ void StarmapWidget::redraw(int x, int y, unsigned curtick) {
 }
 
 GalaxyMinimapWidget::GalaxyMinimapWidget(unsigned x, unsigned y,
-	unsigned width, unsigned height, GameState *game, const char *archive,
-	unsigned starAssets, unsigned fleetAssets, const uint8_t *palette) :
-	StarmapWidget(x, y, width, height, game, archive, starAssets, palette),
-	_curFleet(NULL), _selFleet(NULL), _startTick(0) {
+	unsigned width, unsigned height, GameState *game,
+	unsigned activePlayer, const char *archive, unsigned starAssets,
+	unsigned fleetAssets, const uint8_t *palette) :
+	StarmapWidget(x, y, width, height, game, activePlayer, archive,
+	starAssets, palette), _curFleet(NULL), _selFleet(NULL), _startTick(0) {
 
 	unsigned i;
 
@@ -1095,9 +1096,12 @@ void GalaxyView::leaveGalaxyMap(int x, int y, int arg) {
 void GalaxyView::drawStar(const Star *s, Font *fnt, unsigned curtick) {
 	int x, y, xoff, idx;
 	unsigned i, color, width, tmp, step, total = 0, frame = 0;
+	StarKnowledge explored;
 	const Image *img;
 	const Planet *pptr;
+	const char *str;
 	unsigned colony_count[MAX_PLAYERS] = {0};
+	char buf[STARS_NAME_SIZE + 2];
 
 	x = transformX(s->x);
 	y = transformY(s->y);
@@ -1126,15 +1130,24 @@ void GalaxyView::drawStar(const Star *s, Font *fnt, unsigned curtick) {
 			GALAXY_ANIM_LENGTH);
 	}
 
-	// TODO: handle known but unvisited planets (name in parentheses)
+	explored = _game->isStarExplored(s, _activePlayer);
 
-	if (!total) {
-		color = FONT_COLOR_STAR_NEUTRAL1 + galaxy_fontanim[frame];
-		fnt->centerText(x, y, color, s->name, OUTLINE_FULL);
+	if (explored == STAR_VISITED) {
+		str = s->name;
+	} else if (explored == STAR_CHARTED) {
+		sprintf(buf, "(%s)", s->name);
+		str = buf;
+	} else {
 		return;
 	}
 
-	width = fnt->textWidth(s->name);
+	if (!total) {
+		color = FONT_COLOR_STAR_NEUTRAL1 + galaxy_fontanim[frame];
+		fnt->centerText(x, y, color, str, OUTLINE_FULL);
+		return;
+	}
+
+	width = fnt->textWidth(str);
 	x -= width / 2;
 	xoff = -1;
 
@@ -1151,7 +1164,7 @@ void GalaxyView::drawStar(const Star *s, Font *fnt, unsigned curtick) {
 
 			setClipRegion(x + xoff, y - 1, tmp + 1 - xoff,
 				fnt->height() + 2);
-			fnt->renderText(x, y, color, s->name, OUTLINE_FULL);
+			fnt->renderText(x, y, color, str, OUTLINE_FULL);
 			xoff = tmp;
 		}
 	} catch (...) {
@@ -1646,7 +1659,7 @@ void PlanetsListView::initWidgets(void) {
 			HELP_PLANETLIST_SLOT));
 	}
 
-	_minimap = new StarmapWidget(443, 17, 180, 116, _game,
+	_minimap = new StarmapWidget(443, 17, 180, 116, _game, _activePlayer,
 		PLANET_ARCHIVE, ASSET_PLANETLIST_STAR_IMAGES, pal);
 	addWidget(_minimap);
 	_minimap->setStarSelectCallback(GuiMethod(*this,
@@ -1809,6 +1822,7 @@ void PlanetsListView::handleSelectStar(int x, int y, int arg) {
 	int star;
 	const Planet *ptr;
 	const Star *sptr;
+	const char *str;
 
 	star = _minimap->selectedStar();
 
@@ -1835,7 +1849,14 @@ void PlanetsListView::handleSelectStar(int x, int y, int arg) {
 	// No planet found
 	StringBuffer buf;
 
-	buf.printf(gameLang->hstrings(HSTR_PLANETLIST_NO_PLANETS), sptr->name);
+	// Note: the original game did not check whether the star is explored
+	if (_game->isStarExplored(sptr, _activePlayer)) {
+		str = sptr->name;
+	} else {
+		str = gameLang->hstrings(HSTR_STAR_UNEXPLORED);
+	}
+
+	buf.printf(gameLang->hstrings(HSTR_PLANETLIST_NO_PLANETS), str);
 	new ErrorWindow(this, buf.c_str());
 }
 
@@ -1976,9 +1997,12 @@ void PlanetsListView::redraw(unsigned curtick) {
 		if (sptr->spectralClass == SpectralClass::BlackHole) {
 			color = FONT_COLOR_PLAYER_RED4;
 			str = gameLang->hstrings(HSTR_BLACK_HOLE);
-		} else {
+		} else if (_game->isStarExplored(sptr, _activePlayer)) {
 			color = FONT_COLOR_PLANET_LIST_BRIGHT;
 			str = sptr->name;
+		} else {
+			color = FONT_COLOR_PLANET_LIST_BRIGHT;
+			str = gameLang->hstrings(HSTR_STAR_UNEXPLORED);
 		}
 
 		fnt->centerText(532, 143 + (22 - fnt->height()) / 2, color,
@@ -2063,7 +2087,10 @@ void PlanetsListView::changeFilter(int x, int y, int arg) {
 
 	for (i = 0, count = 0; i < _game->_starSystemCount; i++) {
 		sptr = _game->_starSystems + i;
-		// FIXME: Skip undiscovered stars
+
+		if (!_game->isStarExplored(sptr, _activePlayer)) {
+			continue;
+		}
 
 		if (f_enemy) {
 			// Hostile colony in this star system
