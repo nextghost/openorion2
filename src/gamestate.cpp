@@ -942,6 +942,12 @@ Player::Player(void) {
 	surplusBC = 0;
 
 	totalMaintenance = 0;
+	buildingMaintenance = 0;
+	freighterMaintenance = 0;
+	shipMaintenance = 0;
+	spyMaintenance = 0;
+	tributeCost = 0;
+	officerMaintenance = 0;
 
 	memset(researchTopics, 1, MAX_RESEARCH_TOPICS * sizeof(uint8_t));
 	memset(techs, 0, MAX_TECHNOLOGIES * sizeof(uint8_t));
@@ -1005,8 +1011,13 @@ void Player::load(SeekableReadStream &stream) {
 	surplusFood = stream.readSint16LE();
 	surplusBC = stream.readSint16LE();
 
-	// FIXME: check maintenance offset in save file
 	totalMaintenance = stream.readSint32LE();
+	buildingMaintenance = stream.readUint16LE();
+	freighterMaintenance = stream.readUint16LE();
+	shipMaintenance = stream.readUint16LE();
+	spyMaintenance = stream.readUint16LE();
+	tributeCost = stream.readUint16LE();
+	officerMaintenance = stream.readUint16LE();
 
 	for (i = 0; i < MAX_RESEARCH_TOPICS; i++) {
 		researchTopics[i] = stream.readUint8();

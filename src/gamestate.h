@@ -1018,6 +1018,12 @@ struct Player {
 	int16_t surplusFood;
 	int16_t surplusBC;
 	int32_t totalMaintenance;
+	uint16_t buildingMaintenance;
+	uint16_t freighterMaintenance;
+	uint16_t shipMaintenance;
+	uint16_t spyMaintenance;
+	uint16_t tributeCost;
+	uint16_t officerMaintenance;
 
 	// ResearchStatus enums
 	uint8_t researchTopics[MAX_RESEARCH_TOPICS];
