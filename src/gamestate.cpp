@@ -942,8 +942,15 @@ Player::Player(void) {
 	surplusBC = 0;
 
 	totalMaintenance = 0;
+
+	memset(researchTopics, 1, MAX_RESEARCH_TOPICS * sizeof(uint8_t));
+	memset(techs, 0, MAX_TECHNOLOGIES * sizeof(uint8_t));
+
 	researchProgress = 0;
-	researchArea = ResearchArea::None;
+	researchTopic = 0;
+
+	memset(hyperTechLevels, 0, MAX_RESEARCH_AREAS * sizeof(uint8_t));
+
 	researchItem = 0;
 
 	memset(playerContacts, 0, MAX_PLAYERS * sizeof(uint8_t));
@@ -1000,10 +1007,26 @@ void Player::load(SeekableReadStream &stream) {
 
 	// FIXME: check maintenance offset in save file
 	totalMaintenance = stream.readSint32LE();
-	stream.seek(307, SEEK_CUR);
+
+	for (i = 0; i < MAX_RESEARCH_TOPICS; i++) {
+		researchTopics[i] = stream.readUint8();
+	}
+
+	for (i = 0; i < MAX_TECHNOLOGIES; i++) {
+		techs[i] = stream.readUint8();
+	}
+
 	researchProgress = stream.readUint32LE();
-	stream.seek(0x132, SEEK_CUR);
-	researchArea = ResearchArea(stream.readUint8());
+
+	stream.seek(45, SEEK_CUR);
+
+	for (i = 0; i < MAX_RESEARCH_AREAS; i++) {
+		hyperTechLevels[i] = stream.readUint8();
+	}
+
+	stream.seek(253, SEEK_CUR);
+
+	researchTopic = stream.readUint8();
 	researchItem = stream.readUint8();
 
 	stream.readUint8();	// FIXME: Unknown data
@@ -1074,6 +1097,34 @@ int Player::gravityPenalty(unsigned gravity) const {
 	}
 
 	return gravityPenalties[homegrav][gravity];
+}
+
+unsigned Player::knowsTechnology(unsigned tech_id) const {
+	if (tech_id >= MAX_TECHNOLOGIES) {
+		throw std::out_of_range("Invalid technology ID");
+	}
+
+	if (tech_id < MAX_APPLIED_TECHS) {
+		return techs[tech_id] == RSTATE_KNOWN;
+	}
+
+	return hyperTechLevels[tech_id - MAX_APPLIED_TECHS];
+}
+
+int Player::canResearchTopic(unsigned topic_id) const {
+	if (topic_id >= MAX_RESEARCH_TOPICS) {
+		throw std::out_of_range("Invalid research topic ID");
+	}
+
+	return techs[topic_id] == RSTATE_READY;
+}
+
+int Player::canResearchTech(unsigned tech_id) const {
+	if (tech_id >= MAX_TECHNOLOGIES) {
+		throw std::out_of_range("Invalid technology ID");
+	}
+
+	return techs[tech_id] == RSTATE_RESEARCHABLE;
 }
 
 unsigned Player::blueprintCombatSpeed(unsigned id) const {
@@ -2207,8 +2258,8 @@ void GameState::dump(void) const {
 			_players[i].totalFreighters, _players[i].surplusFreighters, _players[i].commandPoints);
 		fprintf(stdout, "Total production:\t%d\tRP:\t\t\t%d\tFood:\t\t\t%d\n",
 			_players[i].industryProduced, _players[i].researchProduced, _players[i].surplusFood);
-		fprintf(stdout, "Yearly BC:\t\t%d\tResearch progress:\t%u\tResearch Area:\t\t%d\n",
-			_players[i].surplusBC, _players[i].researchProgress, (int)_players[i].researchArea);
+		fprintf(stdout, "Yearly BC:\t\t%d\tResearch progress:\t%u\tResearch Topic:\t\t%d\n",
+			_players[i].surplusBC, _players[i].researchProgress, (int)_players[i].researchTopic);
 		fprintf(stdout, "Research Item:\t\t%d\n",
 			_players[i].researchItem);
 
