@@ -1176,6 +1176,14 @@ int Player::blueprintBeamDefense(const ShipDesign *design) const {
 	return ret + traits.shipDefense;
 }
 
+int Player::isPlayerVisible(unsigned player_id) const {
+	if (player_id >= MAX_PLAYERS) {
+		throw std::out_of_range("Invalid player ID");
+	}
+
+	return traits.omniscience || galaxyCharted || playerContacts[player_id];
+}
+
 void Player::validate(void) const {
 	unsigned i;
 
@@ -1992,6 +2000,42 @@ void GameState::validate(void) const {
 	}
 }
 
+void GameState::setActivePlayer(unsigned player_id) {
+	unsigned i, j;
+	Player *pptr;
+	Star *sptr;
+
+	if (player_id >= _playerCount) {
+		throw std::out_of_range("Invalid player ID");
+	}
+
+	pptr = _players + player_id;
+
+	// update star system ownership cache
+	for (i = 0; i < _starSystemCount; i++) {
+		sptr = _starSystems + i;
+		sptr->owner = -1;
+
+		if (!sptr->hasColony || !isStarExplored(sptr, player_id)) {
+			continue;
+		}
+
+		if (sptr->hasColony & (1 << player_id)) {
+			sptr->owner = player_id;
+			continue;
+		}
+
+		for (j = 0; j < _playerCount; j++) {
+			if (sptr->hasColony & (1 << j) &&
+				pptr->isPlayerVisible(j)) {
+
+				sptr->owner = j;
+				break;
+			}
+		}
+	}
+}
+
 unsigned GameState::findStar(int x, int y) const {
 	unsigned i;
 
@@ -2025,6 +2069,7 @@ StarKnowledge GameState::isStarExplored(unsigned star_id,
 StarKnowledge GameState::isStarExplored(const Star *s,
 	unsigned player_id) const {
 
+	unsigned i;
 	const Player *p;
 
 	if (s->visited & (1 << player_id)) {
@@ -2041,8 +2086,10 @@ StarKnowledge GameState::isStarExplored(const Star *s,
 		return STAR_CHARTED;
 	}
 
-	if (s->owner >= 0 && p->playerContacts[s->owner]) {
-		return STAR_VISITED;
+	for (i = 0; i < _playerCount; i++) {
+		if (s->hasColony & (1 << i) && p->playerContacts[i]) {
+			return STAR_VISITED;
+		}
 	}
 
 	return STAR_UNEXPLORED;

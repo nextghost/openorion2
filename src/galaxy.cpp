@@ -1002,6 +1002,10 @@ void GalaxyView::setPlayer(int player, int a, int b) {
 	}
 
 	_activePlayer = player;
+
+	if (_activePlayer >= 0) {
+		_game->setActivePlayer(_activePlayer);
+	}
 }
 
 void GalaxyView::findObject(unsigned x, unsigned y, int *rstar,
@@ -1095,7 +1099,7 @@ void GalaxyView::leaveGalaxyMap(int x, int y, int arg) {
 
 void GalaxyView::drawStar(const Star *s, Font *fnt, unsigned curtick) {
 	int x, y, xoff, idx;
-	unsigned i, color, width, tmp, step, total = 0, frame = 0;
+	unsigned i, owner, color, width, tmp, step, total = 0, frame = 0;
 	StarKnowledge explored;
 	const Image *img;
 	const Planet *pptr;
@@ -1118,7 +1122,14 @@ void GalaxyView::drawStar(const Star *s, Font *fnt, unsigned curtick) {
 		pptr = _game->_planets + s->planetIndex[i];
 
 		if (pptr->colony >= 0) {
-			colony_count[_game->_colonies[pptr->colony].owner]++;
+			owner = _game->_colonies[pptr->colony].owner;
+			idx = _activePlayer;
+
+			if (!_game->_players[idx].isPlayerVisible(owner)) {
+				continue;
+			}
+
+			colony_count[owner]++;
 			total++;
 		}
 	}

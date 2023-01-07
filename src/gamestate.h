@@ -1067,6 +1067,8 @@ struct Player {
 	int blueprintBeamDefense(unsigned id) const;
 	int blueprintBeamDefense(const ShipDesign *design) const;
 
+	int isPlayerVisible(unsigned player_id) const;
+
 	void validate(void) const;
 };
 
@@ -1248,6 +1250,9 @@ public:
 	void load(const char *filename);
 	void validate(void) const;
 	void dump(void) const;
+
+	// update cached values which depend on active player
+	void setActivePlayer(unsigned player_id);
 
 	unsigned findStar(int x, int y) const;
 	BilistNode<Fleet> *getMovingFleets(void);
