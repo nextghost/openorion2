@@ -1123,9 +1123,7 @@ void GalaxyView::drawStar(const Star *s, Font *fnt, unsigned curtick) {
 		}
 	}
 
-	idx = _curStar;
-
-	if (idx >= 0 && s == _game->_starSystems + idx) {
+	if (_curStar >= 0 && s == _game->_starSystems + _curStar) {
 		frame = loopFrame(curtick - _selTick, STAR_ANIM_SPEED,
 			GALAXY_ANIM_LENGTH);
 	}
