@@ -194,6 +194,8 @@ enum SpectralClass {
 
 enum StarKnowledge {
 	STAR_UNEXPLORED = 0,
+	STAR_NAME_ONLY,	// uncharted star owned by contacted player, name
+			// is visible but no planet information available
 	STAR_CHARTED,	// partial knowledge from galactic lore skill, etc.
 	STAR_VISITED	// full star system knowledge
 };

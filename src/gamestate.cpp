@@ -2088,7 +2088,7 @@ StarKnowledge GameState::isStarExplored(const Star *s,
 
 	for (i = 0; i < _playerCount; i++) {
 		if (s->hasColony & (1 << i) && p->playerContacts[i]) {
-			return STAR_VISITED;
+			return STAR_NAME_ONLY;
 		}
 	}
 

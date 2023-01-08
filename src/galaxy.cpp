@@ -1141,13 +1141,13 @@ void GalaxyView::drawStar(const Star *s, Font *fnt, unsigned curtick) {
 
 	explored = _game->isStarExplored(s, _activePlayer);
 
-	if (explored == STAR_VISITED) {
-		str = s->name;
+	if (!explored) {
+		return;
 	} else if (explored == STAR_CHARTED) {
 		sprintf(buf, "(%s)", s->name);
 		str = buf;
 	} else {
-		return;
+		str = s->name;
 	}
 
 	if (!total) {
@@ -2006,7 +2006,9 @@ void PlanetsListView::redraw(unsigned curtick) {
 		if (sptr->spectralClass == SpectralClass::BlackHole) {
 			color = FONT_COLOR_PLAYER_RED4;
 			str = gameLang->hstrings(HSTR_BLACK_HOLE);
-		} else if (_game->isStarExplored(sptr, _activePlayer)) {
+		} else if (_game->isStarExplored(sptr,
+			_activePlayer) >= STAR_CHARTED) {
+
 			color = FONT_COLOR_PLANET_LIST_BRIGHT;
 			str = sptr->name;
 		} else {
@@ -2097,7 +2099,7 @@ void PlanetsListView::changeFilter(int x, int y, int arg) {
 	for (i = 0, count = 0; i < _game->_starSystemCount; i++) {
 		sptr = _game->_starSystems + i;
 
-		if (!_game->isStarExplored(sptr, _activePlayer)) {
+		if (_game->isStarExplored(sptr, _activePlayer) < STAR_CHARTED) {
 			continue;
 		}
 
