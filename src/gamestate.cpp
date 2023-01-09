@@ -964,6 +964,10 @@ Player::Player(void) {
 	memset(foreignPolicies, 0, MAX_PLAYERS * sizeof(uint8_t));
 	memset(tradeTreaties, 0, MAX_PLAYERS * sizeof(uint8_t));
 	memset(researchTreaties, 0, MAX_PLAYERS * sizeof(uint8_t));
+	memset(fleetHistory, 0, MAX_HISTORY_LENGTH * sizeof(uint8_t));
+	memset(techHistory, 0, MAX_HISTORY_LENGTH * sizeof(uint8_t));
+	memset(populationHistory, 0, MAX_HISTORY_LENGTH * sizeof(uint8_t));
+	memset(buildingHistory, 0, MAX_HISTORY_LENGTH * sizeof(uint8_t));
 	memset(spies, 0, MAX_PLAYERS * sizeof(uint8_t));
 
 	galaxyCharted = 0;
@@ -1079,7 +1083,24 @@ void Player::load(SeekableReadStream &stream) {
 	stream.seek(608, SEEK_CUR);
 
 	traits.load(stream);
-	stream.seek(0x599, SEEK_CUR);
+
+	stream.seek(33, SEEK_CUR);
+
+	for (i = 0; i < MAX_HISTORY_LENGTH; i++) {
+		fleetHistory[i] = stream.readUint8();
+	}
+
+	for (i = 0; i < MAX_HISTORY_LENGTH; i++) {
+		techHistory[i] = stream.readUint8();
+	}
+
+	for (i = 0; i < MAX_HISTORY_LENGTH; i++) {
+		populationHistory[i] = stream.readUint8();
+	}
+
+	for (i = 0; i < MAX_HISTORY_LENGTH; i++) {
+		buildingHistory[i] = stream.readUint8();
+	}
 
 	for (i = 0; i < MAX_PLAYERS; i++) {
 		spies[i] = stream.readUint8();

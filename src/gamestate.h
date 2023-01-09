@@ -59,6 +59,7 @@
 #define MAX_APPLIED_TECHS 204
 #define MAX_TECHNOLOGIES (MAX_APPLIED_TECHS + MAX_RESEARCH_AREAS)
 #define MAX_SETTLERS 25
+#define MAX_HISTORY_LENGTH 350
 #define MAX_STARS 72
 #define MAX_ORBITS 5
 #define MAX_COLONIES 250
@@ -1044,6 +1045,13 @@ struct Player {
 	uint8_t tradeTreaties[MAX_PLAYERS];
 	uint8_t researchTreaties[MAX_PLAYERS];
 	RaceTraits traits;
+
+	// circular history graph buffers
+	uint8_t fleetHistory[MAX_HISTORY_LENGTH];
+	uint8_t techHistory[MAX_HISTORY_LENGTH];
+	uint8_t populationHistory[MAX_HISTORY_LENGTH];
+	uint8_t buildingHistory[MAX_HISTORY_LENGTH];
+
 	uint8_t spies[MAX_PLAYERS];
 	uint8_t galaxyCharted;
 
