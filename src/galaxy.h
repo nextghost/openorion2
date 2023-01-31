@@ -294,6 +294,26 @@ public:
 	void clickReturn(int x, int y, int arg);
 };
 
+class ColoniesListView : public GuiView {
+private:
+	GameState *_game;
+	ScrollBarWidget *_scroll;
+	int _curslot;
+	ImageAsset _bg;
+	unsigned _colonies[MAX_COLONIES];
+
+	void initWidgets(void);
+
+public:
+	ColoniesListView(GameState *game, int activePlayer);
+
+	void highlightSlot(int x, int y, int arg);
+	void redraw(unsigned curtick);
+
+	void showHelp(int x, int y, int arg);
+	void clickReturn(int x, int y, int arg);
+};
+
 class MainMenuWindow : public GuiWindow {
 private:
 	ImageAsset _bg;
