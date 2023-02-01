@@ -217,6 +217,10 @@ static uint8_t font_palettes[FONT_COLOR_MAX][FONT_PALSIZE * 4] = {
 	{TRANSPARENT, SRGB(0x242428), SRGB(0x888890)},
 	{TRANSPARENT, SRGB(0x087008), SRGB(0xb8e488)},
 	{TRANSPARENT, SRGB(0x500c0c), SRGB(0xc40000)},
+
+	// FONT_COLOR_COLONY_LIST
+	{TRANSPARENT, SRGB(0x141420), SRGB(0x6c688c)},
+	{TRANSPARENT, SRGB(0x080814), SRGB(0x80a0bc)},
 };
 
 Image::Image(SeekableReadStream &stream, const uint8_t *base_palette) :

@@ -174,7 +174,10 @@
 #define FONT_COLOR_FLEETLIST_SHIPINFO_DESTINATION 123
 #define FONT_COLOR_FLEETLIST_SPECDAMAGE 124
 
-#define FONT_COLOR_MAX 125
+#define FONT_COLOR_COLONY_LIST 125
+#define FONT_COLOR_COLONY_LIST_BRIGHT 126
+
+#define FONT_COLOR_MAX 127
 
 #define RGB(x) (((x) >> 16) & 0xff), (((x) >> 8) & 0xff), ((x) & 0xff)
 #define SRGB(x) 0xff, RGB(x)
