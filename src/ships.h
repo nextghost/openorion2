@@ -17,8 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef COLONY_H_
-#define COLONY_H_
+#ifndef SHIPS_H_
+#define SHIPS_H_
 
 #include "gui.h"
 #include "lbx.h"
