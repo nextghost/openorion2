@@ -24,6 +24,14 @@
 #include <cstdarg>
 #include <stdexcept>
 
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+#ifndef MAX
+#define MAX(a, b) ((a) < (b) ? (b) : (a))
+#endif
+
 class Mutex {
 private:
 	struct MutexImpl *_mutex;
