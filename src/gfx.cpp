@@ -672,8 +672,8 @@ int Font::renderText(int x, int y, unsigned color, const char *str,
 
 int Font::centerText(int x, int y, unsigned color, const char *str,
 	unsigned outline, unsigned charSpacing) {
-	return renderText(x - textWidth(str) / 2, y, color, str, outline,
-		charSpacing);
+	return renderText(x - textWidth(str, charSpacing) / 2, y, color, str,
+		outline, charSpacing);
 }
 
 FontManager::FontManager(unsigned lang_id) : _fontCount(0) {
