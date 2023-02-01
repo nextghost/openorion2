@@ -52,6 +52,20 @@ public:
 	int try_lock(void);
 };
 
+// Mutex scope guard
+class AutoMutex {
+private:
+	Mutex &_mutex;
+
+	// Do NOT implement
+	AutoMutex(const Mutex &other);
+	const Mutex &operator=(const Mutex &other);
+
+public:
+	AutoMutex(Mutex &m);
+	~AutoMutex(void);
+};
+
 // Base class for objects which need to be deleted while possibly still in use
 // by the rendering thread.
 class Recyclable {

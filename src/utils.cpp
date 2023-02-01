@@ -25,6 +25,14 @@
 Recyclable *GarbageCollector::_garbage = NULL;
 Mutex GarbageCollector::_garbageMutex;
 
+AutoMutex::AutoMutex(Mutex &m) : _mutex(m) {
+	_mutex.lock();
+}
+
+AutoMutex::~AutoMutex(void) {
+	_mutex.unlock();
+}
+
 Recyclable::Recyclable(void) : _nextGarbage(NULL) {
 
 }
