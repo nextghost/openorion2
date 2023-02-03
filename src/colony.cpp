@@ -18,6 +18,7 @@
  */
 
 #include <cstring>
+#include "guimisc.h"
 #include "lang.h"
 #include "colony.h"
 
@@ -74,15 +75,7 @@ ColonistPickerWidget::ColonistPickerWidget(unsigned x, unsigned y,
 }
 
 unsigned ColonistPickerWidget::spriteSpacing(unsigned count) const {
-	unsigned ret = width();
-
-	if (count < 2 || ret < _spriteWidth + count) {
-		return 1;
-	}
-
-	ret -= _spriteWidth;
-	ret /= count - 1;
-	return MIN(ret, _spriteWidth + 2);
+	return ::spriteSpacing(width(), _spriteWidth, count, 2);
 }
 
 void ColonistPickerWidget::update(void) {

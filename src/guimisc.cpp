@@ -160,3 +160,17 @@ void ErrorWindow::redraw(unsigned curtick) {
 void ErrorWindow::handleMouseUp(int x, int y, unsigned button) {
 	close();
 }
+
+unsigned spriteSpacing(unsigned maxWidth, unsigned spriteWidth,
+	unsigned count, unsigned maxSpace) {
+
+	unsigned ret = maxWidth;
+
+	if (count < 2 || ret < spriteWidth + count) {
+		return 1;
+	}
+
+	ret -= spriteWidth;
+	ret /= count - 1;
+	return MIN(ret, spriteWidth + maxSpace);
+}

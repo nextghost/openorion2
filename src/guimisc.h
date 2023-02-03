@@ -58,4 +58,7 @@ public:
 	void handleMouseUp(int x, int y, unsigned button);
 };
 
+unsigned spriteSpacing(unsigned maxWidth, unsigned spriteWidth, unsigned count,
+	unsigned maxSpace);
+
 #endif
