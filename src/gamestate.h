@@ -34,6 +34,7 @@
 #define MAX_COMMON_SKILLS 10
 #define MAX_CAPTAIN_SKILLS 8
 #define MAX_ADMIN_SKILLS 9
+#define MAX_SKILLS (MAX_COMMON_SKILLS + MAX_CAPTAIN_SKILLS + MAX_ADMIN_SKILLS)
 #define COMMON_SKILLS_TYPE 0x0
 #define CAPTAIN_SKILLS_TYPE 0x10
 #define ADMIN_SKILLS_TYPE 0x20
@@ -889,6 +890,15 @@ struct Leader {
 	int skillBonus(unsigned id) const;
 
 	void validate(void) const;
+
+	// Number of skills under given type
+	static unsigned skillCount(unsigned type);
+
+	// Find skill name for given ID
+	static const char *skillName(unsigned id, unsigned advanced = 0);
+
+	// Find skill number (e.g. icon ID) for given skill ID
+	static unsigned skillNum(unsigned id);
 };
 
 struct ShipWeapon {
