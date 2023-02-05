@@ -183,7 +183,8 @@ StarmapWidget::StarmapWidget(unsigned x, unsigned y, unsigned width,
 	unsigned height, GameState *game, unsigned activePlayer,
 	const char *archive, unsigned starAssets, const uint8_t *palette) :
 	Widget(x, y, width, height), _curStar(-1), _selStar(-1), _startTick(0),
-	_game(game), _activePlayer(activePlayer) {
+	_game(game), _activePlayer(activePlayer),
+	_starSelFilter(SELFILTER_ANY), _starHlFilter(SELFILTER_ANY) {
 
 	unsigned i;
 
@@ -254,6 +255,25 @@ int StarmapWidget::findStar(int x, int y) const {
 	return -1;
 }
 
+int StarmapWidget::isStarAllowed(int id, SelectionFilter filter) {
+	if (id < 0) {
+		return 1;
+	} else if (id >= _game->_starSystemCount) {
+		throw std::invalid_argument("Star ID out of range");
+	}
+
+	switch (filter) {
+	case SELFILTER_ANY:
+		return 1;
+
+	case SELFILTER_OWNED:
+		return _game->_starSystems[id].hasColony & (1 << _activePlayer);
+
+	default:
+		return 0;
+	}
+}
+
 void StarmapWidget::onStarHighlight(int x, int y) {
 	_onStarHighlight(x, y);
 }
@@ -275,13 +295,23 @@ void StarmapWidget::highlightStar(int id) {
 		throw std::invalid_argument("Star ID out of range");
 	}
 
-	_curStar = id;
-	_startTick = 0;
+	if (!isStarAllowed(id, _starHlFilter)) {
+		return;
+	}
+
+	if (_curStar != id) {
+		_curStar = id;
+		_startTick = 0;
+	}
 }
 
 void StarmapWidget::selectStar(int id) {
 	if (id >= _game->_starSystemCount) {
 		throw std::invalid_argument("Star ID out of range");
+	}
+
+	if (!isStarAllowed(id, _starSelFilter)) {
+		return;
 	}
 
 	_selStar = id;
@@ -295,10 +325,27 @@ void StarmapWidget::setStarSelectCallback(const GuiCallback &callback) {
 	_onStarSelect = callback;
 }
 
+void StarmapWidget::setStarFilter(SelectionFilter select,
+	SelectionFilter highlight) {
+
+	_starSelFilter = select;
+	_starHlFilter = highlight;
+
+	if (!isStarAllowed(_selStar, _starSelFilter)) {
+		_selStar = -1;
+	}
+
+	if (!isStarAllowed(_curStar, _starHlFilter)) {
+		_curStar = -1;
+	}
+}
+
 void StarmapWidget::handleMouseMove(int x, int y, unsigned buttons) {
 	int star = findStar(x, y);
 
-	if (star >= 0 && star != _curStar) {
+	if (star >= 0 && star != _curStar &&
+		isStarAllowed(star, _starHlFilter)) {
+
 		highlightStar(star);
 		_onStarHighlight(x, y);
 		return;
@@ -317,7 +364,7 @@ void StarmapWidget::handleMouseUp(int x, int y, unsigned button) {
 
 	star = findStar(x, y);
 
-	if (star >= 0) {
+	if (star >= 0 && isStarAllowed(star, _starSelFilter)) {
 		selectStar(star);
 		_onStarSelect(x, y);
 		return;
@@ -366,7 +413,9 @@ GalaxyMinimapWidget::GalaxyMinimapWidget(unsigned x, unsigned y,
 	unsigned activePlayer, const char *archive, unsigned starAssets,
 	unsigned fleetAssets, const uint8_t *palette) :
 	StarmapWidget(x, y, width, height, game, activePlayer, archive,
-	starAssets, palette), _curFleet(NULL), _selFleet(NULL), _startTick(0) {
+	starAssets, palette), _fleetSelFilter(SELFILTER_ANY),
+	_fleetHlFilter(SELFILTER_ANY), _curFleet(NULL), _selFleet(NULL),
+	_startTick(0) {
 
 	unsigned i;
 
@@ -466,7 +515,7 @@ void GalaxyMinimapWidget::drawStar(int x, int y, const Star *s,
 }
 
 void GalaxyMinimapWidget::findObject(unsigned x, unsigned y, int *rstar,
-	Fleet **rfleet) {
+	Fleet **rfleet, SelectionFilter fleetFilter) {
 
 	unsigned i, px, py;
 	const BilistNode<Fleet> *fnode;
@@ -480,7 +529,7 @@ void GalaxyMinimapWidget::findObject(unsigned x, unsigned y, int *rstar,
 			continue;
 		}
 
-		if (touchesFleet(x, y, fnode->data)) {
+		if (touchesFleet(x, y, fnode->data, fleetFilter)) {
 			*rfleet = fnode->data;
 			return;
 		}
@@ -492,7 +541,7 @@ void GalaxyMinimapWidget::findObject(unsigned x, unsigned y, int *rstar,
 		fnode = ptr->getOrbitingFleets();
 
 		if (fnode && fnode->data && touchesFleet(x, y,
-			fnode->data)) {
+			fnode->data, fleetFilter)) {
 
 			*rfleet = fnode->data;
 			return;
@@ -501,7 +550,7 @@ void GalaxyMinimapWidget::findObject(unsigned x, unsigned y, int *rstar,
 		fnode = ptr->getLeavingFleets();
 
 		if (fnode && fnode->data && touchesFleet(x, y,
-			fnode->data)) {
+			fnode->data, fleetFilter)) {
 
 			*rfleet = fnode->data;
 			return;
@@ -517,15 +566,39 @@ void GalaxyMinimapWidget::findObject(unsigned x, unsigned y, int *rstar,
 	}
 }
 
-int GalaxyMinimapWidget::touchesFleet(unsigned x, unsigned y, const Fleet *f) {
+int GalaxyMinimapWidget::touchesFleet(unsigned x, unsigned y, const Fleet *f,
+	SelectionFilter filter) {
 	unsigned fx, fy;
 	const Image *img;
+
+	if (!isFleetAllowed(f, filter)) {
+		return 0;
+	}
 
 	img = getFleetSprite(f);
 	fx = fleetX(f);
 	fy = fleetY(f);
 
 	return isInRect(x, y, fx, fy, img->width(), img->height());
+}
+
+int GalaxyMinimapWidget::isFleetAllowed(const Fleet *f,
+	SelectionFilter filter) {
+
+	if (!f) {
+		return 1;
+	}
+
+	switch (filter) {
+	case SELFILTER_ANY:
+		return 1;
+
+	case SELFILTER_OWNED:
+		return f->getOwner() == _activePlayer;
+
+	default:
+		return 0;
+	}
 }
 
 Fleet *GalaxyMinimapWidget::highlightedFleet(void) {
@@ -537,23 +610,37 @@ Fleet *GalaxyMinimapWidget::selectedFleet(void) {
 }
 
 void GalaxyMinimapWidget::highlightFleet(Fleet *f) {
+	if (!isFleetAllowed(f, _fleetHlFilter)) {
+		return;
+	}
+
 	StarmapWidget::highlightStar(-1);
 	_curFleet = f;
 }
 
 void GalaxyMinimapWidget::selectFleet(Fleet *f) {
-	_selFleet = f;
-	_startTick = 0;
+	if (!isFleetAllowed(f, _fleetSelFilter)) {
+		return;
+	}
+
+	if (f != _selFleet) {
+		_selFleet = f;
+		_startTick = 0;
+	}
 }
 
 void GalaxyMinimapWidget::highlightStar(int id) {
-	StarmapWidget::highlightStar(id);
-	_curFleet = NULL;
+	if (isStarAllowed(id, _starHlFilter)) {
+		StarmapWidget::highlightStar(id);
+		_curFleet = NULL;
+	}
 }
 
 void GalaxyMinimapWidget::selectStar(int id) {
-       StarmapWidget::selectStar(id);
-       _startTick = 0;
+	if (isStarAllowed(id, _starSelFilter) && id != selectedStar()) {
+		StarmapWidget::selectStar(id);
+		_startTick = 0;
+	}
 }
 
 void GalaxyMinimapWidget::setFleetHighlightCallback(
@@ -566,11 +653,26 @@ void GalaxyMinimapWidget::setFleetSelectCallback(const GuiCallback &callback) {
 	_onFleetSelect = callback;
 }
 
+void GalaxyMinimapWidget::setFleetFilter(SelectionFilter select,
+	SelectionFilter highlight) {
+
+	_fleetSelFilter = select;
+	_fleetHlFilter = highlight;
+
+	if (!isFleetAllowed(_selFleet, _fleetSelFilter)) {
+		_selFleet = NULL;
+	}
+
+	if (!isFleetAllowed(_curFleet, _fleetHlFilter)) {
+		_curFleet = NULL;
+	}
+}
+
 void GalaxyMinimapWidget::handleMouseMove(int x, int y, unsigned buttons) {
 	Fleet *f = NULL;
 	int star = -1;
 
-	findObject(x, y, &star, &f);
+	findObject(x, y, &star, &f, _fleetHlFilter);
 
 	if (f && f != _curFleet) {
 		highlightFleet(f);
@@ -579,7 +681,9 @@ void GalaxyMinimapWidget::handleMouseMove(int x, int y, unsigned buttons) {
 	}
 
 	if (star >= 0 && star != highlightedStar() &&
+		isStarAllowed(star, _starHlFilter) &&
 		_game->_starSystems[star].spectralClass != BlackHole) {
+
 		highlightStar(star);
 		onStarHighlight(x, y);
 		return;
@@ -597,7 +701,7 @@ void GalaxyMinimapWidget::handleMouseUp(int x, int y, unsigned button) {
 		return;
 	}
 
-	findObject(x, y, &star, &f);
+	findObject(x, y, &star, &f, _fleetSelFilter);
 
 	if (f) {
 		selectFleet(f);
@@ -605,7 +709,7 @@ void GalaxyMinimapWidget::handleMouseUp(int x, int y, unsigned button) {
 		return;
 	}
 
-	if (star >= 0) {
+	if (star >= 0 && isStarAllowed(star, _starSelFilter)) {
 		selectStar(star);
 		onStarSelect(x, y);
 		return;

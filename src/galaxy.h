@@ -39,6 +39,7 @@ private:
 protected:
 	GameState *_game;
 	unsigned _activePlayer;
+	SelectionFilter _starSelFilter, _starHlFilter;
 
 	unsigned starX(unsigned x) const;
 	unsigned starY(unsigned y) const;
@@ -46,6 +47,7 @@ protected:
 
 	virtual void drawStar(int x, int y, const Star *s, unsigned curtick);
 	int findStar(int x, int y) const;
+	int isStarAllowed(int id, SelectionFilter filter);
 
 	void onStarHighlight(int x, int y);
 	void onStarSelect(int x, int y);
@@ -64,6 +66,7 @@ public:
 
 	void setStarHighlightCallback(const GuiCallback &callback);
 	void setStarSelectCallback(const GuiCallback &callback);
+	void setStarFilter(SelectionFilter select, SelectionFilter highlight);
 
 	void handleMouseMove(int x, int y, unsigned buttons);
 	void handleMouseUp(int x, int y, unsigned button);
@@ -75,6 +78,7 @@ class GalaxyMinimapWidget : public StarmapWidget {
 private:
 	ImageAsset _fleetimg[MAX_FLEET_OWNERS];
 	GuiCallback _onFleetHighlight, _onFleetSelect;
+	SelectionFilter _fleetSelFilter, _fleetHlFilter;
 	Fleet *_curFleet, *_selFleet;
 	unsigned _startTick;
 
@@ -87,8 +91,11 @@ protected:
 		unsigned curtick);
 	void drawStar(int x, int y, const Star *s, unsigned curtick);
 
-	void findObject(unsigned x, unsigned y, int *rstar, Fleet **rfleet);
-	int touchesFleet(unsigned x, unsigned y, const Fleet *f);
+	void findObject(unsigned x, unsigned y, int *rstar, Fleet **rfleet,
+		SelectionFilter fleetFilter);
+	int touchesFleet(unsigned x, unsigned y, const Fleet *f,
+		SelectionFilter filter);
+	int isFleetAllowed(const Fleet *f, SelectionFilter filter);
 
 public:
 	GalaxyMinimapWidget(unsigned x, unsigned y, unsigned width,
@@ -107,6 +114,7 @@ public:
 
 	void setFleetHighlightCallback(const GuiCallback &callback);
 	void setFleetSelectCallback(const GuiCallback &callback);
+	void setFleetFilter(SelectionFilter select, SelectionFilter highlight);
 
 	void handleMouseMove(int x, int y, unsigned buttons);
 	void handleMouseUp(int x, int y, unsigned button);

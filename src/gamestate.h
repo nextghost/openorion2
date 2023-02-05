@@ -655,6 +655,12 @@ enum SpecialDevices {
 	SPEC_REGENERATION
 };
 
+enum SelectionFilter {
+	SELFILTER_NONE = 0,
+	SELFILTER_OWNED,
+	SELFILTER_ANY
+};
+
 extern const unsigned galaxySizeFactors[GALAXY_ZOOM_LEVELS];
 
 class Fleet;
