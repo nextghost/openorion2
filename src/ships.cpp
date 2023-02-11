@@ -190,8 +190,9 @@ ShipGridWidget::ShipGridWidget(GuiView *parent, unsigned x, unsigned y,
 	rows * slotsel->height() + (rows - 1) * vspace), _parent(parent),
 	_slotsel(slotsel), _slotframe(slotframe), _shipimg(game), _rows(rows),
 	_cols(cols), _hspace(hspace), _vspace(vspace), _scroll(0),
-	_combatSelCount(0), _supportSelCount(0), _curSlot(-1), _showCombat(1),
-	_showSupport(1), _activePlayer(activePlayer), _fleet(NULL) {
+	_combatSelCount(0), _supportSelCount(0), _curSlot(-1), _selShip(-1),
+	_showCombat(1), _showSupport(1), _activePlayer(activePlayer),
+	_multiselect(1), _fleet(NULL) {
 
 	if (!rows || !cols) {
 		throw std::invalid_argument(
@@ -237,14 +238,67 @@ int ShipGridWidget::getSlot(unsigned x, unsigned y) const {
 	return _cols * (_scroll + y / (sh + _vspace)) + x / (sw + _hspace);
 }
 
-void ShipGridWidget::setFleet(Fleet *f, int selection) {
-	_fleet = f;
-	_curSlot = -1;
+void ShipGridWidget::updateSingleCount(void) {
+	unsigned combatCount;
 
-	if (f) {
-		memset(_selection, selection, f->shipCount() * sizeof(char));
+	if (_selShip < 0) {
+		_combatSelCount = _supportSelCount = 0;
+	} else {
+		combatCount = _fleet->combatCount();
+		_combatSelCount = unsigned(_selShip) < combatCount ? 1 : 0;
+		_supportSelCount = unsigned(_selShip) < combatCount ? 0 : 1;
+	}
+}
+
+void ShipGridWidget::toggleSlot(unsigned slot) {
+	unsigned combatCount;
+	int change;
+
+	if (slot >= visibleShipCount()) {
+		return;
 	}
 
+	combatCount = _fleet->combatCount();
+	slot += _showCombat ? 0 : combatCount;
+
+	if (!_multiselect) {
+		_selShip = (_selShip == (int)slot) ? -1 : slot;
+		updateSingleCount();
+		return;
+	}
+
+	change = _selection[slot] ? -1 : 1;
+	_selection[slot] = !_selection[slot];
+
+	if (slot < combatCount) {
+		_combatSelCount += change;
+	} else {
+		_supportSelCount += change;
+	}
+}
+
+void ShipGridWidget::setFleet(Fleet *f, int selection) {
+	_curSlot = -1;
+	_selShip = -1;
+	_fleet = f;
+
+	if (!f) {
+		_combatSelCount = _supportSelCount = 0;
+		return;
+	}
+
+	if (f->getOwner() != _activePlayer) {
+		selection = _multiselect ? 0 : -1;
+	}
+
+	if (!_multiselect) {
+		selectNone();
+		_selShip = selection < (int)f->shipCount() ? selection : -1;
+		updateSingleCount();
+		return;
+	}
+
+	memset(_selection, selection, f->shipCount() * sizeof(char));
 	_combatSelCount = selection && f ? f->combatCount() : 0;
 	_supportSelCount = selection && f ? f->supportCount() : 0;
 }
@@ -255,12 +309,34 @@ void ShipGridWidget::setFilter(int combat, int support) {
 	_showSupport = support;
 }
 
+void ShipGridWidget::setSelectionMode(int multiselect) {
+	unsigned i;
+	int oldsel = _selShip;
+
+	if ((_multiselect && multiselect) || (!_multiselect && !multiselect)) {
+		return;
+	}
+
+	_multiselect = multiselect;
+
+	if (_multiselect && oldsel >= 0) {
+		selectNone();
+		toggleSlot(oldsel);
+	} else if (!_multiselect && selectedShipCount() == 1) {
+		for (i = 0; i < _fleet->shipCount() && !_selection[i]; i++);
+		_selShip = i < _fleet->shipCount() ? i : -1;
+		updateSingleCount();
+	} else {
+		selectNone();
+	}
+}
+
 void ShipGridWidget::setScroll(unsigned pos) {
 	_scroll = pos;
 }
 
 void ShipGridWidget::selectAll(void) {
-	if (!_fleet) {
+	if (!_fleet || !_multiselect) {
 		return;
 	}
 
@@ -274,6 +350,7 @@ void ShipGridWidget::selectNone(void) {
 		memset(_selection, 0, _fleet->shipCount() * sizeof(char));
 	}
 
+	_selShip = -1;
 	_combatSelCount = 0;
 	_supportSelCount = 0;
 }
@@ -331,7 +408,11 @@ char *ShipGridWidget::getSelection(void) {
 	return _selection;
 }
 
-Ship *ShipGridWidget::currentShip(void) {
+Ship *ShipGridWidget::selectedShip(void) {
+	return (_fleet && _selShip >= 0) ? _fleet->getShip(_selShip) : NULL;
+}
+
+Ship *ShipGridWidget::highlightedShip(void) {
 	unsigned offset = 0;
 
 	if (_curSlot < 0 || !_fleet) {
@@ -370,8 +451,7 @@ void ShipGridWidget::handleMouseMove(int x, int y, unsigned buttons) {
 }
 
 void ShipGridWidget::handleMouseUp(int x, int y, unsigned button) {
-	unsigned offset, combatCount;
-	int slot, count, change;
+	int slot, count;
 
 	slot = getSlot(x, y);
 	count = visibleShipCount();
@@ -381,20 +461,9 @@ void ShipGridWidget::handleMouseUp(int x, int y, unsigned button) {
 		return;
 	}
 
-	combatCount = _fleet->combatCount();
-	offset = _showCombat ? 0 : combatCount;
-
 	switch (button) {
 	case MBUTTON_LEFT:
-		change = _selection[offset + slot] ? -1 : 1;
-		_selection[offset + slot] = !_selection[offset + slot];
-
-		if (offset + (unsigned)slot < combatCount) {
-			_combatSelCount += change;
-		} else {
-			_supportSelCount += change;
-		}
-
+		toggleSlot(slot);
 		_onSelectionChange(x, y);
 		return;
 
@@ -407,7 +476,7 @@ void ShipGridWidget::handleMouseUp(int x, int y, unsigned button) {
 
 void ShipGridWidget::redraw(int x, int y, unsigned curtick) {
 	unsigned i, offset, count, sw, sh, xpos, ypos, color;
-	int dx, dy;
+	int dx, dy, selected;
 	const Image *img;
 
 	if (!_fleet || isHidden()) {
@@ -430,7 +499,13 @@ void ShipGridWidget::redraw(int x, int y, unsigned curtick) {
 		xpos = sw * (i % _cols);
 		ypos = sh * (i / _cols);
 
-		if (_selection[offset + i]) {
+		if (_multiselect) {
+			selected = _selection[offset + i];
+		} else {
+			selected = _selShip == int(offset + i);
+		}
+
+		if (selected) {
 			_slotsel->draw(x + xpos, y + ypos);
 		}
 
@@ -791,7 +866,7 @@ void FleetListView::fleetSelectionChanged(int x, int y, int arg) {
 
 void FleetListView::shipHighlightChanged(int x, int y, int arg) {
 	_minimapLabel->clear();
-	generateShipInfo(_grid->currentShip());
+	generateShipInfo(_grid->highlightedShip());
 }
 
 void FleetListView::shipSelectionChanged(int x, int y, int arg) {

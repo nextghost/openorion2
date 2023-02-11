@@ -49,11 +49,16 @@ private:
 	unsigned _rows, _cols, _hspace, _vspace, _scroll;
 	unsigned _combatSelCount, _supportSelCount;
 	char _selection[MAX_SHIPS];
-	int _curSlot, _showCombat, _showSupport, _activePlayer;
+	int _curSlot, _selShip, _showCombat, _showSupport, _activePlayer;
+	int _multiselect;
 	Fleet *_fleet;
 
 protected:
 	int getSlot(unsigned x, unsigned y) const;
+	Ship *getShip(int slot);
+
+	void updateSingleCount(void);
+	void toggleSlot(unsigned slot);
 
 public:
 	ShipGridWidget(GuiView *parent, unsigned x, unsigned y, unsigned rows,
@@ -62,8 +67,9 @@ public:
 		Image *slotframe = NULL);
 	~ShipGridWidget(void);
 
-	void setFleet(Fleet *f, int selection = 1);
+	void setFleet(Fleet *f, int selection);
 	void setFilter(int combat, int support);
+	void setSelectionMode(int multiselect);
 	void setScroll(unsigned pos);
 	void selectAll(void);
 	void selectNone(void);
@@ -76,8 +82,9 @@ public:
 	unsigned selectedSupportCount(void) const;
 	unsigned selectedVisibleCount(void) const;
 	unsigned visibleShipCount(void) const;
-	char *getSelection(void);
-	Ship *currentShip(void);
+	char *getSelection(void); // always zeroed when not in multiselect mode
+	Ship *selectedShip(void); // always returns NULL in multiselect mode
+	Ship *highlightedShip(void);
 
 	virtual void setShipHighlightCallback(const GuiCallback &callback);
 	virtual void setSelectionChangeCallback(const GuiCallback &callback);
