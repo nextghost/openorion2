@@ -475,27 +475,29 @@ void ShipGridWidget::handleMouseUp(int x, int y, unsigned button) {
 }
 
 void ShipGridWidget::redraw(int x, int y, unsigned curtick) {
-	unsigned i, offset, count, sw, sh, xpos, ypos, color;
+	unsigned i, offset, scrolloff, count, sw, sh, xpos, ypos, color;
 	int dx, dy, selected;
 	const Image *img;
+	const Fleet *f = _fleet;
 
-	if (!_fleet || isHidden()) {
+	if (!f || isHidden()) {
 		return;
 	}
 
 	x += getX();
 	y += getY();
 	count = visibleShipCount();
-	offset = _showCombat ? 0 : _fleet->combatCount();
-	offset += _scroll * _cols;
+	scrolloff = _scroll * _cols;
+	offset = _showCombat ? 0 : f->combatCount();
+	offset += scrolloff;
 	sw = _slotsel->width() + _hspace;
 	sh = _slotsel->height() + _vspace;
 
-	color = _fleet->getColor();
+	color = f->getColor();
 	// Non-Antaran monsters have only 1 color variant
 	color = color <= MAX_PLAYERS ? color : 0;
 
-	for (i = 0; i < _rows * _cols && i + _scroll * _cols < count; i++) {
+	for (i = 0; i < _rows * _cols && i + scrolloff < count; i++) {
 		xpos = sw * (i % _cols);
 		ypos = sh * (i / _cols);
 
@@ -509,13 +511,13 @@ void ShipGridWidget::redraw(int x, int y, unsigned curtick) {
 			_slotsel->draw(x + xpos, y + ypos);
 		}
 
-		img = _shipimg.getSprite(_fleet->getShip(offset + i));
+		img = _shipimg.getSprite(f->getShip(offset + i));
 		dx = ((int)_slotsel->width() - (int)img->width()) / 2;
 		dy = ((int)_slotsel->height() - (int)img->height()) / 2;
 		img->draw(x + xpos + dx, y + ypos + dy,
 			color * img->frameCount());
 
-		if (_slotframe && _curSlot == int(i + _scroll * _cols)) {
+		if (_slotframe && _curSlot == int(i + scrolloff)) {
 			_slotframe->draw(x + xpos - 1, y + ypos - 1);
 		}
 	}
