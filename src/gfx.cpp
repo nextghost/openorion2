@@ -510,6 +510,10 @@ void Image::draw(int x, int y, unsigned frame) const {
 	drawTexture(textureID(frame), x, y);
 }
 
+void Image::drawCentered(int x, int y, unsigned frame) const {
+	draw(x - _width / 2, y - _height / 2, frame);
+}
+
 Font::Font(unsigned height) : _width(0), _height(height), _title(0),
 	_glyphCount(0), _glyphs(NULL), _bitmap(NULL), _shadowID(-1),
 	_outlineID(-1) {

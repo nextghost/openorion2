@@ -219,6 +219,7 @@ public:
 	const uint8_t *palette(unsigned id = 0) const;
 
 	void draw(int x, int y, unsigned frame = 0) const;
+	void drawCentered(int x, int y, unsigned frame = 0) const;
 };
 
 class FontManager;
