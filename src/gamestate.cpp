@@ -2276,7 +2276,10 @@ unsigned GameState::planetMaxPop(unsigned planet_id, unsigned player_id) const {
 		ret += 2;
 	}
 
-	// FIXME: add +5 for Advanced City Planning tech
+	if (pptr->knowsTechnology(TECH_ADVANCED_CITY_PLANNING)) {
+		ret += 5;
+	}
+
 	return ret;
 }
 
