@@ -74,8 +74,8 @@ GuiCallback *GuiCallback::copy(void) const {
 
 GuiSprite::GuiSprite(Image *img, int offsx, int offsy, int frame,
 	unsigned imgx, unsigned imgy, unsigned width, unsigned height) :
-	_image(NULL), _x(imgx), _y(imgy), _width(0), _height(0), _startTick(0),
-	_offsx(offsx), _offsy(offsy), _frame(frame) {
+	_image(NULL), _x(imgx), _y(imgy), _width(0), _height(0), _variant(0),
+	_startTick(0), _offsx(offsx), _offsy(offsy), _frame(frame) {
 
 	initImage(img, width, height);
 }
@@ -83,17 +83,31 @@ GuiSprite::GuiSprite(Image *img, int offsx, int offsy, int frame,
 GuiSprite::GuiSprite(const char *archive, unsigned id, const uint8_t *palette,
 	int offsx, int offsy, int frame, unsigned imgx, unsigned imgy,
 	unsigned width, unsigned height) : _image(NULL), _x(imgx), _y(imgy),
-	_width(0), _height(0), _startTick(0), _offsx(offsx), _offsy(offsy),
-	_frame(frame) {
+	_width(0), _height(0), _variant(0), _startTick(0), _offsx(offsx),
+	_offsy(offsy), _frame(frame) {
 
 	ImageAsset img = gameAssets->getImage(archive, id, palette);
 
 	initImage((Image *)img, width, height);
 }
 
+GuiSprite::GuiSprite(const char *archive, unsigned id,
+	const uint8_t **base_palettes, unsigned palcount, int offsx, int offsy,
+	int frame, unsigned imgx, unsigned imgy, unsigned width,
+	unsigned height) : _image(NULL), _x(imgx), _y(imgy), _width(0),
+	_height(0), _variant(0), _startTick(0), _offsx(offsx), _offsy(offsy),
+	_frame(frame) {
+
+	ImageAsset img = gameAssets->getImage(archive, id, base_palettes,
+		palcount);
+
+	initImage((Image *)img, width, height);
+}
+
 GuiSprite::GuiSprite(const GuiSprite &other) : _image(other._image),
-	_x(other._x), _y(other._y), _width(other._width), _startTick(0),
-	_offsx(other._offsx), _offsy(other._offsy), _frame(other._frame) {
+	_x(other._x), _y(other._y), _width(other._width),
+	_variant(other._variant), _startTick(0), _offsx(other._offsx),
+	_offsy(other._offsy), _frame(other._frame) {
 
 	gameAssets->takeAsset(_image);
 }
@@ -116,6 +130,7 @@ const GuiSprite &GuiSprite::operator=(const GuiSprite &other) {
 	_x = other._x;
 	_y = other._y;
 	_width = other._width;
+	_variant = other._variant;
 	_startTick = 0;
 	_offsx = other._offsx;
 	_offsy = other._offsy;
@@ -150,6 +165,18 @@ void GuiSprite::stopAnimation(void) {
 
 }
 
+void GuiSprite::setVariant(unsigned var) {
+	if (var >= _image->variantCount()) {
+		throw std::out_of_range("Invalid sprite variant");
+	}
+
+	_variant = var;
+}
+
+unsigned GuiSprite::variant(void) const {
+	return _variant;
+}
+
 int GuiSprite::getX(void) const {
 	return _offsx;
 }
@@ -173,13 +200,14 @@ void GuiSprite::redraw(unsigned x, unsigned y, unsigned curtick) {
 		_startTick = curtick;
 	}
 
+	fcount = _image->frameCount();
+
 	if (_frame >= 0) {
 		fid = _frame;
 	} else {
 		ftime = _image->frameTime();
 		ftime = ftime < MIN_FRAMETIME ? DEFAULT_FRAMETIME : ftime;
 		fid = ((curtick - _startTick) / ftime);
-		fcount = _image->frameCount();
 
 		if (fid >= fcount) {
 			if (_frame == ANIM_ONCE) {
@@ -190,6 +218,7 @@ void GuiSprite::redraw(unsigned x, unsigned y, unsigned curtick) {
 		}
 	}
 
+	fid += _variant * fcount;
 	drawTextureTile(_image->textureID(fid), x + _offsx, y + _offsy, _x,
 		_y, _width, _height);
 }
