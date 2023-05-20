@@ -78,7 +78,7 @@ public:
 class GuiSprite : public Recyclable {
 private:
 	Image *_image;
-	unsigned _x, _y, _width, _height, _variant, _startTick;
+	unsigned _x, _y, _width, _height, _variant, _frameTime, _startTick;
 	int _offsx, _offsy, _frame;
 
 protected:
@@ -87,16 +87,18 @@ protected:
 public:
 	explicit GuiSprite(Image *img, int offsx = 0, int offsy = 0,
 		int frame = ANIM_LOOP, unsigned imgx = 0, unsigned imgy = 0,
-		unsigned width = 0, unsigned height = 0);
+		unsigned width = 0, unsigned height = 0,
+		unsigned frameTime = 0);
 	GuiSprite(const char *archive, unsigned id,
 		const uint8_t *palette = NULL, int offsx = 0, int offsy = 0,
 		int frame = ANIM_LOOP, unsigned imgx = 0, unsigned imgy = 0,
-		unsigned width = 0, unsigned height = 0);
+		unsigned width = 0, unsigned height = 0,
+		unsigned frameTime = 0);
 	GuiSprite(const char *archive, unsigned id,
 		const uint8_t **base_palettes, unsigned palcount,
 		int offsx = 0, int offsy = 0, int frame = ANIM_LOOP,
 		unsigned imgx = 0, unsigned imgy = 0, unsigned width = 0,
-		unsigned height = 0);
+		unsigned height = 0, unsigned frameTime = 0);
 	GuiSprite(const GuiSprite &other);
 	virtual ~GuiSprite(void);
 
