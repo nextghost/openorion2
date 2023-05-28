@@ -128,7 +128,8 @@ private:
 
 	TextBlock *_blocks;
 	GuiSprite **_sprites;
-	unsigned _height, _blockCount, _blockSize, _spriteCount, _spriteSize;
+	unsigned _width, _height, _blockCount, _blockSize;
+	unsigned _spriteCount, _spriteSize;
 	unsigned _fontSize, _fontColor, _fontOutline, _lineSpacing;
 	unsigned _charSpacing;
 
@@ -158,7 +159,11 @@ public:
 
 	void redraw(unsigned x, unsigned y, unsigned curtick);
 
+	unsigned width(void) const;
 	unsigned height(void) const;
+	unsigned fontSize(void) const;
+	unsigned fontColor(void) const;
+	unsigned lineHeight(void) const;
 };
 
 class Widget {

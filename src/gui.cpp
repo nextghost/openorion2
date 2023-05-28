@@ -1638,10 +1638,11 @@ GuiView *ViewStack::top(void) {
 	return ret;
 }
 
-TextLayout::TextLayout(void) : _blocks(NULL), _sprites(NULL), _height(0),
-	_blockCount(0), _blockSize(0), _spriteCount(0), _spriteSize(0),
-	_fontSize(FONTSIZE_MEDIUM), _fontColor(FONT_COLOR_DEFAULT),
-	_fontOutline(OUTLINE_NONE), _lineSpacing(1), _charSpacing(1) {
+TextLayout::TextLayout(void) : _blocks(NULL), _sprites(NULL), _width(0),
+	_height(0), _blockCount(0), _blockSize(0), _spriteCount(0),
+	_spriteSize(0), _fontSize(FONTSIZE_MEDIUM),
+	_fontColor(FONT_COLOR_DEFAULT), _fontOutline(OUTLINE_NONE),
+	_lineSpacing(1), _charSpacing(1) {
 
 }
 
@@ -1734,6 +1735,8 @@ void TextLayout::adjustLine(unsigned lineStart, unsigned align,
 
 		break;
 	}
+
+	_width = MAX(_width, ptr->x + ptr->width);
 }
 
 void TextLayout::setFont(unsigned font, unsigned color, unsigned lineSpacing,
@@ -1815,6 +1818,7 @@ void TextLayout::appendText(const char *text, unsigned x, unsigned y,
 		blk->outline = _fontOutline;
 		blk->spacing = _charSpacing;
 		curx += width;
+		_width = MAX(_width, blk->x + blk->width);
 	}
 
 	if (align != ALIGN_JUSTIFY) {
@@ -1822,12 +1826,11 @@ void TextLayout::appendText(const char *text, unsigned x, unsigned y,
 	}
 
 	if (_blockCount) {
-		tmp = _blocks[_blockCount - 1].y + line_height;
-		_height = _height < tmp ? tmp : _height;
+		_height = MAX(_height, _blocks[_blockCount-1].y + line_height);
 	}
 
 	// keep trailing newlines
-	_height = _height < y ? y : _height;
+	_height = MAX(_height, y);
 }
 
 void TextLayout::addSprite(GuiSprite *sprite) {
@@ -1852,6 +1855,7 @@ void TextLayout::addSprite(GuiSprite *sprite) {
 	_sprites[_spriteCount] = sprite;
 	_spriteCount++;
 	bottom = sprite->getY() + sprite->height();
+	_width = MAX(_width, sprite->getX() + sprite->width());
 
 	if (bottom > 0 && _height < (unsigned)bottom) {
 		_height = bottom;
@@ -1898,6 +1902,24 @@ void TextLayout::redraw(unsigned x, unsigned y, unsigned curtick) {
 	}
 }
 
+unsigned TextLayout::width(void) const {
+	return _width;
+}
+
 unsigned TextLayout::height(void) const {
 	return _height;
+}
+
+unsigned TextLayout::fontSize(void) const {
+	return _fontSize;
+}
+
+unsigned TextLayout::fontColor(void) const {
+	return _fontColor;
+}
+
+unsigned TextLayout::lineHeight(void) const {
+	const Font *fnt = gameFonts->getFont(_fontSize);
+
+	return fnt->height() + _lineSpacing;
 }
