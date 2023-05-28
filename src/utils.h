@@ -178,6 +178,7 @@ char *strlower(const char *str);
 char *strupper(const char *str);
 
 int isInRect(int x, int y, int rx, int ry, unsigned width, unsigned height);
+int isInEllipse(int x, int y, int cx, int cy, unsigned rx, unsigned ry);
 
 int checkBitfield(const uint8_t *bitfield, unsigned bit);
 
