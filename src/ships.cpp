@@ -1156,17 +1156,7 @@ void FleetListView::redrawShipInfo(unsigned curtick) {
 			frm = fleetlistOfficerBlueFrame;
 		}
 
-		fillRect(x - 2, y - 2, w + 4, 1, frm[0], frm[1], frm[2]);
-		fillRect(x + w + 1, y - 1, 1, h + 2, frm[0], frm[1], frm[2]);
-		frm += 3;
-		fillRect(x, y - 1, w + 1, 1, frm[0], frm[1], frm[2]);
-		fillRect(x + w, y, 1, h, frm[0], frm[1], frm[2]);
-		frm += 3;
-		fillRect(x - 2, y - 1, 1, h + 3, frm[0], frm[1], frm[2]);
-		fillRect(x - 1, y + h + 1, w + 3, 1, frm[0], frm[1], frm[2]);
-		frm += 3;
-		fillRect(x - 1, y - 1, 1, h + 2, frm[0], frm[1], frm[2]);
-		fillRect(x, y + h, w + 1, 1, frm[0], frm[1], frm[2]);
+		drawFrame(x - 2, y - 2, w + 4, h + 4, frm);
 
 		if (eta) {
 			StringBuffer buf;

@@ -161,6 +161,21 @@ void ErrorWindow::handleMouseUp(int x, int y, unsigned button) {
 	close();
 }
 
+void drawFrame(int x, int y, unsigned width, unsigned height,
+	const uint8_t *clr) {
+	fillRect(x, y, width, 1, clr[0], clr[1], clr[2]);
+	fillRect(x + width - 1, y + 1, 1, height - 2, clr[0], clr[1], clr[2]);
+	clr += 3;
+	fillRect(x + 2, y + 1, width - 3, 1, clr[0], clr[1], clr[2]);
+	fillRect(x + width - 2, y + 2, 1, height - 4, clr[0], clr[1], clr[2]);
+	clr += 3;
+	fillRect(x, y + 1, 1, height - 1, clr[0], clr[1], clr[2]);
+	fillRect(x + 1, y + height - 1, width - 1, 1, clr[0], clr[1], clr[2]);
+	clr += 3;
+	fillRect(x + 1, y + 1, 1, height - 2, clr[0], clr[1], clr[2]);
+	fillRect(x + 2, y + height - 2, width - 3, 1, clr[0], clr[1], clr[2]);
+}
+
 unsigned spriteSpacing(unsigned maxWidth, unsigned spriteWidth,
 	unsigned count, unsigned maxSpace) {
 

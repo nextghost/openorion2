@@ -58,6 +58,10 @@ public:
 	void handleMouseUp(int x, int y, unsigned button);
 };
 
+// colors must point to array of 4 RGB triplets
+void drawFrame(int x, int y, unsigned width, unsigned height,
+	const uint8_t *colors);
+
 unsigned spriteSpacing(unsigned maxWidth, unsigned spriteWidth, unsigned count,
 	unsigned maxSpace);
 
