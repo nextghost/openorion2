@@ -1331,6 +1331,8 @@ public:
 	void setActivePlayer(unsigned player_id);
 
 	unsigned findStar(int x, int y) const;
+	int getOrbitingPlanetID(unsigned star_id, unsigned orbit) const;
+	Planet *getOrbitingPlanet(unsigned star_id, unsigned orbit);
 	BilistNode<Fleet> *getMovingFleets(void);
 	const BilistNode<Fleet> *getMovingFleets(void) const;
 

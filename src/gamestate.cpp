@@ -2172,6 +2172,24 @@ unsigned GameState::findStar(int x, int y) const {
 	throw std::runtime_error("No star at given coordinates");
 }
 
+int GameState::getOrbitingPlanetID(unsigned star_id, unsigned orbit) const {
+	if (star_id >= _starSystemCount) {
+		throw std::out_of_range("Invalid star ID");
+	}
+
+	if (orbit >= MAX_ORBITS) {
+		throw std::out_of_range("Invalid orbit ID");
+	}
+
+	return _starSystems[star_id].planetIndex[orbit];
+}
+
+Planet *GameState::getOrbitingPlanet(unsigned star_id, unsigned orbit) {
+	int id = getOrbitingPlanetID(star_id, orbit);
+
+	return id >= 0 ? _planets + id : NULL;
+}
+
 BilistNode<Fleet> *GameState::getMovingFleets(void) {
 	return _firstMovingFleet.next();
 }
