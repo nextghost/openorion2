@@ -18,6 +18,7 @@
  */
 
 #include <cstring>
+#include <cmath>
 #include "screen.h"
 #include "guimisc.h"
 #include "mainmenu.h"
@@ -41,6 +42,16 @@
 #define ASSET_GALAXY_BHOLE_IMAGES 184
 #define ASSET_GALAXY_FLEET_IMAGES 205
 #define ASSET_GALAXY_TURN_DONE 265
+
+#define ASSET_GALAXY_STARWIDGET_COLONY_ICONS 35
+#define ASSET_GALAXY_STARWIDGET_RETICLE 75
+#define ASSET_GALAXY_STARWIDGET_STAR_IMAGES 83
+#define ASSET_GALAXY_STARWIDGET_ORBIT_RINGS 90
+#define ASSET_GALAXY_STARWIDGET_ASTEROIDS 91
+#define ASSET_GALAXY_STARWIDGET_PLANET_IMAGES 92
+#define ASSET_GALAXY_STARWIDGET_GAS_GIANT_IMAGE 142
+#define ASSET_GALAXY_STARWIDGET_SHADOW 143
+#define SHADOW_COLOR_COUNT 10
 
 #define STARBG_ARCHIVE "starbg.lbx"
 #define ASSET_STARBG 3
@@ -66,6 +77,7 @@
 #define GALAXY_ANIM_SPEED 120
 #define GALAXY_SIDEBAR_X 579
 #define STAR_ANIM_SPEED 80
+#define PLANET_ANIM_SPEED 60
 
 #define PSELECT_BUFSIZE 128
 #define PSELECT_ANIM_LENGTH 8
@@ -115,9 +127,18 @@ static const uint8_t planetListScrollTexture[PLANET_LIST_SCROLL_WIDTH * 3] = {
 	RGB(0x808080),
 };
 
+static const uint8_t planetInfoFrame[] = {
+	RGB(0x5c7ca0), RGB(0x506c90), RGB(0x384c6c), RGB(0x445c80)
+};
+
 static const unsigned galaxy_fontanim[GALAXY_ANIM_LENGTH] = {
 	1, 2, 3, 4, 3, 2, 1, 0
 };
+
+static const int orbitRadiusX[MAX_ORBITS] = {46, 71, 95, 120, 142};
+
+static const int orbitRadiusY[MAX_ORBITS] = {25, 38, 51, 64, 76};
+
 const char *romanNumbers[] = { "I", "II", "III", "IV", "V"};
 
 const int planetClimateMap[PLANET_CLIMATE_COUNT] = {
@@ -149,6 +170,14 @@ const int sizesMap[PLANET_SIZE_COUNT] = {
 	ESTR_PLANET_SIZE_HUGE
 };
 
+const unsigned planetSpriteSizes[PLANET_SIZE_COUNT + 1] = {
+	19, 20, 22, 22, 25, 26
+};
+
+const unsigned planetShadowOffsets[PLANET_CLIMATE_COUNT + 1] = {
+	0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0
+};
+
 static const unsigned planetListFontColors[MAX_PLAYERS + 1] = {
 	FONT_COLOR_PLAYER_RED4,
 	FONT_COLOR_PLAYER_YELLOW4,
@@ -177,6 +206,17 @@ static const unsigned galaxyStarColors[MAX_PLAYERS] = {
 	FONT_COLOR_STAR_RED1, FONT_COLOR_STAR_YELLOW1, FONT_COLOR_STAR_GREEN1,
 	FONT_COLOR_STAR_SILVER1, FONT_COLOR_STAR_BLUE1, FONT_COLOR_STAR_BROWN1,
 	FONT_COLOR_STAR_PURPLE1, FONT_COLOR_STAR_ORANGE1
+};
+
+static const unsigned defensiveBuildings[] = {
+	BUILDING_STAR_FORTRESS,
+	BUILDING_BATTLESTATION,
+	BUILDING_STAR_BASE,
+	BUILDING_MISSILE_BASE,
+	BUILDING_GROUND_BATTERIES,
+	BUILDING_STELLAR_CONVERTER,
+	BUILDING_FIGHTER_GARRISON,
+	0
 };
 
 StarmapWidget::StarmapWidget(unsigned x, unsigned y, unsigned width,
@@ -755,6 +795,578 @@ void GalaxyMinimapWidget::redraw(int x, int y, unsigned curtick) {
 		}
 
 		drawFleet(x, y, fnode->data, curtick);
+	}
+}
+
+StarSystemWidget::StarSystemWidget(unsigned x, unsigned y, unsigned width,
+	unsigned height, GameState *game, unsigned activePlayer, unsigned star,
+	const Image *bg) : Widget(x, y, width, height), _reticle(NULL),
+	_info(NULL), _bg(bg), _game(game), _activePlayer(activePlayer),
+	_startTick(0), _curOrbit(-1) {
+
+	ImageAsset palImg, reticleImg;
+	unsigned i, j, k;
+	const uint8_t *pal, *rpal[MAX_PLAYERS + 1];
+	uint8_t *palbuf;
+	unsigned rpal_offsets[MAX_PLAYERS + 1] = {
+		0, 25, 37, 215, 245, 75, 228, 12, 189
+	};
+
+	palImg = gameAssets->getImage(GALAXY_ARCHIVE, ASSET_GALAXY_GUI);
+	pal = palImg->palette();
+	palbuf = new uint8_t[2 * PALSIZE];
+	memcpy(palbuf, pal, PALSIZE);
+	memcpy(palbuf + PALSIZE, pal, PALSIZE);
+
+	for (i = 0; i < MAX_PLAYERS + 1; i++) {
+		rpal[i] = palbuf + 4 * rpal_offsets[i];
+	}
+
+	try {
+		reticleImg = gameAssets->getImage(GALAXY_ARCHIVE,
+			ASSET_GALAXY_STARWIDGET_RETICLE, rpal, MAX_PLAYERS + 1);
+	} catch (...) {
+		delete[] palbuf;
+		throw;
+	}
+
+	memset(palbuf, 0, PALSIZE);
+
+	// FIXME: analyze original game and calculate better shadow palette
+	for (i = 1; i < SHADOW_COLOR_COUNT; i++) {
+		palbuf[4 * i] = 17 * i;
+	}
+
+	try {
+		for (i = 0; i < PLANET_SIZE_COUNT; i++) {
+			_planetShadow[i] = gameAssets->getImage(GALAXY_ARCHIVE,
+				ASSET_GALAXY_STARWIDGET_SHADOW + i, palbuf);
+		}
+	} catch (...) {
+		delete[] palbuf;
+		throw;
+	}
+
+	delete[] palbuf;
+
+	for (i = 0; i < STAR_TYPE_COUNT; i++) {
+		_starImg[i] = gameAssets->getImage(GALAXY_ARCHIVE,
+			ASSET_GALAXY_STARWIDGET_STAR_IMAGES + i, pal);
+	}
+
+	for (i = 0, k = 0; i < PLANET_CLIMATE_COUNT; i++) {
+		for (j = 0; j < PLANET_SIZE_COUNT; j++, k++) {
+			_planetImg[i][j] = gameAssets->getImage(GALAXY_ARCHIVE,
+				ASSET_GALAXY_STARWIDGET_PLANET_IMAGES + k, pal);
+		}
+	}
+
+	// FIXME: there are two sets of icons, one filled and one not, why?
+	for (i = 0; i < MAX_PLAYERS; i++) {
+		_colonyIcons[i] = gameAssets->getImage(GALAXY_ARCHIVE,
+			ASSET_GALAXY_STARWIDGET_COLONY_ICONS + i, pal);
+	}
+
+	_gasGiant = gameAssets->getImage(GALAXY_ARCHIVE,
+		ASSET_GALAXY_STARWIDGET_GAS_GIANT_IMAGE, pal);
+	_orbits = gameAssets->getImage(GALAXY_ARCHIVE,
+		ASSET_GALAXY_STARWIDGET_ORBIT_RINGS, pal);
+	_asteroids = gameAssets->getImage(GALAXY_ARCHIVE,
+		ASSET_GALAXY_STARWIDGET_ASTEROIDS, pal);
+
+	setStar(star);
+
+	_reticle = new GuiSprite((Image*)reticleImg, -(reticleImg->width() / 2),
+		-(reticleImg->height() / 2), ANIM_LOOP, 0, 0, 0, 0,
+		PLANET_ANIM_SPEED);
+
+	if (bg) {
+		try {
+			gameAssets->takeAsset(bg);
+		} catch (...) {
+			delete _reticle;
+			throw;
+		}
+	}
+}
+
+StarSystemWidget::~StarSystemWidget(void) {
+	delete _info;
+	delete _reticle;
+
+	if (_bg) {
+		gameAssets->freeAsset(_bg);
+	}
+}
+
+double StarSystemWidget::orbitAngle(unsigned orbit) const {
+	// FIXME: Analyze and implement
+	return 0;
+}
+
+int StarSystemWidget::orbitX(unsigned orbit) const {
+	return cos(orbitAngle(orbit)) * orbitRadiusX[orbit];
+}
+
+int StarSystemWidget::orbitY(unsigned orbit) const {
+	return -sin(orbitAngle(orbit)) * orbitRadiusY[orbit];
+}
+
+int StarSystemWidget::findPlanet(int x, int y) const {
+	unsigned i, ps, pw, ph;
+	int planet_id, orbit, px, py, cx = width() / 2, cy = height() / 2;
+	const Planet *pptr;
+
+	for (i = 0; i < MAX_ORBITS; i++) {
+		orbit = _drawlist[MAX_ORBITS - i - 1];
+
+		if (orbit < 0) {
+			continue;
+		}
+
+		planet_id = _game->getOrbitingPlanetID(_star, orbit);
+		pptr = _game->_planets + planet_id;
+
+		if (pptr->type == PlanetType::ASTEROIDS) {
+			if (orbit) {
+				pw = orbitRadiusX[orbit] +
+					orbitRadiusX[orbit - 1];
+				ph = orbitRadiusY[orbit] +
+					orbitRadiusY[orbit - 1];
+			} else {
+				pw = 3 * orbitRadiusX[orbit] -
+					orbitRadiusX[orbit + 1];
+				ph = 3 * orbitRadiusY[orbit] -
+					orbitRadiusY[orbit + 1];
+			}
+
+			if (isInEllipse(x, y, cx, cy, pw / 2, ph / 2)) {
+				continue;
+			}
+
+			if (orbit < MAX_ORBITS - 1) {
+				pw = orbitRadiusX[orbit] +
+					orbitRadiusX[orbit + 1];
+				ph = orbitRadiusY[orbit] +
+					orbitRadiusY[orbit + 1];
+			} else {
+				pw = 3 * orbitRadiusX[orbit] -
+					orbitRadiusX[orbit - 1];
+				ph = 3 * orbitRadiusY[orbit] -
+					orbitRadiusY[orbit - 1];
+			}
+
+			if (!isInEllipse(x, y, cx, cy, pw / 2, ph / 2)) {
+				continue;
+			}
+
+			return orbit;
+		}
+
+		if (pptr->type == PlanetType::HABITABLE) {
+			ps = planetSpriteSizes[pptr->size];
+		} else {
+			ps = planetSpriteSizes[PLANET_SIZE_COUNT];
+		}
+
+		ps /= 2;
+		px = cx + orbitX(orbit);
+		py = cy + orbitY(orbit);
+
+		if (isInEllipse(x, y, px, py, ps, ps)) {
+			return orbit;
+		}
+	}
+
+	return -1;
+}
+
+void StarSystemWidget::updateDrawlist(void) {
+	unsigned i, j, k, pcount;
+	int tmp, newlist[MAX_ORBITS], ypos[MAX_ORBITS] = {0};
+	const Planet *planets[MAX_ORBITS] = {NULL};
+	const Star *sptr;
+
+	sptr = _game->_starSystems + _star;
+
+	for (i = 0, pcount = 0; i < MAX_ORBITS; i++) {
+		newlist[i] = -1;
+
+		if (sptr->planetIndex[i] < 0) {
+			continue;
+		}
+
+		planets[i] = _game->_planets + sptr->planetIndex[i];
+
+		if (planets[i]->type != PlanetType::ASTEROIDS) {
+			ypos[i] = orbitY(i);
+			newlist[pcount++] = i;
+		}
+	}
+
+	// bubble sort the planets (without asteroids)
+	for (i = 0; i < pcount - 1; i++) {
+		for (j = 1; j < pcount - i; j++) {
+			if (ypos[newlist[j - 1]] > ypos[newlist[j]]) {
+				tmp = newlist[j];
+				newlist[j] = newlist[j - 1];
+				newlist[j - 1] = tmp;
+			}
+		}
+	}
+
+	// insert asteroids
+	for (i = 0; i < MAX_ORBITS; i++) {
+		tmp = j = MAX_ORBITS - i - 1;
+
+		if (!planets[j] || planets[j]->type != PlanetType::ASTEROIDS) {
+			continue;
+		}
+
+		for (j = 0; j < pcount; j++) {
+			if ((newlist[j] == tmp - 1 && ypos[newlist[j]] < 0) ||
+				(newlist[j] == tmp + 1 &&
+				ypos[newlist[j]] > 0)) {
+				break;
+			}
+		}
+
+		for (k = pcount++; k > j; k--) {
+			newlist[k] = newlist[k - 1];
+		}
+
+		newlist[j] = tmp;
+	}
+
+	for (i = 0; i < MAX_ORBITS; i++) {
+		_drawlist[i] = newlist[i];
+	}
+}
+
+void StarSystemWidget::setStar(unsigned star) {
+	unsigned idx, exp;
+	TextLayout *newinfo = NULL, *oldinfo = _info;
+
+	if (star >= _game->_starSystemCount) {
+		throw std::out_of_range("Invalid star ID");
+	} else if (_game->_starSystems[star].spectralClass >= BlackHole) {
+		throw std::out_of_range("Invalid star type");
+	}
+
+	exp = _game->isStarExplored(star, _activePlayer) >= STAR_CHARTED;
+
+	if (!exp) {
+		idx = HSTR_SPECTRAL_CLASS_DESCRIPTIONS;
+		idx += _game->_starSystems[star].spectralClass;
+		newinfo = new TextLayout;
+		newinfo->setFont(FONTSIZE_MEDIUM, FONT_COLOR_STAR_DESCRIPTION,
+			1, OUTLINE_NONE, 2);
+		newinfo->appendText(gameLang->hstrings(idx), 0, 0,
+			width() - 34, ALIGN_JUSTIFY);
+	}
+
+	for (idx = 0; idx < MAX_ORBITS; idx++) {
+		_drawlist[idx] = -1;
+	}
+
+	_star = star;
+	_info = newinfo;
+	_explored = exp;
+	_startTick = 0;
+	highlightOrbit(-1);
+
+	if (oldinfo) {
+		oldinfo->discard();
+	}
+
+	updateDrawlist();
+}
+
+void StarSystemWidget::highlightOrbit(int orbit) {
+	unsigned i, y, climate, lineheight, maxwidth = width();
+	int planet_id;
+	const Star *sptr = _game->_starSystems + _star;
+	const Planet *pptr;
+	const Colony *cptr = NULL;
+	const char *str;
+	TextLayout *newinfo = NULL, *oldinfo = _info;
+	StringBuffer buf;
+
+	if (orbit < 0) {
+		_curOrbit = -1;
+
+		if (_explored) {
+			_info = NULL;
+
+			if (oldinfo) {
+				oldinfo->discard();
+			}
+		}
+
+		return;
+	}
+
+	planet_id = _game->getOrbitingPlanetID(_star, orbit);
+
+	if (planet_id < 0) {
+		throw std::runtime_error("Selected orbit is empty");
+	}
+
+	pptr = _game->_planets + planet_id;
+	newinfo = new TextLayout;
+	newinfo->setFont(FONTSIZE_SMALL, FONT_COLOR_STARWIDGET_PLANET_INFO);
+	lineheight = newinfo->lineHeight();
+
+	if (pptr->type == PlanetType::ASTEROIDS) {
+		str = gameLang->hstrings(HSTR_STARSYSTEM_ASTEROIDS_INFO);
+		newinfo->appendText(str, 0, 0, maxwidth);
+		_curOrbit = -1;
+	} else if (pptr->type == PlanetType::GAS_GIANT) {
+		str = gameLang->hstrings(HSTR_STARSYSTEM_GAS_GIANT_INFO);
+		newinfo->appendText(str, 0, 0, maxwidth);
+		_reticle->setVariant(MAX_PLAYERS);
+		_curOrbit = orbit;
+	} else {
+		if (pptr->colony >= 0) {
+			cptr = _game->_colonies + pptr->colony;
+			i = _game->_players[cptr->owner].color;
+			_reticle->setVariant(i);
+		} else {
+			_reticle->setVariant(MAX_PLAYERS);
+		}
+
+		buf.printf("%s %s", sptr->name,
+			romanNumbers[sptr->planetSeq(pptr->orbit)]);
+
+		if (cptr) {
+			buf.append_printf(" (%s)",
+				gameLang->estrings(ESTR_RACENAME_ALKARI +
+				_game->_players[cptr->owner].picture));
+		}
+
+		newinfo->appendText(buf.c_str(), 0, 0, maxwidth);
+		climate = _game->planetClimate(planet_id);
+		buf.printf("%s, %s", gameLang->estrings(sizesMap[pptr->size]),
+			gameLang->estrings(planetClimateMap[climate]));
+		newinfo->appendText(buf.c_str(), 0, newinfo->height(),
+			maxwidth);
+
+		if (cptr) {
+			str = gameLang->hstrings(HSTR_COLONY_POPULATION);
+			buf.printf(str, cptr->population,
+				_game->planetMaxPop(planet_id, _activePlayer));
+		} else {
+			str = gameLang->hstrings(HSTR_PLANET_POPULATION);
+			buf.printf(str, _game->planetMaxPop(planet_id,
+				_activePlayer));
+		}
+
+		newinfo->appendText(buf.c_str(), 0, newinfo->height(),
+			maxwidth);
+		buf.printf("%s, %s",
+			gameLang->estrings(mineralsMap[pptr->minerals]),
+			gameLang->estrings(ESTR_LGRAVITY_LOW + pptr->gravity));
+		newinfo->appendText(buf.c_str(), 0, newinfo->height(),
+			maxwidth);
+		y = newinfo->height() + 5;
+
+		for (i = 0; cptr && defensiveBuildings[i]; i++) {
+			if (!cptr->buildings[defensiveBuildings[i]]) {
+				continue;
+			}
+
+			str = gameLang->techname(TNAME_BUILDING_NONE +
+				defensiveBuildings[i]);
+			newinfo->appendText(str, 0, y, maxwidth);
+			y += lineheight;
+		}
+
+		if (pptr->special && pptr->special < ORION_SPECIAL) {
+			str = gameLang->estrings(ESTR_SPECIAL_NONE +
+				pptr->special);
+			newinfo->appendText(str, 0, y, maxwidth);
+		}
+
+		_curOrbit = orbit;
+	}
+
+	_reticle->stopAnimation();
+	_reticle->startAnimation();
+	_info = newinfo;
+
+	if (oldinfo) {
+		oldinfo->discard();
+	}
+}
+
+void StarSystemWidget::redrawPlanets(const Star *sptr, const int *drawlist,
+	int x, int y, unsigned curtick) {
+	unsigned i, idx, climate, color, offset;
+	int px, py;
+	double cycle;
+	const Image *pimg, *shadow;
+	const Planet *pptr;
+	const Colony *cptr = NULL;
+
+	for (i = 0; i < MAX_ORBITS; i++) {
+		if (sptr->planetIndex[i] < 0) {
+			continue;
+		}
+
+		pptr = _game->_planets + sptr->planetIndex[i];
+
+		if (pptr->type != PlanetType::ASTEROIDS) {
+			_orbits->drawCentered(x, y, i);
+		}
+	}
+
+	for (i = 0; i < MAX_ORBITS && drawlist[i] >= 0; i++) {
+		idx = drawlist[i];
+		pptr = _game->_planets + sptr->planetIndex[idx];
+
+		if (pptr->type == PlanetType::ASTEROIDS) {
+			_asteroids->drawCentered(x, y, idx);
+			continue;
+		}
+
+		cptr = NULL;
+		px = x + orbitX(idx);
+		py = y + orbitY(idx);
+
+		if (pptr->type == PlanetType::GAS_GIANT) {
+			offset = PLANET_SIZE_COUNT;
+			pimg = (const Image*)_gasGiant;
+			shadow = (const Image*)_planetShadow[offset - 1];
+			px -= planetSpriteSizes[offset] / 2;
+			py -= planetSpriteSizes[offset] / 2;
+			offset = planetShadowOffsets[PLANET_CLIMATE_COUNT];
+		} else {
+			climate = _game->planetClimate(sptr->planetIndex[idx]);
+			pimg = (const Image*)_planetImg[climate][pptr->size];
+			shadow = (const Image*)_planetShadow[pptr->size];
+			px -= planetSpriteSizes[pptr->size] / 2;
+			py -= planetSpriteSizes[pptr->size] / 2;
+			offset = planetShadowOffsets[climate];
+
+			if (pptr->colony >= 0) {
+				cptr = _game->_colonies + pptr->colony;
+			}
+		}
+
+		pimg->draw(px, py, loopFrame(curtick - _startTick,
+			PLANET_ANIM_SPEED, pimg->frameCount()));
+		cycle = orbitAngle(idx) / (2 * M_PI);
+		cycle -= (int)cycle;
+		cycle = cycle < 0 ? cycle + 1 : cycle;
+		shadow->draw(px + offset, py + offset,
+			(unsigned)(cycle * shadow->frameCount()));
+	}
+
+	for (i = 0; i < MAX_ORBITS && drawlist[i] >= 0; i++) {
+		idx = drawlist[i];
+		pptr = _game->_planets + sptr->planetIndex[idx];
+
+		if (pptr->type != PlanetType::HABITABLE || pptr->colony < 0) {
+			continue;
+		}
+
+		px = x + orbitX(idx) - planetSpriteSizes[pptr->size] / 2;
+		py = y + orbitY(idx) - planetSpriteSizes[pptr->size] / 2;
+		cptr = _game->_colonies + pptr->colony;
+		color = _game->_players[cptr->owner].color;
+		_colonyIcons[color]->draw(px - 6, py);
+	}
+
+	if (_curOrbit >= 0) {
+		px = x + orbitX(_curOrbit);
+		py = y + orbitY(_curOrbit);
+		_reticle->redraw(px, py, curtick);
+	}
+}
+
+void StarSystemWidget::redraw(int x, int y, unsigned curtick) {
+	unsigned i, w = width(), h = height();
+	int drawx = x + getX(), drawy = y + getY(), px, py;
+	TextLayout *info;
+	const Star *sptr;
+	int drawlist[MAX_ORBITS];
+
+	if (!_startTick) {
+		_startTick = curtick;
+	}
+
+	if (_bg) {
+		_bg->draw(drawx, drawy);
+	}
+
+	if (!_explored) {
+		info = _info;
+
+		if (info) {
+			drawy += (h - info->height()) / 2;
+			info->redraw(drawx + 16, drawy, curtick);
+		}
+
+		return;
+	}
+
+	sptr = _game->_starSystems + _star;
+
+	for (i = 0; i < MAX_ORBITS; i++) {
+		drawlist[i] = _drawlist[i];
+	}
+
+	drawx += w / 2;
+	drawy += h / 2;
+	_starImg[sptr->spectralClass]->drawCentered(drawx, drawy);
+
+	redrawPlanets(sptr, drawlist, drawx, drawy, curtick);
+	// TODO: draw fleets and satellites
+
+	if (sptr->wormhole >= 0) {
+		StringBuffer buf;
+		const char *str;
+		Font *fnt = gameFonts->getFont(FONTSIZE_SMALLER);
+
+		str = gameLang->hstrings(HSTR_STARSYSTEM_WORMHOLE_INFO);
+		buf.printf(str, _game->_starSystems[sptr->wormhole].name);
+		px = x + getX() + width() - fnt->textWidth(buf.c_str()) - 5;
+		py = y + getY() + height() - fnt->height() - 5;
+		fnt->renderText(px, py, FONT_COLOR_STARWIDGET_WORMHOLE,
+			buf.c_str());
+	}
+
+	info = _info;
+
+	if (info) {
+		x += getX();
+		y += getY();
+		fillTransparentRect(x + 13, y + 12, info->width() + 7,
+			info->height() + 2, RGBA(0x0, 0x80));
+		info->redraw(x + 15, y + 15, curtick);
+		drawFrame(x + 11, y + 10, info->width() + 11,
+			info->height() + 6, planetInfoFrame);
+	}
+}
+
+void StarSystemWidget::handleMouseMove(int x, int y, unsigned buttons) {
+	int idx, oldHL = _curOrbit;
+
+	idx = findPlanet(x - getX(), y - getY());
+
+	if (idx >= 0 && idx != oldHL) {
+		highlightOrbit(idx);
+		_onPlanetHighlight(x, y);
+	}
+}
+
+void StarSystemWidget::handleMouseUp(int x, int y, unsigned button) {
+	int idx;
+
+	idx = findPlanet(x - getX(), y - getY());
+
+	if (idx >= 0) {
+		_onPlanetSelect(x, y);
 	}
 }
 

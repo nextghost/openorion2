@@ -122,6 +122,51 @@ public:
 	void redraw(int x, int y, unsigned curtick);
 };
 
+class StarSystemWidget : public Widget {
+private:
+	ImageAsset _starImg[STAR_TYPE_COUNT];
+	ImageAsset _planetImg[PLANET_CLIMATE_COUNT][PLANET_SIZE_COUNT];
+	ImageAsset _planetShadow[PLANET_SIZE_COUNT];
+	ImageAsset _colonyIcons[MAX_PLAYERS];
+	ImageAsset _gasGiant, _orbits, _asteroids;
+	GuiCallback _onPlanetHighlight, _onPlanetSelect;
+	GuiSprite *_reticle;
+	TextLayout *_info;
+	const Image *_bg;
+	const GameState *_game;
+	unsigned _star, _explored, _activePlayer, _startTick;
+	int _curOrbit;
+	int _drawlist[MAX_ORBITS];
+
+protected:
+	double orbitAngle(unsigned orbit) const;
+	int orbitX(unsigned orbit) const;
+	int orbitY(unsigned orbit) const;
+
+	int findPlanet(int x, int y) const;	// returns orbit ID
+
+	void updateDrawlist(void);
+	void redrawPlanets(const Star *sptr, const int *drawlist, int x, int y,
+		unsigned curtick);
+
+public:
+	StarSystemWidget(unsigned x, unsigned y, unsigned width,
+		unsigned height, GameState *game, unsigned activePlayer,
+		unsigned star, const Image *bg = NULL);
+	~StarSystemWidget(void);
+
+	void setStar(unsigned star);
+	void highlightOrbit(int orbit);
+
+	void setPlanetHighlightCallback(const GuiCallback &callback);
+	void setPlanetSelectCallback(const GuiCallback &callback);
+
+	void handleMouseMove(int x, int y, unsigned buttons);
+	void handleMouseUp(int x, int y, unsigned button);
+
+	void redraw(int x, int y, unsigned curtick);
+};
+
 class GalaxyView : public GuiView {
 private:
 	ImageAsset _bg, _gui, _starimg[STAR_TYPE_COUNT][GALAXY_STAR_SIZES];

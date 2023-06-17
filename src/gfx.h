@@ -176,8 +176,11 @@
 
 #define FONT_COLOR_COLONY_LIST 125
 #define FONT_COLOR_COLONY_LIST_BRIGHT 126
+#define FONT_COLOR_STAR_DESCRIPTION 127
+#define FONT_COLOR_STARWIDGET_PLANET_INFO 128
+#define FONT_COLOR_STARWIDGET_WORMHOLE 129
 
-#define FONT_COLOR_MAX 127
+#define FONT_COLOR_MAX 130
 
 #define RGB(x) (((x) >> 16) & 0xff), (((x) >> 8) & 0xff), ((x) & 0xff)
 #define SRGB(x) 0xff, RGB(x)
