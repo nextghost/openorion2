@@ -413,6 +413,44 @@ void fillRect(int x, int y, unsigned width, unsigned height, uint8_t r,
 		SDL_MapRGB(drawbuffer->format, r, g, b));
 }
 
+void fillTransparentRect(int x, int y, unsigned width, unsigned height,
+	uint8_t a, uint8_t r, uint8_t g, uint8_t b) {
+	SDL_Rect argrect = {x, y, (int)width, (int)height};
+	SDL_Rect bufrect = {0, 0, drawbuffer->w, drawbuffer->h};
+	SDL_Rect drawrect;
+	unsigned i, j;
+	uint32_t da, ra, ga, ba;
+	uint8_t *dest;
+
+	if (!SDL_IntersectRect(&argrect, &bufrect, &drawrect)) {
+		return;
+	}
+
+	x = drawrect.x;
+	y = drawrect.y;
+	width = drawrect.w;
+	height = drawrect.h;
+	da = 0xff - a;
+	ra = uint32_t(a) * r;
+	ga = uint32_t(a) * g;
+	ba = uint32_t(a) * b;
+
+	SDL_LockSurface(drawbuffer);
+
+	for (i = 0; i < height; i++) {
+		dest = (uint8_t*)drawbuffer->pixels;
+		dest += (y + i) * drawbuffer->pitch + x * 4;
+
+		for (j = 0; j < width; j++, dest += 4) {
+			dest[1] = (ra + dest[1] * da) / 0xff;
+			dest[2] = (ga + dest[2] * da) / 0xff;
+			dest[3] = (ba + dest[3] * da) / 0xff;
+		}
+	}
+
+	SDL_UnlockSurface(drawbuffer);
+}
+
 void clearScreen(uint8_t r, uint8_t g, uint8_t b) {
 	fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, r, g, b);
 }

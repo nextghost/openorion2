@@ -54,6 +54,8 @@ void drawRect(int x, int y, unsigned width, unsigned height, uint8_t r = 0,
 	uint8_t g = 0, uint8_t b = 0, unsigned thickness = 1);
 void fillRect(int x, int y, unsigned width, unsigned height, uint8_t r = 0,
 	uint8_t g = 0, uint8_t b = 0);
+void fillTransparentRect(int x, int y, unsigned width, unsigned height,
+	uint8_t a = 0xff, uint8_t r = 0, uint8_t g = 0, uint8_t b = 0);
 void clearScreen(uint8_t r = 0, uint8_t g = 0, uint8_t b = 0);
 
 // Set or remove clipping rectangle on the screen
