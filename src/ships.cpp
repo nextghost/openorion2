@@ -87,12 +87,6 @@ static const unsigned shipTypeHelpEntry[MAX_SHIP_TYPES] = {
 	HELP_TECH_OUTPOST_SHIP
 };
 
-const unsigned npcFleetOwnerNames[NPC_FLEET_OWNERS] = {
-	ESTR_MONSTER_ANTARANS, ESTR_MONSTER_GUARDIAN, ESTR_MONSTER_AMOEBA,
-	ESTR_MONSTER_CRYSTAL, ESTR_MONSTER_DRAGON, ESTR_MONSTER_EEL,
-	ESTR_MONSTER_HYDRA
-};
-
 ShipAssets::ShipAssets(const GameState *game) : _game(game) {
 
 }
@@ -765,15 +759,9 @@ void FleetListView::starSelectionChanged(int x, int y, int arg) {
 }
 
 void FleetListView::fleetHighlightChanged(int x, int y, int arg) {
-	unsigned owner, color, i, tmp, total = 0;
-	const char *str;
+	unsigned owner, color;
 	const Fleet *f = _minimap->highlightedFleet();
 	StringBuffer buf;
-	int shipTypes[] = {COLONY_SHIP, TRANSPORT_SHIP, OUTPOST_SHIP, -1};
-	unsigned shipTypeNames[] = {
-		HSTR_SHIPCLASS_COLONY, HSTR_SHIPCLASS_TRANSPORT,
-		HSTR_SHIPCLASS_OUTPOST
-	};
 
 	if (!f) {
 		_minimapLabel->clear();
@@ -781,10 +769,10 @@ void FleetListView::fleetHighlightChanged(int x, int y, int arg) {
 	}
 
 	owner = f->getOwner();
+	color = FONT_COLOR_FLEETLIST_FLEET_RED;
+	fleetSummary(buf, *f);
 
 	if (owner > MAX_PLAYERS) {
-		buf = gameLang->estrings(npcFleetOwnerNames[owner-MAX_PLAYERS]);
-		buf.toUpper();
 		_minimapLabel->setText(buf.c_str(), FONTSIZE_BIG,
 			FONT_COLOR_FLEETLIST_FLEET_MONSTER, OUTLINE_FULL,
 			ALIGN_CENTER);
@@ -792,49 +780,9 @@ void FleetListView::fleetHighlightChanged(int x, int y, int arg) {
 	}
 
 	if (owner < MAX_PLAYERS) {
-		str = _game->_players[owner].race;
-		color = FONT_COLOR_FLEETLIST_FLEET_RED + f->getColor();
-	} else {
-		str = gameLang->estrings(npcFleetOwnerNames[owner-MAX_PLAYERS]);
-		color = FONT_COLOR_FLEETLIST_FLEET_RED;
+		color += f->getColor();
 	}
 
-	buf.printf(gameLang->hstrings(HSTR_FLEET_RACE_DETAIL_FMT), str);
-	buf.toUpper();
-
-	for (i = 0; shipTypes[i] >= 0; i++) {
-		tmp = f->shipTypeCount(shipTypes[i]);
-
-		if (!tmp) {
-			continue;
-		}
-
-		str = gameLang->hstrings(shipTypeNames[i] + (tmp > 1 ? 1 : 0));
-		buf.append_printf(str, (int)tmp);
-	}
-
-	for (i = 0; i < MAX_COMBAT_SHIP_CLASSES; i++) {
-		tmp = f->combatClassCount(i);
-
-		if (!tmp) {
-			continue;
-		}
-
-		if (tmp == 1) {
-			str = gameLang->techname(TNAME_SHIPCLASS_FRIGATE + i);
-		} else {
-			str = gameLang->techname(TNAME_SHIPCLASS_FRIGATE_PLURAL
-				+ i);
-		}
-
-		buf.append_printf("%u %s, ", tmp, str);
-		total += tmp;
-	}
-
-	str = buf.c_str();
-	i = buf.length() - 1;
-	for (; i > 0 && (str[i] == ',' || str[i] == ' '); i--);
-	buf.truncate(i + 1);
 	_minimapLabel->setText(buf.c_str(), FONTSIZE_SMALLER, color,
 		OUTLINE_FULL, ALIGN_CENTER);
 }
@@ -1251,4 +1199,57 @@ void FleetListView::clickLeaders(int x, int y, int arg) STUB(this)
 
 void FleetListView::clickReturn(int x, int y, int arg) {
 	exitView();
+}
+
+void fleetSummary(StringBuffer &buf, const Fleet &f) {
+	unsigned idx, i, tmp;
+	const char *str;
+	int shipTypes[] = {COLONY_SHIP, TRANSPORT_SHIP, OUTPOST_SHIP, -1};
+	unsigned shipTypeNames[] = {
+		HSTR_SHIPCLASS_COLONY, HSTR_SHIPCLASS_TRANSPORT,
+		HSTR_SHIPCLASS_OUTPOST
+	};
+
+	idx = f.getOwner();
+	str = f.getRace();
+
+	if (idx > MAX_PLAYERS) {
+		buf = str;
+		buf.toUpper();
+		return;
+	}
+
+	buf.printf(gameLang->hstrings(HSTR_FLEET_RACE_DETAIL_FMT), str);
+	buf.toUpper();
+
+	for (i = 0; shipTypes[i] >= 0; i++) {
+		tmp = f.shipTypeCount(shipTypes[i]);
+
+		if (!tmp) {
+			continue;
+		}
+
+		str = gameLang->hstrings(shipTypeNames[i] + (tmp > 1 ? 1 : 0));
+		buf.append_printf(str, (int)tmp);
+	}
+
+	for (i = 0; i < MAX_COMBAT_SHIP_CLASSES; i++) {
+		tmp = f.combatClassCount(i);
+
+		if (!tmp) {
+			continue;
+		} else if (tmp == 1) {
+			idx = TNAME_SHIPCLASS_FRIGATE;
+		} else {
+			idx = TNAME_SHIPCLASS_FRIGATE_PLURAL;
+		}
+
+		str = gameLang->techname(idx + i);
+		buf.append_printf("%u %s, ", tmp, str);
+	}
+
+	str = buf.c_str();
+	i = buf.length() - 1;
+	for (; i > 0 && (str[i] == ',' || str[i] == ' '); i--);
+	buf.truncate(i + 1);
 }

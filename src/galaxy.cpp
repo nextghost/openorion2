@@ -2663,9 +2663,7 @@ void PlanetsListView::redraw(unsigned curtick) {
 			}
 
 			if (node) {
-				owner = node->data->getOwner() - MAX_PLAYERS;
-				owner = npcFleetOwnerNames[owner];
-				buf.printf("(%s)", gameLang->estrings(owner));
+				buf.printf("(%s)", node->data->getRace());
 				smallFnt->centerText(61, y + 41, color,
 					buf.c_str());
 			}

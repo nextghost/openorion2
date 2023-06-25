@@ -166,6 +166,12 @@ static const int shipCrewDefenseBonuses[MAX_SHIP_CREW_LEVELS] = {
 	0, 15, 30, 50, 75
 };
 
+static const unsigned npcFleetOwnerNames[NPC_FLEET_OWNERS] = {
+	ESTR_MONSTER_ANTARANS, ESTR_MONSTER_GUARDIAN, ESTR_MONSTER_AMOEBA,
+	ESTR_MONSTER_CRYSTAL, ESTR_MONSTER_DRAGON, ESTR_MONSTER_EEL,
+	ESTR_MONSTER_HYDRA
+};
+
 GameConfig::GameConfig(void) {
 	version = 0;
 	memset(saveGameName, 0, SAVE_GAME_NAME_SIZE);
@@ -2716,6 +2722,18 @@ uint8_t Fleet::getOwner(void) const {
 
 uint8_t Fleet::getColor(void) const {
 	return _owner < MAX_PLAYERS ? _parent->_players[_owner].color : _owner;
+}
+
+const char *Fleet::getRace(void) const {
+	unsigned idx;
+
+	if (_owner < MAX_PLAYERS) {
+		idx = ESTR_RACENAME_ALKARI + _parent->_players[_owner].picture;
+	} else {
+		idx = npcFleetOwnerNames[_owner - MAX_PLAYERS];
+	}
+
+	return gameLang->estrings(idx);
 }
 
 uint8_t Fleet::getStatus(void) const {

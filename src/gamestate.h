@@ -1397,6 +1397,7 @@ public:
 
 	// Returns player[owner].color for player fleets, owner ID for monsters
 	uint8_t getColor(void) const;
+	const char *getRace(void) const;
 
 	uint8_t getStatus(void) const;
 	uint16_t getX(void) const;
