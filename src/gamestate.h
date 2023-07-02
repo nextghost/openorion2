@@ -1381,6 +1381,7 @@ public:
 	void addShip(unsigned ship_id);
 	void removeShip(size_t pos);
 
+	unsigned getShipID(size_t pos) const;
 	Ship *getShip(size_t pos);
 	const Ship *getShip(size_t pos) const;
 	Star *getOrbitedStar(void);

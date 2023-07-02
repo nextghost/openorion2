@@ -83,7 +83,9 @@ public:
 	unsigned selectedVisibleCount(void) const;
 	unsigned visibleShipCount(void) const;
 	char *getSelection(void); // always zeroed when not in multiselect mode
+	int selectedShipID(void) const; // always returns -1 in multiselect mode
 	Ship *selectedShip(void); // always returns NULL in multiselect mode
+	int highlightedShipID(void) const;
 	Ship *highlightedShip(void);
 
 	virtual void setShipHighlightCallback(const GuiCallback &callback);

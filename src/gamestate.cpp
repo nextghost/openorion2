@@ -2656,20 +2656,20 @@ void Fleet::removeShip(size_t pos) {
 	}
 }
 
-Ship *Fleet::getShip(size_t pos) {
+unsigned Fleet::getShipID(size_t pos) const {
 	if (pos >= _shipCount) {
 		throw std::out_of_range("Invalid ship index");
 	}
 
-	return _parent->_ships + _ships[pos];
+	return _ships[pos];
+}
+
+Ship *Fleet::getShip(size_t pos) {
+	return _parent->_ships + getShipID(pos);
 }
 
 const Ship *Fleet::getShip(size_t pos) const {
-	if (pos >= _shipCount) {
-		throw std::out_of_range("Invalid ship index");
-	}
-
-	return _parent->_ships + _ships[pos];
+	return _parent->_ships + getShipID(pos);
 }
 
 Star *Fleet::getOrbitedStar(void) {

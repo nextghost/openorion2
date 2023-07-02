@@ -402,8 +402,26 @@ char *ShipGridWidget::getSelection(void) {
 	return _selection;
 }
 
+int ShipGridWidget::selectedShipID(void) const {
+	return (!_fleet || _selShip < 0) ? -1 : _fleet->getShipID(_selShip);
+}
+
 Ship *ShipGridWidget::selectedShip(void) {
 	return (_fleet && _selShip >= 0) ? _fleet->getShip(_selShip) : NULL;
+}
+
+int ShipGridWidget::highlightedShipID(void) const {
+	unsigned offset = 0;
+
+	if (_curSlot < 0 || !_fleet) {
+		return -1;
+	}
+
+	if (!_showCombat) {
+		offset = _fleet->combatCount();
+	}
+
+	return _fleet->getShipID(offset + _curSlot);
 }
 
 Ship *ShipGridWidget::highlightedShip(void) {
