@@ -265,6 +265,9 @@ public:
 	int centerText(int x, int y, unsigned color, const char *str,
 		unsigned outline = OUTLINE_NONE, unsigned charSpacing = 1);
 
+	static const uint8_t *titlePalette(unsigned color);
+	static const uint8_t *fontPalette(unsigned color);
+
 	friend class FontManager;
 };
 

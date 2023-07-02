@@ -36,14 +36,14 @@
 static const char *font_archives[LANG_COUNT] = {"fonts.lbx", "fontsg.lbx",
 	"fontsf.lbx", "fontss.lbx", "fontsi.lbx"};
 
-static uint8_t title_palettes[TITLE_COLOR_MAX][TITLE_PALSIZE * 4] = {
+static const uint8_t title_palettes[TITLE_COLOR_MAX][TITLE_PALSIZE * 4] = {
 	{TRANSPARENT, SRGB(0), SRGB(0x302804), SRGB(0x187814), SRGB(0x187814),
 		SRGB(0x187814), SRGB(0x209c1c), SRGB(0x209c1c), SRGB(0x209c1c)},
 	{TRANSPARENT, SRGB(0), SRGB(0x043804), SRGB(0x087008), SRGB(0x087008),
 		SRGB(0x087008), SRGB(0x489038), SRGB(0x489038), SRGB(0x489038)}
 };
 
-static uint8_t font_palettes[FONT_COLOR_MAX][FONT_PALSIZE * 4] = {
+static const uint8_t font_palettes[FONT_COLOR_MAX][FONT_PALSIZE * 4] = {
 	{TRANSPARENT, SRGB(0x302804), SRGB(0x209c1c), SRGB(0x187814)},
 	{TRANSPARENT, SRGB(0x043804), SRGB(0x489038), SRGB(0x087008)},
 	{TRANSPARENT, SRGB(0x580c08), SRGB(0xcc1814), SRGB(0x90141c)},
@@ -685,6 +685,22 @@ int Font::centerText(int x, int y, unsigned color, const char *str,
 	unsigned outline, unsigned charSpacing) {
 	return renderText(x - textWidth(str, charSpacing) / 2, y, color, str,
 		outline, charSpacing);
+}
+
+const uint8_t *Font::titlePalette(unsigned color) {
+	if (color >= TITLE_COLOR_MAX) {
+		throw std::out_of_range("Invalid title font color ID");
+	}
+
+	return title_palettes[color];
+}
+
+const uint8_t *Font::fontPalette(unsigned color) {
+	if (color >= FONT_COLOR_MAX) {
+		throw std::out_of_range("Invalid font color ID");
+	}
+
+	return font_palettes[color];
 }
 
 FontManager::FontManager(unsigned lang_id) : _fontCount(0) {
