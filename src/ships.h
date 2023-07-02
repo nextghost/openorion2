@@ -50,7 +50,7 @@ private:
 	unsigned _combatSelCount, _supportSelCount;
 	char _selection[MAX_SHIPS];
 	int _curSlot, _selShip, _showCombat, _showSupport, _activePlayer;
-	int _multiselect;
+	int _multiselect, _keepHighlight;
 	Fleet *_fleet;
 
 protected:
@@ -64,7 +64,7 @@ public:
 	ShipGridWidget(GuiView *parent, unsigned x, unsigned y, unsigned rows,
 		unsigned cols, unsigned hspace, unsigned vspace,
 		const GameState *game, int activePlayer, Image *slotsel,
-		Image *slotframe = NULL);
+		Image *slotframe = NULL, int keepHighlight = 1);
 	~ShipGridWidget(void);
 
 	void setFleet(Fleet *f, int selection);

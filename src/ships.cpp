@@ -179,14 +179,14 @@ const Image *ShipAssets::getSprite(const Ship *s) const {
 ShipGridWidget::ShipGridWidget(GuiView *parent, unsigned x, unsigned y,
 	unsigned rows, unsigned cols, unsigned hspace, unsigned vspace,
 	const GameState *game, int activePlayer, Image *slotsel,
-	Image *slotframe) :
+	Image *slotframe, int keepHighlight) :
 	Widget(x, y, cols * slotsel->width() + (cols - 1) * hspace,
 	rows * slotsel->height() + (rows - 1) * vspace), _parent(parent),
 	_slotsel(slotsel), _slotframe(slotframe), _shipimg(game), _rows(rows),
 	_cols(cols), _hspace(hspace), _vspace(vspace), _scroll(0),
 	_combatSelCount(0), _supportSelCount(0), _curSlot(-1), _selShip(-1),
 	_showCombat(1), _showSupport(1), _activePlayer(activePlayer),
-	_multiselect(1), _fleet(NULL) {
+	_multiselect(1), _keepHighlight(keepHighlight), _fleet(NULL) {
 
 	if (!rows || !cols) {
 		throw std::invalid_argument(
@@ -429,12 +429,12 @@ void ShipGridWidget::setSelectionChangeCallback(const GuiCallback &callback) {
 }
 
 void ShipGridWidget::handleMouseMove(int x, int y, unsigned buttons) {
-	int slot, count;
+	int slot;
 
 	slot = getSlot(x, y);
-	count = visibleShipCount();
+	slot = slot >= (int)visibleShipCount() ? -1 : slot;
 
-	if (slot >= 0 && slot < count && slot != _curSlot &&
+	if ((!_keepHighlight || slot >= 0) && slot != _curSlot &&
 		_fleet->getOwner() == _activePlayer) {
 		_curSlot = slot;
 		_onShipHighlight(x, y);
