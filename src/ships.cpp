@@ -1108,27 +1108,11 @@ void FleetListView::redrawShipInfo(unsigned curtick) {
 
 		if (eta) {
 			StringBuffer buf;
-			Font *fnt;
 
-			fnt = gameFonts->getFont(FONTSIZE_SMALL);
-			x += w / 2;
-			y += 1 + (h - fnt->height()) / 2;
 			str = gameLang->hstrings(HSTR_FLEET_OFFICER_ETA);
 			buf.printf(str, eta);
-			w = fnt->textWidth(buf.c_str(), 2);
-			x -= w / 2;
-
-			// double outline
-			fnt->renderText(x + 1, y + 1,
-				FONT_COLOR_FLEETLIST_SPECDAMAGE, buf.c_str(),
-				OUTLINE_FULL, 2);
-			fnt->renderText(x, y, FONT_COLOR_FLEETLIST_SPECDAMAGE,
-				buf.c_str(), OUTLINE_FULL, 2);
-			fillRect(x - 1, y - 4, w + 3, 1, 0xc4, 0, 0);
-			fillRect(x - 1, y - 3, w + 3, 1, 0x50, 0x0c, 0x0c);
-			y += fnt->height();
-			fillRect(x - 1, y, w + 3, 1, 0x50, 0x0c, 0x0c);
-			fillRect(x - 1, y + 1, w + 3, 1, 0xc4, 0, 0);
+			drawETA(x + w / 2, y + 1 + h / 2,
+				FONT_COLOR_FLEETLIST_SPECDAMAGE, buf.c_str());
 		}
 	}
 

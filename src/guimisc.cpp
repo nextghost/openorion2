@@ -176,6 +176,28 @@ void drawFrame(int x, int y, unsigned width, unsigned height,
 	fillRect(x + 2, y + height - 2, width - 3, 1, clr[0], clr[1], clr[2]);
 }
 
+void drawETA(int x, int y, unsigned color, const char *str) {
+	unsigned w;
+	Font *fnt;
+	const uint8_t *pal;
+
+	fnt = gameFonts->getFont(FONTSIZE_SMALL);
+	w = fnt->textWidth(str, 2);
+	x -= w / 2;
+	y -= fnt->height() / 2;
+	pal = Font::fontPalette(color);
+
+	// double outline
+	fnt->renderText(x + 1, y + 1, color, str, OUTLINE_FULL, 2);
+	fnt->renderText(x, y, color, str, OUTLINE_FULL, 2);
+	fillRect(x - 1, y - 4, w + 3, 1, pal[9], pal[10], pal[11]);
+	fillRect(x - 1, y - 3, w + 3, 1, pal[5], pal[6], pal[7]);
+	y += fnt->height();
+	fillRect(x - 1, y, w + 3, 1, pal[5], pal[6], pal[7]);
+	fillRect(x - 1, y + 1, w + 3, 1, pal[9], pal[10], pal[11]);
+
+}
+
 unsigned spriteSpacing(unsigned maxWidth, unsigned spriteWidth,
 	unsigned count, unsigned maxSpace) {
 

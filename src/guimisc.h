@@ -61,6 +61,7 @@ public:
 // colors must point to array of 4 RGB triplets
 void drawFrame(int x, int y, unsigned width, unsigned height,
 	const uint8_t *colors);
+void drawETA(int x, int y, unsigned color, const char *str);
 
 unsigned spriteSpacing(unsigned maxWidth, unsigned spriteWidth, unsigned count,
 	unsigned maxSpace);
