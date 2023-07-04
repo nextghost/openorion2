@@ -1335,6 +1335,7 @@ public:
 	Planet *getOrbitingPlanet(unsigned star_id, unsigned orbit);
 	BilistNode<Fleet> *getMovingFleets(void);
 	const BilistNode<Fleet> *getMovingFleets(void) const;
+	Fleet *findFleet(const Ship *s);
 
 	StarKnowledge isStarExplored(unsigned star_id,
 		unsigned player_id) const;

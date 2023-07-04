@@ -2204,6 +2204,22 @@ const BilistNode<Fleet> *GameState::getMovingFleets(void) const {
 	return _firstMovingFleet.next();
 }
 
+Fleet *GameState::findFleet(const Ship *s) {
+	Fleet *ret;
+
+	if (!s->isActive()) {
+		return NULL;
+	}
+
+	ret = findFleet(s->owner, s->status, s->x, s->y, s->getStarID());
+
+	if (!ret) {
+		throw std::runtime_error("Active ship without fleet");
+	}
+
+	return ret;
+}
+
 StarKnowledge GameState::isStarExplored(unsigned star_id,
 	unsigned player_id) const {
 
