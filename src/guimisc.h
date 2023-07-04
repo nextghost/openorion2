@@ -36,6 +36,8 @@ private:
 public:
 	MessageBoxWindow(GuiView *parent, const char *text,
 		unsigned flags = WINDOW_MOVABLE | WINDOW_MODAL);
+	MessageBoxWindow(GuiView *parent, const char *title, const char *text,
+		unsigned flags = WINDOW_MOVABLE | WINDOW_MODAL);
 	MessageBoxWindow(GuiView *parent, unsigned help_id,
 		const uint8_t *palette,
 		unsigned flags = WINDOW_MOVABLE | WINDOW_MODAL);

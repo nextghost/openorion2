@@ -42,6 +42,20 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *text,
 	initWidgets();
 }
 
+MessageBoxWindow::MessageBoxWindow(GuiView *parent, const char *title,
+	const char *text, unsigned flags) : GuiWindow(parent, flags) {
+
+	initAssets();
+	_text.setFont(FONTSIZE_TITLE, TITLE_COLOR_HELP, 2, OUTLINE_NONE, 2);
+	_text.appendText(title, 0, 0, _width - 40, ALIGN_CENTER);
+	_text.setFont(FONTSIZE_MEDIUM, FONT_COLOR_HELP, 2, OUTLINE_NONE, 2);
+	_text.appendText(text, 0, _text.height() + 6, _width - 40);
+	_height += _text.height() >= 32 ? _text.height() - 32 : 0;
+	_y = (SCREEN_HEIGHT - _height) / 2;
+
+	initWidgets();
+}
+
 MessageBoxWindow::MessageBoxWindow(GuiView *parent, unsigned help_id,
 	const uint8_t *palette, unsigned flags) : GuiWindow(parent, flags) {
 
