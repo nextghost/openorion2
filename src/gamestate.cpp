@@ -140,7 +140,7 @@ static const unsigned skillNameTable[MAX_SKILL_TYPES][2*MAX_COMMON_SKILLS] = {
 	}
 };
 
-static const unsigned skillNumTable[MAX_SKILL_TYPES][2*MAX_COMMON_SKILLS] = {
+static const unsigned skillNumTable[MAX_SKILL_TYPES][MAX_COMMON_SKILLS] = {
 	{0, 1, 2, 5, 14, 16, 18, 22, 24, 25},
 	{3, 7, 9, 10, 15, 17, 20, 26},
 	{4, 6, 8, 11, 12, 13, 19, 21, 23}
@@ -599,7 +599,7 @@ void Leader::load(ReadStream &stream) {
 	location = stream.readSint16LE();
 	eta = stream.readUint8();
 	displayLevelUp = stream.readUint8();
-	status = stream.readUint8();
+	status = stream.readSint8();
 	playerIndex = stream.readSint8();
 }
 
@@ -693,6 +693,10 @@ int Leader::skillBonus(unsigned id) const {
 void Leader::validate(void) const {
 	if (picture >= LEADER_COUNT) {
 		throw std::out_of_range("Invalid leader picture");
+	}
+
+	if (status == LeaderState::Working && location < 0) {
+		throw std::runtime_error("Working officer has no location");
 	}
 }
 

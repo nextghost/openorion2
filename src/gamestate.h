@@ -627,6 +627,21 @@ enum LeaderSkills {
 	SKILL_TACTICS
 };
 
+enum LeaderState {
+	Dead = -2,	// FIXME: check
+	Unavailable = -1,	// Alive but not offering services to anyone
+	Idle = 0,
+	Working,
+
+	// Temporary idle state after a leader has been removed from
+	// assignment. The leader can be returned to the last assignment
+	// without the usual delay. Closing the leader list screen
+	// automatically changes this state to Idle.
+	Unassigned,
+	// FIXME: Unknown state 3
+	ForHire = 4
+};
+
 enum ShipState {
 	InOrbit = 0,
 	InTransit,
@@ -928,7 +943,7 @@ struct Leader {
 	uint8_t eta;
 	// if true show level up popup for the leader
 	uint8_t displayLevelUp;
-	uint8_t status;
+	int8_t status;
 	int8_t playerIndex;
 
 	Leader(void);
