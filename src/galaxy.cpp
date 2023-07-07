@@ -24,6 +24,7 @@
 #include "mainmenu.h"
 #include "lang.h"
 #include "ships.h"
+#include "officer.h"
 #include "galaxy.h"
 
 #define STARSEL_FRAMECOUNT 6
@@ -2137,7 +2138,9 @@ void GalaxyView::clickFleetsButton(int x, int y, int arg) {
 	gui_stack->push(new FleetListView(_game, _activePlayer));
 }
 
-void GalaxyView::clickLeadersButton(int x, int y, int arg) STUB(this)
+void GalaxyView::clickLeadersButton(int x, int y, int arg) {
+	gui_stack->push(new LeaderListView(_game, _activePlayer));
+}
 
 void GalaxyView::clickRacesButton(int x, int y, int arg) STUB(this)
 

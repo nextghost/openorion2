@@ -23,6 +23,7 @@
 #include "guimisc.h"
 #include "lang.h"
 #include "galaxy.h"
+#include "officer.h"
 #include "ships.h"
 
 #define FLEETLIST_ARCHIVE "fleet.lbx"
@@ -1197,7 +1198,9 @@ void FleetListView::clickRelocate(int x, int y, int arg) STUB(this)
 
 void FleetListView::clickScrap(int x, int y, int arg) STUB(this)
 
-void FleetListView::clickLeaders(int x, int y, int arg) STUB(this)
+void FleetListView::clickLeaders(int x, int y, int arg) {
+	gui_stack->push(new LeaderListView(_game, _activePlayer));
+}
 
 void FleetListView::clickReturn(int x, int y, int arg) {
 	exitView();
