@@ -22,6 +22,7 @@
 
 #include <ctime>
 #include <cstdarg>
+#include <cstdint>
 #include <stdexcept>
 
 #ifndef MIN
