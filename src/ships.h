@@ -92,6 +92,7 @@ public:
 	virtual void setSelectionChangeCallback(const GuiCallback &callback);
 
 	void handleMouseMove(int x, int y, unsigned buttons);
+	void handleMouseOut(int x, int y, unsigned buttons);
 	void handleMouseUp(int x, int y, unsigned button);
 
 	void redraw(int x, int y, unsigned curtick);

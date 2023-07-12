@@ -463,6 +463,15 @@ void ShipGridWidget::handleMouseMove(int x, int y, unsigned buttons) {
 	Widget::handleMouseMove(x, y, buttons);
 }
 
+void ShipGridWidget::handleMouseOut(int x, int y, unsigned buttons) {
+	if (_curSlot >= 0 && !_keepHighlight) {
+		_curSlot = -1;
+		_onShipHighlight(x, y);
+	}
+
+	Widget::handleMouseOut(x, y, buttons);
+}
+
 void ShipGridWidget::handleMouseUp(int x, int y, unsigned button) {
 	int slot, count;
 
