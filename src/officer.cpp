@@ -112,10 +112,18 @@ LeaderListView::LeaderListView(GameState *game, int activePlayer) :
 
 		if (type == LEADER_TYPE_ADMIN &&
 			_adminCount < MAX_HIRED_LEADERS) {
-			_admins[_adminCount++] = i;
+			_admins[_adminCount] = i;
+			_adminNames[_adminCount].printf("%s %s",
+				_game->_leaders[i].rank(),
+				_game->_leaders[i].name);
+			_adminCount++;
 		} else if (type == LEADER_TYPE_CAPTAIN &&
 			_captainCount < MAX_HIRED_LEADERS) {
-			_captains[_captainCount++] = i;
+			_captains[_captainCount] = i;
+			_captainNames[_captainCount].printf("%s %s",
+				_game->_leaders[i].rank(),
+				_game->_leaders[i].name);
+			_captainCount++;
 		}
 	}
 
@@ -307,6 +315,24 @@ int LeaderListView::getLeaderID(int slot) const {
 	}
 }
 
+const char *LeaderListView::getRankedName(int slot) const {
+	if (slot < 0) {
+		return "";
+	}
+
+	if (_panelChoice->value()) {
+		if (slot < (int)_captainCount) {
+			return _captainNames[slot].c_str();
+		}
+	} else {
+		if (slot < (int)_adminCount) {
+			return _adminNames[slot].c_str();
+		}
+	}
+
+	return "";
+}
+
 unsigned LeaderListView::drawSkills(unsigned x, unsigned y, const Leader *lptr,
 	unsigned base, unsigned count, unsigned color) {
 
@@ -348,7 +374,7 @@ void LeaderListView::redraw(unsigned curtick) {
 	Font *fnt, *smallfnt;
 	const Image *img;
 	const char *str;
-	StringBuffer buf;
+	StringBuffer buf, *namelist;
 
 	clearScreen();
 	_bg->draw(0, 0);
@@ -357,11 +383,13 @@ void LeaderListView::redraw(unsigned curtick) {
 
 	if (_panelChoice->value()) {
 		idlist = _captains;
+		namelist = _captainNames;
 		count = _captainCount;
 		skillbase = CAPTAIN_SKILLS_TYPE;
 		skillcount = MAX_CAPTAIN_SKILLS;
 	} else {
 		idlist = _admins;
+		namelist = _adminNames;
 		count = _adminCount;
 		skillbase = ADMIN_SKILLS_TYPE;
 		skillcount = MAX_ADMIN_SKILLS;
@@ -378,11 +406,8 @@ void LeaderListView::redraw(unsigned curtick) {
 
 		x = LEADER_LIST_INFO_X;
 		y = LEADER_LIST_FIRST_ROW + i * LEADER_LIST_ROW_DIST;
-		buf = ptr->rank();
-		buf += " ";
-		buf += ptr->name;
 		fnt->centerText(x + LEADER_LIST_INFO_WIDTH / 2, y, color2,
-			buf.c_str(), OUTLINE_FULL);
+			namelist[i].c_str(), OUTLINE_FULL);
 
 		x = LEADER_LIST_PORTRAIT_X;
 
@@ -496,12 +521,8 @@ void LeaderListView::showSlotHelp(int x, int y, int arg) {
 	int idx = getLeaderID(arg);
 	Leader *ptr = idx >= 0 ? _game->_leaders + idx : NULL;
 	Font *fnt;
-	const char *str;
+	const char *str, *name = getRankedName(arg);
 	StringBuffer buf, namebuf;
-
-	if (ptr) {
-		namebuf.printf("%s %s", ptr->rank(), ptr->name);
-	}
 
 	if (x < LEADER_LIST_INFO_X) {
 		if (!ptr) {
@@ -510,13 +531,13 @@ void LeaderListView::showSlotHelp(int x, int y, int arg) {
 
 		if (ptr->status == LeaderState::Idle) {
 			str = gameLang->hstrings(HSTR_OFFICER_LOCATION_POOL);
-			buf.printf(str, namebuf.c_str());
+			buf.printf(str, name);
 			new ErrorWindow(this, buf.c_str());
 			return;
 		} else if (ptr->status != LeaderState::Working ||
 			ptr->location < 0) {
 			str = gameLang->hstrings(HSTR_OFFICER_LOCATION_NONE);
-			buf.printf(str, namebuf.c_str());
+			buf.printf(str, name);
 			new ErrorWindow(this, buf.c_str());
 			return;
 		}
@@ -527,15 +548,14 @@ void LeaderListView::showSlotHelp(int x, int y, int arg) {
 			if (sptr->status == ShipState::InRefit) {
 				i = HSTR_OFFICER_LOCATION_REFIT;
 				idx = sptr->getStarID();
-				buf.printf(gameLang->hstrings(i),
-					namebuf.c_str(), sptr->design.name,
+				buf.printf(gameLang->hstrings(i), name,
+					sptr->design.name,
 					_game->_starSystems[idx].name);
 				new ErrorWindow(this, buf.c_str());
 				return;
 			} else if (!sptr->isActive()) {
 				i = HSTR_OFFICER_LOCATION_MISSING;
-				buf.printf(gameLang->hstrings(i),
-					namebuf.c_str());
+				buf.printf(gameLang->hstrings(i), name);
 				new ErrorWindow(this, buf.c_str());
 				return;
 			}
@@ -585,12 +605,12 @@ void LeaderListView::showSlotHelp(int x, int y, int arg) {
 
 		if (i < total) {
 			idx = HSTR_OFFICER_DEFINITE_ARTICLE;
+			namebuf = name;
 			namebuf.append(gameLang->hstrings(idx));
 			namebuf.append(ptr->title);
 			namebuf.append(",");
 			idx = ptr->skillNum(skill_list[i]);
-			buf.printf(gameLang->skilldesc(idx),
-				namebuf.c_str(),
+			buf.printf(gameLang->skilldesc(idx), namebuf.c_str(),
 				abs(ptr->skillBonus(skill_list[i])));
 			new MessageBoxWindow(this, gameLang->skillname(idx),
 				buf.c_str());

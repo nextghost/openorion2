@@ -38,6 +38,8 @@ private:
 	ImageAsset _bg, _leaderImg[LEADER_COUNT], _leaderDarkImg[LEADER_COUNT];
 	ImageAsset _skillImg[MAX_SKILLS];
 	unsigned _admins[MAX_HIRED_LEADERS], _captains[MAX_HIRED_LEADERS];
+	StringBuffer _adminNames[MAX_HIRED_LEADERS];
+	StringBuffer _captainNames[MAX_HIRED_LEADERS];
 	unsigned _adminCount, _captainCount;
 	Fleet *_curFleet;
 
@@ -57,6 +59,7 @@ protected:
 	void updateScrollbar(void);
 
 	int getLeaderID(int slot) const;
+	const char *getRankedName(int slot) const;
 
 	unsigned drawSkills(unsigned x, unsigned y, const Leader *lptr,
 		unsigned base, unsigned count, unsigned color);
