@@ -401,10 +401,14 @@ void TextManager::clear(void) {
 
 	for (i = 0; i < TXT_HELPSECTION_COUNT; i++) {
 		delete[] _helpIndex[i];
+		_helpIndex[i] = NULL;
+		_helpIndexCount[i] = 0;
 	}
 
 	delete[] _diplomsg;
 	delete[] _help;
+	_diplomsg = NULL;
+	_help = NULL;
 }
 
 void TextManager::loadDiplomsg(unsigned lang_id) {
