@@ -604,10 +604,11 @@ void LeaderListView::showSlotHelp(int x, int y, int arg) {
 		i = y / (_skillImg[0]->height() + 1);
 
 		if (i < total) {
+			str = gameLang->officerTitle(idx);
 			idx = HSTR_OFFICER_DEFINITE_ARTICLE;
 			namebuf = name;
 			namebuf.append(gameLang->hstrings(idx));
-			namebuf.append(ptr->title);
+			namebuf.append(str);
 			namebuf.append(",");
 			idx = ptr->skillNum(skill_list[i]);
 			buf.printf(gameLang->skilldesc(idx), namebuf.c_str(),

@@ -21,6 +21,7 @@
 #include <cstring>
 #include "system.h"
 #include "lbx.h"
+#include "gamestate.h"
 
 #define LBX_MAGIC 0xfead
 
@@ -62,6 +63,8 @@ static const char *estrings_archives[] = {"estrings.lbx", "estrgerm.lbx",
 	"estrfren.lbx", "estrspan.lbx", "estrital.lbx"};
 static const char *hstrings_archives[] = {"hestrngs.lbx", "hgstrngs.lbx",
 	"hfstrngs.lbx", "hsstrngs.lbx", "histrngs.lbx"};
+static const char *officer_archives[] = {"herodata.lbx", "herodatg.lbx",
+	"herodatf.lbx", "herodats.lbx", "herodati.lbx"};
 static const char *help_archives[] = {"help.lbx", "ger_help.lbx",
 	"fre_help.lbx", "spa_help.lbx", "ita_help.lbx"};
 
@@ -379,8 +382,8 @@ void TextManager::StringList::loadStrings(const char *filename,
 	delete asset;
 }
 
-TextManager::TextManager(unsigned lang_id) : _diplomsg(NULL),
-	_diplomsgCount(0), _help(NULL), _helpCount(0) {
+TextManager::TextManager(unsigned lang_id) : _officerTitle(NULL),
+	_diplomsg(NULL), _diplomsgCount(0), _help(NULL), _helpCount(0) {
 
 	unsigned i;
 
@@ -405,8 +408,15 @@ void TextManager::clear(void) {
 		_helpIndexCount[i] = 0;
 	}
 
+	for (i = 0; _officerTitle && i < LEADER_COUNT; i++) {
+		delete[] _officerTitle[i];
+		_officerTitle[i] = NULL;
+	}
+
+	delete[] _officerTitle;
 	delete[] _diplomsg;
 	delete[] _help;
+	_officerTitle = NULL;
 	_diplomsg = NULL;
 	_help = NULL;
 }
@@ -553,6 +563,41 @@ void TextManager::loadHelp(unsigned lang_id) {
 	delete lbx;
 }
 
+void TextManager::loadOfficerTitles(unsigned lang_id) {
+	unsigned i, count, size;
+	LBXArchive *lbx;
+	MemoryReadStream *asset = NULL;
+	Leader tmp;
+
+	lbx = openLBX(officer_archives[lang_id]);
+
+	try {
+		asset = lbx->loadAsset(0);
+		count = asset->readUint16LE();
+		size = asset->readUint16LE();
+
+		if (count != LEADER_COUNT || size != LEADER_DATA_SIZE) {
+			throw std::runtime_error("Invalid officer data format");
+		}
+
+		_officerTitle = new char*[count];
+		memset(_officerTitle, 0, count * sizeof(char*));
+
+		for (i = 0; i < count; i++) {
+			tmp.load(*asset);
+			_officerTitle[i] = copystr(tmp.title);
+		}
+
+		delete asset;
+	} catch (...) {
+		delete asset;
+		delete lbx;
+		throw;
+	}
+
+	delete lbx;
+}
+
 void TextManager::load(unsigned lang_id) {
 	unsigned i;
 
@@ -587,6 +632,7 @@ void TextManager::load(unsigned lang_id) {
 	try {
 		loadDiplomsg(lang_id);
 		loadHelp(lang_id);
+		loadOfficerTitles(lang_id);
 	} catch (...) {
 		clear();
 		throw;
@@ -675,6 +721,14 @@ const char *TextManager::raceInfo(unsigned str_id) const {
 
 const char *TextManager::techname(unsigned str_id) const {
 	return _techname[str_id];
+}
+
+const char *TextManager::officerTitle(unsigned officer_id) const {
+	if (!_officerTitle || officer_id >= LEADER_COUNT) {
+		throw std::out_of_range("Officer ID out of range");
+	}
+
+	return _officerTitle[officer_id];
 }
 
 const char *TextManager::diplomsg(unsigned asset_id, unsigned str_id) const {

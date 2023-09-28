@@ -147,6 +147,7 @@ private:
 	struct StringList _raceInfo;	// racestuf.lbx assets 8-13
 	struct StringList _techname;
 
+	char **_officerTitle;
 	struct StringList *_diplomsg;
 	unsigned _diplomsgCount;
 
@@ -167,6 +168,7 @@ protected:
 
 	void loadDiplomsg(unsigned lang_id);
 	void loadHelp(unsigned lang_id);
+	void loadOfficerTitles(unsigned lang_id);
 	void load(unsigned lang_id);
 
 public:
@@ -192,6 +194,7 @@ public:
 	const char *raceTraits(unsigned str_id) const;
 	const char *raceInfo(unsigned str_id) const;
 	const char *techname(unsigned str_id) const;
+	const char *officerTitle(unsigned officer_id) const;
 	const char *diplomsg(unsigned asset_id, unsigned str_id) const;
 	const struct HelpText *help(unsigned id) const;
 	const struct HelpLink *helpIndex(unsigned section_id,
