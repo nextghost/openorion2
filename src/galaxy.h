@@ -301,6 +301,10 @@ private:
 
 	void initWidgets(const uint8_t *palette);
 
+protected:
+	void newGame(int x, int y, int arg);
+	void quitGame(int x, int y, int arg);
+
 public:
 	// MainMenuWindow does not take ownership of the gamestate
 	MainMenuWindow(GuiView *parent, GameState *game);

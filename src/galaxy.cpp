@@ -3001,6 +3001,13 @@ void MainMenuWindow::initWidgets(const uint8_t *pal) {
 		HELP_GAMEMENU_RETURN));
 }
 
+void MainMenuWindow::newGame(int x, int y, int arg) STUB(_parent)
+
+void MainMenuWindow::quitGame(int x, int y, int arg) {
+	_parent->close();
+	gui_stack->clear();
+}
+
 void MainMenuWindow::redraw(unsigned curtick) {
 	_bg->draw(_x, _y);
 	redrawWidgets(_x, _y, curtick);
@@ -3012,7 +3019,13 @@ void MainMenuWindow::showHelp(int x, int y, int arg) {
 	new MessageBoxWindow(_parent, arg, img->palette());
 }
 
-void MainMenuWindow::clickNew(int x, int y, int arg) STUB(_parent)
+void MainMenuWindow::clickNew(int x, int y, int arg) {
+	ConfirmationWindow *w;
+
+	w = new ConfirmationWindow(_parent,
+		gameLang->hstrings(HSTR_MAINMENU_ASK_NEWGAME));
+	w->setYesCallback(GuiMethod(*this, &MainMenuWindow::newGame));
+}
 
 void MainMenuWindow::clickSave(int x, int y, int arg) STUB(_parent)
 
@@ -3021,8 +3034,11 @@ void MainMenuWindow::clickLoad(int x, int y, int arg) {
 }
 
 void MainMenuWindow::clickQuit(int x, int y, int arg) {
-	_parent->close();
-	gui_stack->clear();
+	ConfirmationWindow *w;
+
+	w = new ConfirmationWindow(_parent,
+		gameLang->hstrings(HSTR_MAINMENU_ASK_QUIT));
+	w->setYesCallback(GuiMethod(*this, &MainMenuWindow::quitGame));
 }
 
 void MainMenuWindow::clickSettings(int x, int y, int arg) STUB(_parent)
