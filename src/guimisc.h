@@ -46,6 +46,27 @@ public:
 	void redraw(unsigned curtick);
 };
 
+class ConfirmationWindow : public GuiWindow {
+private:
+	ImageAsset _bg;
+	GuiCallback _onYes, _onNo;
+	TextLayout _text;
+
+	void initWidgets(void);
+
+public:
+	ConfirmationWindow(GuiView *parent, const char *text,
+		unsigned flags = WINDOW_MOVABLE | WINDOW_MODAL);
+
+	void setYesCallback(const GuiCallback &callback);
+	void setNoCallback(const GuiCallback &callback);
+
+	void clickYes(int x, int y, int arg);
+	void clickNo(int x, int y, int arg);
+
+	void redraw(unsigned curtick);
+};
+
 class ErrorWindow : public GuiWindow {
 private:
 	ImageAsset _bg;

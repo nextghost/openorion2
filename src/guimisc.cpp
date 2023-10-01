@@ -27,6 +27,16 @@
 #define ASSET_TEXTBOX_FOOTER 2
 #define ASSET_TEXTBOX_BUTTON 3
 
+#define CONFIRMATION_ARCHIVE "confirm.lbx"
+#define ASSET_CONFIRM_BACKGROUND 0
+#define ASSET_CONFIRM_YES_BUTTON 1
+#define ASSET_CONFIRM_NO_BUTTON 2
+
+#define CONFIRM_TEXT_X 44
+#define CONFIRM_TEXT_Y 33
+#define CONFIRM_TEXT_WIDTH 223
+#define CONFIRM_TEXT_HEIGHT 133
+
 #define ERROR_ARCHIVE "warning.lbx"
 #define ASSET_ERROR_BACKGROUND 0
 
@@ -135,6 +145,71 @@ void MessageBoxWindow::redraw(unsigned curtick) {
 		_height - by - fh);
 	_footer->draw(_x, _y + _height - fh);
 	_text.redraw(_x + 20, _y + 11, curtick);
+	redrawWidgets(_x, _y, curtick);
+}
+
+ConfirmationWindow::ConfirmationWindow(GuiView *parent, const char *text,
+	unsigned flags) : GuiWindow(parent, flags) {
+
+	_bg = gameAssets->getImage(CONFIRMATION_ARCHIVE,
+		ASSET_CONFIRM_BACKGROUND);
+
+	_width = _bg->width();
+	_height = _bg->height();
+	_x = (SCREEN_WIDTH - _width) / 2;
+	_y = (SCREEN_HEIGHT - _height) / 2;
+
+	_text.setFont(FONTSIZE_BIG, FONT_COLOR_FLEETLIST_STAR_ORANGE, 2,
+		OUTLINE_NONE, 2);
+	_text.appendText(text, 0, 0, CONFIRM_TEXT_WIDTH, ALIGN_CENTER);
+	initWidgets();
+}
+
+void ConfirmationWindow::initWidgets(void) {
+	Widget *w;
+	const uint8_t *pal = _bg->palette();
+
+	w = createWidget(74, 185, 51, 21);
+	w->setIdleSprite(CONFIRMATION_ARCHIVE, ASSET_CONFIRM_YES_BUTTON, pal,
+		0);
+	w->setClickSprite(MBUTTON_LEFT, CONFIRMATION_ARCHIVE,
+		ASSET_CONFIRM_YES_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &ConfirmationWindow::clickYes));
+
+	w = createWidget(184, 185, 51, 22);
+	w->setIdleSprite(CONFIRMATION_ARCHIVE, ASSET_CONFIRM_NO_BUTTON, pal, 0);
+	w->setClickSprite(MBUTTON_LEFT, CONFIRMATION_ARCHIVE,
+		ASSET_CONFIRM_NO_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &ConfirmationWindow::clickNo));
+}
+
+void ConfirmationWindow::setYesCallback(const GuiCallback &callback) {
+	_onYes = callback;
+}
+
+void ConfirmationWindow::setNoCallback(const GuiCallback &callback) {
+	_onNo = callback;
+}
+
+void ConfirmationWindow::clickYes(int x, int y, int arg) {
+	_onYes(x, y);
+	close(x, y, arg);
+}
+
+void ConfirmationWindow::clickNo(int x, int y, int arg) {
+	_onNo(x, y);
+	close(x, y, arg);
+}
+
+void ConfirmationWindow::redraw(unsigned curtick) {
+	int offset;
+
+	offset = (CONFIRM_TEXT_HEIGHT - (int)_text.height()) / 2;
+	_bg->draw(_x, _y);
+	_text.redraw(_x + CONFIRM_TEXT_X, _y + CONFIRM_TEXT_Y + offset,
+		curtick);
 	redrawWidgets(_x, _y, curtick);
 }
 
