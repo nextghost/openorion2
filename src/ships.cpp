@@ -399,6 +399,14 @@ unsigned ShipGridWidget::visibleShipCount(void) const {
 	return ret;
 }
 
+Fleet *ShipGridWidget::getFleet(void) {
+	return _fleet;
+}
+
+const Fleet *ShipGridWidget::getFleet(void) const {
+	return _fleet;
+}
+
 char *ShipGridWidget::getSelection(void) {
 	return _selection;
 }
