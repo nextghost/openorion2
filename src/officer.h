@@ -67,6 +67,11 @@ protected:
 	void showSelectionHelp(int x, int y, int arg);
 	void showSlotHelp(int x, int y, int arg);
 
+	void cancelSelect(int x, int y, int arg);
+	void assignOfficer(int x, int y, int arg);
+
+	void askAssignOfficer(void);
+
 public:
 	LeaderListView(GameState *game, int activePlayer);
 

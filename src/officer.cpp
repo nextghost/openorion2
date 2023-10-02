@@ -628,6 +628,92 @@ void LeaderListView::showSlotHelp(int x, int y, int arg) {
 	new MessageBoxWindow(this, idx, _bg->palette());
 }
 
+void LeaderListView::cancelSelect(int x, int y, int arg) {
+	_selLeader = -1;
+	_grid->selectNone();
+}
+
+void LeaderListView::assignOfficer(int x, int y, int arg) {
+	cancelSelect(0, 0, 0);
+	new MessageBoxWindow(this, "Not implemented yet");
+}
+
+void LeaderListView::askAssignOfficer(void) {
+	int location, oldloc = -1, eta = 0;
+	const Leader *ptr;
+	const char *locname = NULL;
+	ConfirmationWindow *window;
+	StringBuffer buf;
+
+	if (_selLeader < 0) {
+		cancelSelect(0, 0, 0);
+		return;
+	}
+
+	ptr = _game->_leaders + getLeaderID(_selLeader);
+
+	if (ptr->status == LeaderState::Working ||
+		ptr->status == LeaderState::Unassigned) {
+		oldloc = ptr->location;
+	}
+
+	if (_panelChoice->value()) {
+		const Fleet *f1 = NULL, *f2 = _grid->getFleet();
+		const Star *s1, *s2;
+
+		location = _grid->selectedShipID();
+
+		if (location >= 0) {
+			locname = _game->_ships[location].design.name;
+		}
+
+		if (oldloc >= 0) {
+			f1 = _game->findFleet(_game->_ships + oldloc);
+		}
+
+		s1 = f1 ? f1->getOrbitedStar() : NULL;
+		s2 = f2 ? f2->getOrbitedStar() : NULL;
+
+		// Reassignment is free only within the same fleet or
+		// when two different fleets orbit the same star
+		if (!f1 || (f1 != f2 && (!s1 || s1 != s2))) {
+			eta = LEADER_MOVE_TIME;
+		}
+	} else {
+		location = _minimap->selectedStar();
+
+		if (location >= 0) {
+			locname = _game->_starSystems[location].name;
+		}
+
+		// Reassignment is free only when the officer was just
+		// unassigned from the same location
+		if (ptr->status != LeaderState::Unassigned ||
+			ptr->location != location) {
+			eta = LEADER_MOVE_TIME;
+		}
+	}
+
+	if (location < 0 || (ptr->status == LeaderState::Working &&
+		ptr->location == location)) {
+		cancelSelect(0, 0, 0);
+		return;
+	}
+
+	if (eta) {
+		buf.printf(gameLang->hstrings(HSTR_OFFICER_ASSIGN_SLOW), eta,
+			getRankedName(_selLeader), locname);
+	} else {
+		buf.printf(gameLang->hstrings(HSTR_OFFICER_ASSIGN_INSTANT),
+			getRankedName(_selLeader), locname);
+	}
+
+	window = new ConfirmationWindow(this, buf.c_str());
+	window->setYesCallback(GuiMethod(*this,
+		&LeaderListView::assignOfficer));
+	window->setNoCallback(GuiMethod(*this, &LeaderListView::cancelSelect));
+}
+
 void LeaderListView::changePanel(int x, int y, int arg) {
 	unsigned val = _panelChoice->value();
 
@@ -677,15 +763,13 @@ void LeaderListView::selectSlot(int x, int y, int arg) {
 	}
 
 	if (_panelChoice->value()) {
+		_selLeader = (_selLeader == arg) ? -1 : arg;
 		location = _grid->selectedShipID();
 
-		if (location < 0) {
-			_selLeader = (_selLeader == arg) ? -1 : arg;
-			return;
+		if (location >= 0 && _selLeader >= 0) {
+			askAssignOfficer();
 		}
 
-		// TODO: Ask whether to assign leader to ship
-		new MessageBoxWindow(this, "Not implemented yet");
 		return;
 	} else {
 		location = _minimap->selectedStar();
@@ -695,8 +779,8 @@ void LeaderListView::selectSlot(int x, int y, int arg) {
 			return;
 		}
 
-		// TODO: Ask whether to assign leader to star system
-		new MessageBoxWindow(this, "Not implemented yet");
+		_selLeader = (_selLeader == arg) ? -1 : arg;
+		askAssignOfficer();
 		return;
 	}
 }
@@ -781,9 +865,7 @@ void LeaderListView::shipSelectionChanged(int x, int y, int arg) {
 	}
 
 	if (_selLeader >= 0 && sptr) {
-		_selLeader = -1;
-		_grid->selectNone();
-		new MessageBoxWindow(this, "Not implemented yet");
+		askAssignOfficer();
 	}
 }
 
