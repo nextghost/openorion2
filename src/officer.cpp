@@ -81,6 +81,139 @@ static const char *skillFormatStrings[MAX_SKILL_TYPES][MAX_COMMON_SKILLS] = {
 	}
 };
 
+LeaderSkillsWidget::LeaderSkillsWidget(GuiView *parent, unsigned x, unsigned y,
+	unsigned width, unsigned height, const GameState *game,
+	unsigned drawOffset) : Widget(x, y, width, height), _parent(parent),
+	_game(game), _leaderID(-1), _drawOffset(drawOffset),
+	_fontColor(FONT_COLOR_LEADERLIST_NORMAL), _skillCount(0) {
+
+	ImageAsset palImg;
+	unsigned i;
+	const uint8_t *pal;
+
+	if (height < drawOffset + 85) {
+		throw std::out_of_range("Widget height is too small");
+	}
+
+	palImg = gameAssets->getImage(GALAXY_ARCHIVE, ASSET_GALAXY_GUI);
+	pal = palImg->palette();
+
+	for (i = 0; i < MAX_SKILLS; i++) {
+		_skillImg[i] = gameAssets->getImage(LEADER_LIST_ARCHIVE,
+			ASSET_LEADERLIST_SKILLS + i, pal);
+	}
+}
+
+LeaderSkillsWidget::~LeaderSkillsWidget(void) {
+
+}
+
+void LeaderSkillsWidget::setLeader(int id) {
+	unsigned i, skillbase, skillcount;
+	const Leader *ptr;
+
+	if (id >= LEADER_COUNT) {
+		throw std::out_of_range("Invalid leader ID");
+	}
+
+	_skillCount = 0;
+	_leaderID = id;
+
+	if (_leaderID < 0) {
+		return;
+	}
+
+	ptr = _game->_leaders + _leaderID;
+
+	if (ptr->type == LEADER_TYPE_CAPTAIN) {
+		skillbase = CAPTAIN_SKILLS_TYPE;
+		skillcount = MAX_CAPTAIN_SKILLS;
+	} else {
+		skillbase = ADMIN_SKILLS_TYPE;
+		skillcount = MAX_ADMIN_SKILLS;
+	}
+
+	for (i = 0; i < skillcount; i++) {
+		if (ptr->hasSkill(skillbase + i)) {
+			_skills[_skillCount++] = skillbase + i;
+		}
+	}
+
+	skillbase = COMMON_SKILLS_TYPE;
+
+	for (i = 0; i < MAX_COMMON_SKILLS; i++) {
+		if (ptr->hasSkill(skillbase + i)) {
+			_skills[_skillCount++] = skillbase + i;
+		}
+	}
+}
+
+void LeaderSkillsWidget::setFontColor(unsigned color) {
+	_fontColor = color;
+}
+
+void LeaderSkillsWidget::handleMouseUp(int x, int y, unsigned button) {
+	int minY = getY() + _drawOffset;
+	int rowHeight = _skillImg[0]->height() + 1;
+
+	if (_leaderID >= 0 && button == MBUTTON_RIGHT && y >= minY &&
+		y < minY + (int)_skillCount * rowHeight) {
+
+		unsigned skill, idx;
+		const Leader *ptr = _game->_leaders + _leaderID;
+		StringBuffer namebuf, buf;
+
+		namebuf.printf("%s %s", ptr->rank(), ptr->name);
+		idx = HSTR_OFFICER_DEFINITE_ARTICLE;
+		namebuf.append(gameLang->hstrings(idx));
+		namebuf.append(gameLang->officerTitle(_leaderID));
+		namebuf.append(",");
+		skill = _skills[(y - minY) / rowHeight];
+		idx = ptr->skillNum(skill);
+		buf.printf(gameLang->skilldesc(idx), namebuf.c_str(),
+			abs(ptr->skillBonus(skill)));
+		new MessageBoxWindow(_parent, gameLang->skillname(idx),
+			buf.c_str());
+		return;
+	}
+
+	Widget::handleMouseUp(x, y, button);
+}
+
+void LeaderSkillsWidget::redraw(int x, int y, unsigned curtick) {
+	unsigned i, idx, x2, level;
+	Font *fnt;
+	const Leader *ptr;
+	const char *str;
+
+	if (_leaderID < 0) {
+		return;
+	}
+
+	StringBuffer buf;
+
+	ptr = _game->_leaders + _leaderID;
+	x += getX();
+	y += getY() + _drawOffset;
+	fnt = gameFonts->getFont(FONTSIZE_MEDIUM);
+
+	for (i = 0; i < _skillCount; i++) {
+		idx = _skills[i];
+		level = ptr->hasSkill(idx);
+		str = skillFormatStrings[SKILLTYPE(idx)][idx & SKILLCODE_MASK];
+		buf.printf(str, ptr->skillBonus(idx));
+		str = Leader::skillName(idx, level > 1);
+		idx = Leader::skillNum(idx);
+		_skillImg[idx]->draw(x + 2, y);
+		fnt->renderText(x + 24, y + 4, _fontColor, str, OUTLINE_FULL);
+		x2 = x + width() - 3;
+		x2 -= fnt->textWidth(buf.c_str());
+		fnt->renderText(x2, y + 4, _fontColor, buf.c_str(),
+			OUTLINE_FULL);
+		y += _skillImg[idx]->height() + 1;
+	}
+}
+
 LeaderListView::LeaderListView(GameState *game, int activePlayer) :
 	_game(game), _panelChoice(NULL), _starSystem(NULL), _grid(NULL),
 	_scroll(NULL), _scrollUp(NULL), _scrollDown(NULL), _minimap(NULL),

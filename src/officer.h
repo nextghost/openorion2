@@ -24,6 +24,28 @@
 
 #define MAX_HIRED_LEADERS 4
 
+class LeaderSkillsWidget : public Widget {
+private:
+	GuiView *_parent;
+	const GameState *_game;
+	ImageAsset _skillImg[MAX_SKILLS];
+	int _leaderID;
+	unsigned _drawOffset, _fontColor, _skills[MAX_SKILLS], _skillCount;
+
+public:
+	LeaderSkillsWidget(GuiView *parent, unsigned x, unsigned y,
+		 unsigned width, unsigned height, const GameState *game,
+		 unsigned drawOffset = 0);
+	~LeaderSkillsWidget(void);
+
+	void setLeader(int id);
+	void setFontColor(unsigned color);
+
+	void handleMouseUp(int x, int y, unsigned button);
+
+	void redraw(int x, int y, unsigned curtick);
+};
+
 class LeaderListView : public GuiView {
 private:
 	GameState *_game;
