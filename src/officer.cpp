@@ -49,7 +49,7 @@
 #define LEADER_LIST_PORTRAIT_X 13
 #define LEADER_LIST_FIRST_ROW 38
 #define LEADER_LIST_ROW_DIST 109
-#define LEADER_LIST_SLOT_WIDTH 289
+#define LEADER_LIST_SLOT_WIDTH 85
 #define LEADER_LIST_SLOT_HEIGHT 105
 #define LEADER_LIST_INFO_X 92
 #define LEADER_LIST_INFO_WIDTH 204
@@ -226,6 +226,10 @@ LeaderListView::LeaderListView(GameState *game, int activePlayer) :
 	unsigned i, type;
 	const uint8_t *pal;
 
+	for (i = 0; i < MAX_HIRED_LEADERS; i++) {
+		_leaderSlots[i] = NULL;
+	}
+
 	palImg = gameAssets->getImage(GALAXY_ARCHIVE, ASSET_GALAXY_GUI);
 	pal = palImg->palette();
 	_bg = gameAssets->getImage(LEADER_LIST_ARCHIVE, ASSET_LEADERLIST_BG,
@@ -260,11 +264,6 @@ LeaderListView::LeaderListView(GameState *game, int activePlayer) :
 		}
 	}
 
-	for (i = 0; i < MAX_SKILLS; i++) {
-		_skillImg[i] = gameAssets->getImage(LEADER_LIST_ARCHIVE,
-			ASSET_LEADERLIST_SKILLS + i, pal);
-	}
-
 	i = _game->_players[_activePlayer].homePlayerId;
 	_curStar = _game->_planets[i].star;
 	initWidgets();
@@ -276,6 +275,7 @@ void LeaderListView::initWidgets(void) {
 	ImageAsset img;
 	unsigned i;
 	Widget *w;
+	Font *fnt = gameFonts->getFont(FONTSIZE_MEDIUM);
 	const uint8_t *pal = _bg->palette();
 
 	for (i = 0; i < MAX_HIRED_LEADERS; i++) {
@@ -289,7 +289,21 @@ void LeaderListView::initWidgets(void) {
 		w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod(*this,
 			&LeaderListView::selectSlot, i));
 		w->setMouseUpCallback(MBUTTON_RIGHT, GuiMethod(*this,
-			&LeaderListView::showSlotHelp, i));
+			&LeaderListView::selectOfficerLocation, i));
+
+		_leaderSlots[i] = new LeaderSkillsWidget(this,
+			LEADER_LIST_INFO_X, LEADER_LIST_FIRST_ROW +
+			i * LEADER_LIST_ROW_DIST, LEADER_LIST_INFO_WIDTH,
+			LEADER_LIST_SLOT_HEIGHT, _game, fnt->height() - 1);
+		addWidget(_leaderSlots[i]);
+		_leaderSlots[i]->setMouseOverCallback(GuiMethod(*this,
+			&LeaderListView::highlightSlot, i));
+		_leaderSlots[i]->setMouseOutCallback(GuiMethod(*this,
+			&LeaderListView::highlightSlot, -1));
+		_leaderSlots[i]->setMouseUpCallback(MBUTTON_LEFT,
+			GuiMethod(*this, &LeaderListView::selectSlot, i));
+		_leaderSlots[i]->setMouseUpCallback(MBUTTON_RIGHT,
+			GuiMethod(*this, &LeaderListView::showSlotHelp));
 	}
 
 	_panelChoice = new ChoiceWidget(7, 10, 296, 23, 2);
@@ -466,41 +480,8 @@ const char *LeaderListView::getRankedName(int slot) const {
 	return "";
 }
 
-unsigned LeaderListView::drawSkills(unsigned x, unsigned y, const Leader *lptr,
-	unsigned base, unsigned count, unsigned color) {
-
-	unsigned i, idx, x2, level;
-	Font *fnt;
-	const char *str;
-	StringBuffer buf;
-
-	fnt = gameFonts->getFont(FONTSIZE_MEDIUM);
-
-	for (i = 0; i < count; i++) {
-		level = lptr->hasSkill(base + i);
-
-		if (!level) {
-			continue;
-		}
-
-		idx = base + i;
-		str = skillFormatStrings[SKILLTYPE(idx)][idx & SKILLCODE_MASK];
-		buf.printf(str, lptr->skillBonus(base + i));
-		str = Leader::skillName(base + i, level > 1);
-		idx = Leader::skillNum(base + i);
-		_skillImg[idx]->draw(x + 2, y);
-		fnt->renderText(x + 24, y + 4, color, str, OUTLINE_FULL);
-		x2 = x + LEADER_LIST_INFO_WIDTH - 3;
-		x2 -= fnt->textWidth(buf.c_str());
-		fnt->renderText(x2, y + 4, color, buf.c_str(), OUTLINE_FULL);
-		y += _skillImg[idx]->height() + 1;
-	}
-
-	return y;
-}
-
 void LeaderListView::redraw(unsigned curtick) {
-	unsigned i, x, y, count, skillbase, skillcount, *idlist;
+	unsigned i, x, y, count, *idlist;
 	unsigned color, color2;
 	int location;
 	const Leader *ptr;
@@ -518,14 +499,10 @@ void LeaderListView::redraw(unsigned curtick) {
 		idlist = _captains;
 		namelist = _captainNames;
 		count = _captainCount;
-		skillbase = CAPTAIN_SKILLS_TYPE;
-		skillcount = MAX_CAPTAIN_SKILLS;
 	} else {
 		idlist = _admins;
 		namelist = _adminNames;
 		count = _adminCount;
-		skillbase = ADMIN_SKILLS_TYPE;
-		skillcount = MAX_ADMIN_SKILLS;
 	}
 
 	for (i = 0; i < count; i++) {
@@ -603,12 +580,6 @@ void LeaderListView::redraw(unsigned curtick) {
 		}
 
 		// TODO: draw salary/hire price
-
-		x = LEADER_LIST_INFO_X;
-		y += fnt->height() - 1;
-		y = drawSkills(x, y, ptr, skillbase, skillcount, color);
-		drawSkills(x, y, ptr, COMMON_SKILLS_TYPE, MAX_COMMON_SKILLS,
-			color);
 	}
 
 	redrawWidgets(0, 0, curtick);
@@ -650,107 +621,7 @@ void LeaderListView::showSelectionHelp(int x, int y, int arg) {
 }
 
 void LeaderListView::showSlotHelp(int x, int y, int arg) {
-	unsigned i, base, skillcount, total = 0, skill_list[MAX_SKILLS];
-	int idx = getLeaderID(arg);
-	Leader *ptr = idx >= 0 ? _game->_leaders + idx : NULL;
-	Font *fnt;
-	const char *str, *name = getRankedName(arg);
-	StringBuffer buf, namebuf;
-
-	if (x < LEADER_LIST_INFO_X) {
-		if (!ptr) {
-			return;
-		}
-
-		if (ptr->status == LeaderState::Idle) {
-			str = gameLang->hstrings(HSTR_OFFICER_LOCATION_POOL);
-			buf.printf(str, name);
-			new ErrorWindow(this, buf.c_str());
-			return;
-		} else if (ptr->status != LeaderState::Working ||
-			ptr->location < 0) {
-			str = gameLang->hstrings(HSTR_OFFICER_LOCATION_NONE);
-			buf.printf(str, name);
-			new ErrorWindow(this, buf.c_str());
-			return;
-		}
-
-		if (_panelChoice->value()) {
-			const Ship *sptr = _game->_ships + ptr->location;
-
-			if (sptr->status == ShipState::InRefit) {
-				i = HSTR_OFFICER_LOCATION_REFIT;
-				idx = sptr->getStarID();
-				buf.printf(gameLang->hstrings(i), name,
-					sptr->design.name,
-					_game->_starSystems[idx].name);
-				new ErrorWindow(this, buf.c_str());
-				return;
-			} else if (!sptr->isActive()) {
-				i = HSTR_OFFICER_LOCATION_MISSING;
-				buf.printf(gameLang->hstrings(i), name);
-				new ErrorWindow(this, buf.c_str());
-				return;
-			}
-
-			_minimap->selectFleet(_game->findFleet(sptr));
-			fleetSelectionChanged(x, y, 0);
-		} else {
-			_minimap->selectStar(ptr->location);
-			starSelectionChanged(x, y, 0);
-		}
-
-		return;
-	}
-
-	if (ptr) {
-		if (_panelChoice->value()) {
-			base = CAPTAIN_SKILLS_TYPE;
-			skillcount = MAX_CAPTAIN_SKILLS;
-		} else {
-			base = ADMIN_SKILLS_TYPE;
-			skillcount = MAX_ADMIN_SKILLS;
-		}
-
-		for (i = 0, total = 0; i < skillcount; i++) {
-			if (ptr->hasSkill(base + i)) {
-				skill_list[total++] = base + i;
-			}
-		}
-
-		base = COMMON_SKILLS_TYPE;
-
-		for (i = 0; i < MAX_COMMON_SKILLS; i++) {
-			if (ptr->hasSkill(base + i)) {
-				skill_list[total++] = base + i;
-			}
-		}
-
-		fnt = gameFonts->getFont(FONTSIZE_MEDIUM);
-		y -= LEADER_LIST_FIRST_ROW + arg * LEADER_LIST_ROW_DIST;
-		y -= fnt->height() - 1;
-
-		if (y < 0) {
-			return;
-		}
-
-		i = y / (_skillImg[0]->height() + 1);
-
-		if (i < total) {
-			str = gameLang->officerTitle(idx);
-			idx = HSTR_OFFICER_DEFINITE_ARTICLE;
-			namebuf = name;
-			namebuf.append(gameLang->hstrings(idx));
-			namebuf.append(str);
-			namebuf.append(",");
-			idx = ptr->skillNum(skill_list[i]);
-			buf.printf(gameLang->skilldesc(idx), namebuf.c_str(),
-				abs(ptr->skillBonus(skill_list[i])));
-			new MessageBoxWindow(this, gameLang->skillname(idx),
-				buf.c_str());
-			return;
-		}
-	}
+	int idx;
 
 	if (_panelChoice->value()) {
 		idx = HELP_LEADERLIST_CAPTAIN_LIST;
@@ -761,8 +632,62 @@ void LeaderListView::showSlotHelp(int x, int y, int arg) {
 	new MessageBoxWindow(this, idx, _bg->palette());
 }
 
+void LeaderListView::selectOfficerLocation(int x, int y, int arg) {
+	unsigned i;
+	int idx = getLeaderID(arg);
+	const Leader *ptr;
+	const char *str, *name = getRankedName(arg);
+	StringBuffer buf;
+
+	if (idx < 0) {
+		return;
+	}
+
+	ptr = _game->_leaders + idx;
+
+	if (ptr->status == LeaderState::Idle) {
+		str = gameLang->hstrings(HSTR_OFFICER_LOCATION_POOL);
+		buf.printf(str, name);
+		new ErrorWindow(this, buf.c_str());
+		return;
+	} else if (ptr->status != LeaderState::Working || ptr->location < 0) {
+		str = gameLang->hstrings(HSTR_OFFICER_LOCATION_NONE);
+		buf.printf(str, name);
+		new ErrorWindow(this, buf.c_str());
+		return;
+	}
+
+	if (_panelChoice->value()) {
+		const Ship *sptr = _game->_ships + ptr->location;
+
+		if (sptr->status == ShipState::InRefit) {
+			i = HSTR_OFFICER_LOCATION_REFIT;
+			idx = sptr->getStarID();
+			buf.printf(gameLang->hstrings(i), name,
+				sptr->design.name,
+				_game->_starSystems[idx].name);
+			new ErrorWindow(this, buf.c_str());
+			return;
+		} else if (!sptr->isActive()) {
+			i = HSTR_OFFICER_LOCATION_MISSING;
+			buf.printf(gameLang->hstrings(i), name);
+			new ErrorWindow(this, buf.c_str());
+			return;
+		}
+
+		_minimap->selectFleet(_game->findFleet(sptr));
+		fleetSelectionChanged(x, y, 0);
+	} else {
+		_minimap->selectStar(ptr->location);
+		starSelectionChanged(x, y, 0);
+	}
+}
+
 void LeaderListView::cancelSelect(int x, int y, int arg) {
+	int oldsel = _selLeader;
+
 	_selLeader = -1;
+	slotStateChanged(oldsel);
 	_grid->selectNone();
 }
 
@@ -847,8 +772,25 @@ void LeaderListView::askAssignOfficer(void) {
 	window->setNoCallback(GuiMethod(*this, &LeaderListView::cancelSelect));
 }
 
+void LeaderListView::slotStateChanged(int slot) {
+	unsigned color;
+
+	if (slot < 0) {
+		return;
+	}
+
+	if (slot == _curLeader || slot == _selLeader) {
+		color = FONT_COLOR_LEADERLIST_BRIGHT;
+	} else {
+		color = FONT_COLOR_LEADERLIST_NORMAL;
+	}
+
+	_leaderSlots[slot]->setFontColor(color);
+}
+
 void LeaderListView::changePanel(int x, int y, int arg) {
-	unsigned val = _panelChoice->value();
+	unsigned i, count, val = _panelChoice->value();
+	unsigned *idlist;
 
 	_curLeader = -1;
 	_selLeader = -1;
@@ -859,26 +801,39 @@ void LeaderListView::changePanel(int x, int y, int arg) {
 	_scrollDown->hide(!val);
 
 	if (val) {
+		idlist = _captains;
+		count = _captainCount;
 		_minimap->selectStar(-1);
 		_minimap->selectFleet(_curFleet);
 		fleetSelectionChanged(x, y, 0);
 	} else {
+		idlist = _admins;
+		count = _adminCount;
 		_minimap->selectFleet(NULL);
 		_minimap->selectStar(_curStar);
 		starSelectionChanged(x, y, 0);
 	}
+
+	for (i = 0; i < MAX_HIRED_LEADERS; i++) {
+		slotStateChanged(i);
+		_leaderSlots[i]->setLeader(i < count ? idlist[i] : -1);
+	}
 }
 
 void LeaderListView::highlightSlot(int x, int y, int arg) {
+	int oldsel = _curLeader;
+
 	if (getLeaderID(arg) < 0) {
 		arg = -1;
 	}
 
 	_curLeader = arg;
+	slotStateChanged(oldsel);
+	slotStateChanged(_curLeader);
 }
 
 void LeaderListView::selectSlot(int x, int y, int arg) {
-	int idx, location;
+	int idx, location, oldsel = _selLeader;
 	Leader *ptr = NULL;
 
 	idx = getLeaderID(arg);
@@ -897,6 +852,8 @@ void LeaderListView::selectSlot(int x, int y, int arg) {
 
 	if (_panelChoice->value()) {
 		_selLeader = (_selLeader == arg) ? -1 : arg;
+		slotStateChanged(oldsel);
+		slotStateChanged(_selLeader);
 		location = _grid->selectedShipID();
 
 		if (location >= 0 && _selLeader >= 0) {
@@ -913,6 +870,8 @@ void LeaderListView::selectSlot(int x, int y, int arg) {
 		}
 
 		_selLeader = (_selLeader == arg) ? -1 : arg;
+		slotStateChanged(oldsel);
+		slotStateChanged(_selLeader);
 		askAssignOfficer();
 		return;
 	}

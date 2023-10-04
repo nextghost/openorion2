@@ -50,6 +50,7 @@ class LeaderListView : public GuiView {
 private:
 	GameState *_game;
 	ChoiceWidget *_panelChoice;
+	LeaderSkillsWidget *_leaderSlots[MAX_HIRED_LEADERS];
 	StarSystemWidget *_starSystem;
 	ShipGridWidget *_grid;
 	ScrollBarWidget *_scroll;
@@ -58,7 +59,6 @@ private:
 	LabelWidget *_minimapLabel, *_selectionLabel;
 	int _activePlayer, _curLeader, _selLeader, _curStar, _scrollgrab;
 	ImageAsset _bg, _leaderImg[LEADER_COUNT], _leaderDarkImg[LEADER_COUNT];
-	ImageAsset _skillImg[MAX_SKILLS];
 	unsigned _admins[MAX_HIRED_LEADERS], _captains[MAX_HIRED_LEADERS];
 	StringBuffer _adminNames[MAX_HIRED_LEADERS];
 	StringBuffer _captainNames[MAX_HIRED_LEADERS];
@@ -83,16 +83,15 @@ protected:
 	int getLeaderID(int slot) const;
 	const char *getRankedName(int slot) const;
 
-	unsigned drawSkills(unsigned x, unsigned y, const Leader *lptr,
-		unsigned base, unsigned count, unsigned color);
-
 	void showSelectionHelp(int x, int y, int arg);
 	void showSlotHelp(int x, int y, int arg);
 
+	void selectOfficerLocation(int x, int y, int arg);
 	void cancelSelect(int x, int y, int arg);
 	void assignOfficer(int x, int y, int arg);
 
 	void askAssignOfficer(void);
+	void slotStateChanged(int slot);
 
 public:
 	LeaderListView(GameState *game, int activePlayer);
