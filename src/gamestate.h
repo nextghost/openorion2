@@ -25,6 +25,7 @@
 
 #define SAVE_GAME_NAME_SIZE 37
 #define LEADER_COUNT 67
+#define LEADER_ID_LOKNAR 65
 #define LEADER_DATA_SIZE 59
 #define LEADER_NAME_SIZE 0x0f
 #define LEADER_TITLE_SIZE 0x14
@@ -962,6 +963,9 @@ struct Leader {
 	// 0 if the leader doesn't have it
 	int skillBonus(unsigned id) const;
 
+	int isEmployed(void) const;
+	unsigned hireCost(int modifier) const;
+
 	void validate(void) const;
 
 	// Number of skills under given type
@@ -1367,6 +1371,9 @@ public:
 	int shipBeamOffense(const Ship *sptr, int ignoreDamage) const;
 	int shipBeamDefense(unsigned ship_id, int ignoreDamage) const;
 	int shipBeamDefense(const Ship *sptr, int ignoreDamage) const;
+
+	int leaderHireModifier(unsigned player_id) const;
+	unsigned leaderMaintenanceCost(unsigned leader_id, int modifier) const;
 
 	void sort_ids(unsigned *id_list, unsigned length, int player,
 		gamestate_cmp_func cmp);

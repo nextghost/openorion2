@@ -481,11 +481,11 @@ const char *LeaderListView::getRankedName(int slot) const {
 }
 
 void LeaderListView::redraw(unsigned curtick) {
-	unsigned i, x, y, count, *idlist;
+	unsigned i, x, y, count, cost, *idlist;
 	unsigned color, color2;
-	int location;
+	int location, hire_modifier;
 	const Leader *ptr;
-	Font *fnt, *smallfnt;
+	Font *fnt, *smallfnt, *tinyfnt;
 	const Image *img;
 	const char *str;
 	StringBuffer buf, *namelist;
@@ -494,6 +494,8 @@ void LeaderListView::redraw(unsigned curtick) {
 	_bg->draw(0, 0);
 	fnt = gameFonts->getFont(FONTSIZE_MEDIUM);
 	smallfnt = gameFonts->getFont(FONTSIZE_SMALL);
+	tinyfnt = gameFonts->getFont(FONTSIZE_TINY);
+	hire_modifier = _game->leaderHireModifier(_activePlayer);
 
 	if (_panelChoice->value()) {
 		idlist = _captains;
@@ -518,6 +520,28 @@ void LeaderListView::redraw(unsigned curtick) {
 		y = LEADER_LIST_FIRST_ROW + i * LEADER_LIST_ROW_DIST;
 		fnt->centerText(x + LEADER_LIST_INFO_WIDTH / 2, y, color2,
 			namelist[i].c_str(), OUTLINE_FULL);
+
+		if (ptr->status == LeaderState::ForHire) {
+			cost = ptr->hireCost(hire_modifier);
+			buf.printf("%u BC", cost);
+			str = gameLang->hstrings(HSTR_OFFICER_HIRE_COST);
+		} else {
+			cost = _game->leaderMaintenanceCost(idlist[i],
+				hire_modifier);
+			str = gameLang->hstrings(HSTR_OFFICER_FREE_MAINT);
+
+			if (cost) {
+				buf.printf("%u BC", cost);
+			} else {
+				buf = str;
+			}
+
+			str = gameLang->hstrings(HSTR_OFFICER_MAINT_COST);
+		}
+
+		x += LEADER_LIST_INFO_WIDTH - 3 - tinyfnt->textWidth(str);
+		tinyfnt->renderText(x, y, color, buf.c_str());
+		tinyfnt->renderText(x, y + tinyfnt->height(), color, str);
 
 		x = LEADER_LIST_PORTRAIT_X;
 
@@ -578,8 +602,6 @@ void LeaderListView::redraw(unsigned curtick) {
 				y + img->height() + 5, color2, str,
 				OUTLINE_FULL, 2);
 		}
-
-		// TODO: draw salary/hire price
 	}
 
 	redrawWidgets(0, 0, curtick);

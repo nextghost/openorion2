@@ -690,6 +690,18 @@ int Leader::skillBonus(unsigned id) const {
        return ret;
 }
 
+int Leader::isEmployed(void) const {
+	return (status == LeaderState::Idle ||
+		status == LeaderState::Working ||
+		status == LeaderState::Unassigned);
+}
+
+unsigned Leader::hireCost(int modifier) const {
+	int ret = 10 * skillValue * (expLevel() + 1) + modifier;
+
+	return MAX(ret, 0);
+}
+
 void Leader::validate(void) const {
 	if (picture >= LEADER_COUNT) {
 		throw std::out_of_range("Invalid leader picture");
@@ -2392,6 +2404,42 @@ int GameState::shipBeamDefense(const Ship *sptr, int ignoreDamage) const {
 	}
 
 	return ret;
+}
+
+int GameState::leaderHireModifier(unsigned player_id) const {
+	unsigned i;
+	int tmp, ret = 0;
+	const Leader *ptr;
+
+	for (i = 0; i < LEADER_COUNT; i++) {
+		ptr = _leaders + i;
+
+		if (ptr->playerIndex != (int)player_id || !ptr->isEmployed()) {
+			continue;
+		}
+
+		// The bonus is not cumulative, only the leader with
+		// the highest effect counts
+		tmp = ptr->skillBonus(SKILL_FAMOUS);
+		ret = MIN(tmp, ret);
+	}
+
+	return ret;
+}
+
+unsigned GameState::leaderMaintenanceCost(unsigned leader_id,
+	int modifier) const {
+	unsigned ret;
+
+	if (leader_id >= LEADER_COUNT) {
+		throw std::out_of_range("Invalid leader ID");
+	} else if (leader_id == LEADER_ID_LOKNAR ||
+		_leaders[leader_id].hasSkill(SKILL_MEGAWEALTH)) {
+		return 0;
+	}
+
+	ret = (_leaders[leader_id].hireCost(modifier) + 99) / 100;
+	return MAX(ret, 1);
 }
 
 void GameState::sort_ids(unsigned *id_list, unsigned length, int player,
