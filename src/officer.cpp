@@ -55,6 +55,11 @@
 #define LEADER_LIST_INFO_WIDTH 204
 #define LEADER_LIST_SCROLL_WIDTH 6
 
+#define POPUP_ARCHIVE "mainpups.lbx"
+#define ASSET_HIREDIALOG_BG 48
+#define ASSET_HIREDIALOG_REJECT_BUTTON 49
+#define ASSET_HIREDIALOG_HIRE_BUTTON 50
+
 static const int leaderListMinimapStarColors[MAX_PLAYERS + 1] = {
 	FONT_COLOR_STAR_RED1, FONT_COLOR_STAR_YELLOW1, FONT_COLOR_STAR_GREEN1,
 	FONT_COLOR_LEADERLIST_STAR_SILVER, FONT_COLOR_STAR_BLUE2,
@@ -867,8 +872,27 @@ void LeaderListView::selectSlot(int x, int y, int arg) {
 	ptr = _game->_leaders + idx;
 
 	if (ptr->status == LeaderState::ForHire) {
-		// TODO: Ask whether to hire leader
-		new MessageBoxWindow(this, "Not implemented yet");
+		int hire_modifier, hire_cost, money;
+
+		hire_modifier = _game->leaderHireModifier(_activePlayer);
+		hire_cost = ptr->hireCost(hire_modifier);
+		money = _game->_players[_activePlayer].BC;
+
+		if (hire_cost > 0 && money < hire_cost) {
+			const char *str;
+			StringBuffer buf, namebuf;
+
+			str = gameLang->hstrings(HSTR_OFFICER_DEFINITE_ARTICLE);
+			namebuf = getRankedName(arg);
+			namebuf.append(str);
+			namebuf.append(gameLang->officerTitle(idx));
+			str = gameLang->hstrings(HSTR_OFFICER_TOO_EXPENSIVE);
+			buf.printf(str, money, namebuf.c_str(), hire_cost);
+			new MessageBoxWindow(this, buf.c_str());
+			return;
+		}
+
+		new HireLeaderWindow(this, _game, _activePlayer, idx, 0);
 		return;
 	}
 
@@ -1078,4 +1102,148 @@ void LeaderListView::clickDismissButton(int x, int y, int arg) STUB(this)
 
 void LeaderListView::clickReturn(int x, int y, int arg) {
 	exitView();
+}
+
+HireLeaderWindow::HireLeaderWindow(GuiView *parent, GameState *game,
+	int activePlayer, unsigned leader_id, int newOffer, unsigned flags) :
+	GuiWindow(parent, flags), _game(game), _activePlayer(activePlayer),
+	_leaderID(leader_id) {
+
+	ImageAsset palImg;
+	const uint8_t *pal;
+	const Leader *ptr;
+	int hire_modifier, hire_cost, maint_cost, money;
+	const char *str;
+	StringBuffer buf;
+
+	if (_leaderID >= LEADER_COUNT) {
+		throw std::out_of_range("Invalid leader ID");
+	}
+
+	palImg = gameAssets->getImage(GALAXY_ARCHIVE, ASSET_GALAXY_GUI);
+	pal = palImg->palette();
+	_bg = gameAssets->getImage(POPUP_ARCHIVE, ASSET_HIREDIALOG_BG, pal);
+	_leaderImg = gameAssets->getImage(LEADER_LIST_ARCHIVE,
+		ASSET_LEADER_PORTRAITS + _leaderID, pal);
+	_width = _bg->width();
+	_height = _bg->height();
+	_x = (SCREEN_WIDTH - _width) / 2;
+	_y = (SCREEN_HEIGHT - _height) / 2;
+
+	ptr = _game->_leaders + _leaderID;
+	hire_modifier = _game->leaderHireModifier(_activePlayer);
+	hire_cost = ptr->hireCost(hire_modifier);
+	maint_cost = _game->leaderMaintenanceCost(_leaderID, hire_modifier);
+	money = _game->_players[_activePlayer].BC;
+
+	_fullname.printf("%s %s", ptr->rank(), ptr->name);
+
+	// Popup hire window on galaxy screen shows officer name without title
+	if (newOffer) {
+		if (hire_cost > 0 && money < hire_cost) {
+			str = gameLang->estrings(ESTR_OFFICER_TOO_EXPENSIVE);
+			buf.printf(str, _fullname.c_str(), hire_cost);
+		} else {
+			str = gameLang->estrings(ESTR_OFFICER_HIRE_COST);
+			buf.printf(str, _fullname.c_str(), hire_cost,
+				maint_cost, "");
+		}
+	}
+
+	_fullname.append(gameLang->hstrings(HSTR_OFFICER_DEFINITE_ARTICLE));
+	_fullname.append(gameLang->officerTitle(_leaderID));
+
+	// Hire window in leader list screen shows officer name with title
+	// and formats the info text differently
+	if (!newOffer) {
+		if (hire_cost > 0 && money < hire_cost) {
+			str = gameLang->hstrings(HSTR_OFFICER_TOO_EXPENSIVE);
+			buf.printf(str, money, _fullname.c_str(), hire_cost);
+		} else {
+			if (maint_cost == 1) {
+				str = gameLang->hstrings(HSTR_OFFICER_COST1);
+			} else {
+				str = gameLang->hstrings(HSTR_OFFICER_COST);
+			}
+
+			buf.printf(str, _fullname.c_str(), hire_cost,
+				maint_cost);
+		}
+	}
+
+	_text.setFont(FONTSIZE_MEDIUM, FONT_COLOR_LEADERLIST_NORMAL, 2,
+		OUTLINE_FULL);
+	_text.appendText(buf.c_str(), 0, 0, 278, ALIGN_CENTER);
+	initWidgets(hire_cost <= 0 || money >= hire_cost);
+}
+
+HireLeaderWindow::~HireLeaderWindow(void) {
+
+}
+
+void HireLeaderWindow::initWidgets(int can_hire) {
+	Widget *w;
+	LeaderSkillsWidget *sw;
+	const uint8_t *pal = _bg->palette();
+
+	sw = new LeaderSkillsWidget(_parent, 95, 54, 195, 90, _game);
+	addWidget(sw);
+	sw->setLeader(_leaderID);
+
+	w = createWidget(44, 226, 92, 27);
+	w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod<HireLeaderWindow>(*this,
+		&HireLeaderWindow::close));
+	w->setClickSprite(MBUTTON_LEFT, POPUP_ARCHIVE,
+		ASSET_HIREDIALOG_REJECT_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT, GuiMethod(*this,
+		&HireLeaderWindow::showHelp, 1));
+
+	if (can_hire) {
+		w = createWidget(175, 226, 85, 27);
+		w->setIdleSprite(POPUP_ARCHIVE, ASSET_HIREDIALOG_HIRE_BUTTON,
+			pal, 0);
+		w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod(*this,
+			&HireLeaderWindow::clickHire));
+		w->setClickSprite(MBUTTON_LEFT, POPUP_ARCHIVE,
+			ASSET_HIREDIALOG_HIRE_BUTTON, pal, 1);
+		w->setMouseUpCallback(MBUTTON_RIGHT, GuiMethod(*this,
+			&HireLeaderWindow::showHelp, 0));
+	}
+}
+
+void HireLeaderWindow::clickHire(int x, int y, int arg) {
+	new MessageBoxWindow(_parent, "Not implemented yet");
+	close();
+}
+
+void HireLeaderWindow::redraw(unsigned curtick) {
+	unsigned color = FONT_COLOR_LEADERLIST_NORMAL;
+	Font *fnt = gameFonts->getFont(FONTSIZE_MEDIUM);
+
+	_bg->draw(_x, _y);
+	fnt->centerText(_x + 153, _y + 22, color, _fullname.c_str(),
+		OUTLINE_FULL);
+	_leaderImg->draw(_x + 12, _y + 53);
+	_text.redraw(_x + 15, _y + 152 + (58 - _text.height()) / 2, curtick);
+	redrawWidgets(_x, _y, curtick);
+}
+
+void HireLeaderWindow::showHelp(int x, int y, int arg) {
+	unsigned title, desc;
+	int hire_modifier;
+	const Leader *ptr = _game->_leaders + _leaderID;
+	StringBuffer buf;
+
+	if (arg) {
+		title = ESTR_OFFICER_REJECT_BUTTON_TITLE;
+		desc = ESTR_OFFICER_REJECT_BUTTON_DESC;
+	} else {
+		title = ESTR_OFFICER_HIRE_BUTTON_TITLE;
+		desc = ESTR_OFFICER_HIRE_BUTTON_DESC;
+	}
+
+	hire_modifier = _game->leaderHireModifier(_activePlayer);
+	buf.printf(gameLang->estrings(desc), ptr->rank(), ptr->name,
+		(int)ptr->hireCost(hire_modifier));
+	new MessageBoxWindow(_parent, gameLang->estrings(title), buf.c_str());
 }

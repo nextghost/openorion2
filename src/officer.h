@@ -113,4 +113,28 @@ public:
 	void clickReturn(int x, int y, int arg);
 };
 
+class HireLeaderWindow : public GuiWindow {
+private:
+	GameState *_game;
+	int _activePlayer;
+	unsigned _leaderID;
+	ImageAsset _bg, _leaderImg;
+	StringBuffer _fullname;
+	TextLayout _text;
+
+	void initWidgets(int can_hire);
+
+	void clickHire(int x, int y, int arg);
+
+public:
+	HireLeaderWindow(GuiView *parent, GameState *game, int activePlayer,
+		unsigned leader_id, int newOffer,
+		unsigned flags = WINDOW_MOVABLE | WINDOW_MODAL);
+	~HireLeaderWindow(void);
+
+	void redraw(unsigned curtick);
+
+	void showHelp(int x, int y, int arg);
+};
+
 #endif
