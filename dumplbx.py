@@ -81,8 +81,12 @@ class MOOImage:
         if len(data) < 16:
             raise RuntimeError('Asset is not an image')
 
+        intcolors = None
+        self.extcolors = set()
+        self.colors = set()
         header = struct.unpack_from('<HHHHHH', data, 0)
         self.width, self.height = header[:2]
+        self.realsize = [self.width, self.height, 0, 0]
         self.framecount, self.frametime, self.flags = header[3:]
 
         if 20 + 4 * self.framecount > len(data):
@@ -112,6 +116,7 @@ class MOOImage:
 
         if self.flags & 0x1000 != 0:
             start, size = struct.unpack_from('<HH', data, pos)
+            intcolors = range(start, start+size)
             pos += 4
             palette = list(self.palette)
             newpal = list(convert_palette(data[pos:pos+4*size]))
@@ -120,7 +125,7 @@ class MOOImage:
         elif basepal is None:
             raise PaletteError('Image lacks palette, provide a default one')
 
-        if self.flags & 0x800:
+        if self.flags & 0x800 != 0:
             self.palette = b'\0\0\0\0' + self.palette[4:]
 
         buf = self.width * self.height * [0]
@@ -129,19 +134,31 @@ class MOOImage:
         for start, end in frameindex:
             if self.flags & 0x400:
                 buf = self.width * self.height * [0]
-            self.framelist.append(self.decode_frame(buf, data[start:end])[:])
+            (frame, raw) = self.decode_frame(buf, data[start:end])
+            self.colors.update(raw)
+            self.framelist.append(frame)
+            if intcolors is not None:
+                self.extcolors.update((x for x in raw if (x not in intcolors)))
+
+        if self.flags & 0x800 != 0:
+            self.extcolors.discard(0)
+            self.colors.discard(0)
 
     def decode_frame(self, buf, data):
         # Raw bitmap
         if self.flags & 0x100 != 0:
-            return data[:self.width*self.height]
+            ret = data[:self.width*self.height]
+            return (ret, ret)
 
         # Sparse bitmap
         x, y = struct.unpack_from('<HH', data, 0)
         pos = 4
+        raw = b''
 
         if x != 1:
             raise RuntimeError('Invalid frame start marker')
+
+        self.realsize[1] = min(y, self.realsize[1])
 
         while y < self.height:
             ptr = y * self.width
@@ -153,14 +170,20 @@ class MOOImage:
                 if size == 0:
                     y += skip
                     break
+                self.realsize[0] = min(x + skip, self.realsize[0])
+                self.realsize[3] = max(y + 1, self.realsize[3])
                 x += skip + size
+                self.realsize[2] = max(x, self.realsize[2])
                 if x > self.width:
                     raise RuntimeError('Scan line overflow at %d:%d' % (x, y))
                 ptr += skip
                 buf[ptr:ptr+size] = list(data[pos:pos+size])
+                raw += data[pos:pos+size]
                 ptr += size
                 pos += size + size % 2
-        return bytes(buf)
+        self.realsize[2] -= self.realsize[0]
+        self.realsize[3] -= self.realsize[1]
+        return (bytes(buf), raw)
 
 class MOOCursor(MOOImage):
     def __init__(self, data):
@@ -245,16 +268,20 @@ def dumplbx(filename, palette):
                 if palette is None:
                     palette = img.palette
                 dump_image(assetname, img)
+                print('Image %d dimensions: %s' % (idx, str(img.realsize)))
+                if img.extcolors:
+                    print('Asset %d uses external colors: %s' % (idx, str(list(sorted(img.extcolors)))))
+                print('Asset %d colors: %s' % (idx, str(list(sorted(img.colors)))))
             except PaletteError as e:
                 print('Asset %d: %s' % (idx, e.args[0]))
             except:
                 pass
 
-def load_palette(filename, asset):
+def load_palette(filename, asset, basepal):
     with open(filename, 'rb') as fr:
         lbx = LBXArchive(fr)
         try:
-            img = MOOImage(lbx.loadAsset(asset), None)
+            img = MOOImage(lbx.loadAsset(asset), basepal)
         except PaletteError:
             print('%s:%d does not have a palette' % (filename, asset))
             sys.exit(1)
@@ -265,9 +292,13 @@ def load_palette(filename, asset):
 
 if __name__ == '__main__':
     palette = None
-    if len(sys.argv) == 4:
-        palette = load_palette(sys.argv[2], int(sys.argv[3]))
-    elif len(sys.argv) != 2:
+    idx = 2
+
+    if len(sys.argv) % 2 != 0:
         print('Usage: %s file_to_dump.lbx [palette_archive.lbx palette_asset_num]' % sys.argv[0], file=sys.stderr)
+
+    while idx + 2 <= len(sys.argv):
+        palette = load_palette(sys.argv[idx], int(sys.argv[idx+1]), palette)
+        idx += 2
 
     dumplbx(sys.argv[1], palette)
