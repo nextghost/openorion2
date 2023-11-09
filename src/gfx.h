@@ -186,7 +186,11 @@
 #define FONT_COLOR_LEADERLIST_STAR_NEUTRAL 133
 #define FONT_COLOR_LEADERLIST_STAR_SILVER 134
 
-#define FONT_COLOR_MAX 135
+#define FONT_COLOR_RESEARCH_NORMAL 135
+#define FONT_COLOR_RESEARCH_BRIGHT 136
+#define FONT_COLOR_RESEARCH_BRIGHTER 137
+
+#define FONT_COLOR_MAX 138
 
 #define RGB(x) (((x) >> 16) & 0xff), (((x) >> 8) & 0xff), ((x) & 0xff)
 #define SRGB(x) 0xff, RGB(x)

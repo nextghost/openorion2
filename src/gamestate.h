@@ -1153,6 +1153,7 @@ struct Player {
 
 	// returns 1 if the topic can be researched now
 	int canResearchTopic(unsigned topic_id) const;
+	unsigned researchCost(unsigned topic_id, int full) const;
 
 	// returns 1 if the technology can be researched at some point
 	int canResearchTech(unsigned tech_id) const;

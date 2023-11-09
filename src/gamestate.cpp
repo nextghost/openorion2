@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include "lang.h"
 #include "lbx.h"
+#include "tech.h"
 #include "gamestate.h"
 
 #define COLONY_COUNT_OFFSET 0x25b
@@ -1273,7 +1274,29 @@ int Player::canResearchTopic(unsigned topic_id) const {
 		throw std::out_of_range("Invalid research topic ID");
 	}
 
-	return techs[topic_id] == RSTATE_READY;
+	return researchTopics[topic_id] == RSTATE_READY;
+}
+
+unsigned Player::researchCost(unsigned topic_id, int full) const {
+	unsigned cost;
+
+	if (topic_id >= MAX_RESEARCH_TOPICS) {
+		throw std::out_of_range("Invalid research topic ID");
+	}
+
+	cost = research_choices[topic_id].cost;
+
+	if (isHyperTopic(topic_id)) {
+		Technology tech = research_choices[topic_id].choices[0];
+
+		cost += 10000 * knowsTechnology(tech);
+	}
+
+	if (full) {
+		return cost;
+	}
+
+	return researchProgress < cost ? cost - researchProgress : 0;
 }
 
 int Player::canResearchTech(unsigned tech_id) const {

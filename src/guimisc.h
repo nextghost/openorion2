@@ -22,6 +22,7 @@
 
 #include "lbx.h"
 #include "gui.h"
+#include "gamestate.h"
 
 #define STUB(view) { new MessageBoxWindow(view, "Not implemented yet"); }
 
@@ -40,6 +41,8 @@ public:
 		unsigned flags = WINDOW_MOVABLE | WINDOW_MODAL);
 	MessageBoxWindow(GuiView *parent, unsigned help_id,
 		const uint8_t *palette,
+		unsigned flags = WINDOW_MOVABLE | WINDOW_MODAL);
+	MessageBoxWindow(GuiView *parent, Technology tech, unsigned cost,
 		unsigned flags = WINDOW_MOVABLE | WINDOW_MODAL);
 	~MessageBoxWindow(void);
 

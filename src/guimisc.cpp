@@ -19,6 +19,7 @@
 
 #include <cstring>
 #include "screen.h"
+#include "lang.h"
 #include "guimisc.h"
 
 #define TEXTBOX_ARCHIVE "textbox.lbx"
@@ -101,6 +102,29 @@ MessageBoxWindow::MessageBoxWindow(GuiView *parent, unsigned help_id,
 	} while (help_id);
 
 	_height += _text.height() >= 20 ? _text.height() - 20 : 0;
+	_y = (SCREEN_HEIGHT - _height) / 2;
+
+	initWidgets();
+}
+
+MessageBoxWindow::MessageBoxWindow(GuiView *parent, Technology tech,
+	unsigned cost, unsigned flags) : GuiWindow(parent, flags) {
+	const HelpText *entry;
+	const char *str;
+	StringBuffer buf;
+
+	initAssets();
+	entry = gameLang->help(tech);
+	_text.setFont(FONTSIZE_TITLE, TITLE_COLOR_HELP, 2, OUTLINE_NONE, 2);
+	_text.appendText(entry->title, 0, 0, _width - 40, ALIGN_CENTER);
+	_text.setFont(FONTSIZE_MEDIUM, FONT_COLOR_HELP, 2, OUTLINE_NONE, 2);
+	_text.appendText(entry->text, 0, _text.height() + 6, _width - 40,
+		ALIGN_JUSTIFY);
+	str = gameLang->misctext(TXT_MISC_BILLTEXT, BILL_RESEARCH_COST);
+	buf.printf("%s%u RP", str, cost);
+	_text.appendText(buf.c_str(), 0, _text.height() + 3, _width - 40,
+		ALIGN_CENTER);
+	_height += _text.height() >= 32 ? _text.height() - 32 : 0;
 	_y = (SCREEN_HEIGHT - _height) / 2;
 
 	initWidgets();

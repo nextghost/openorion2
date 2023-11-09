@@ -25,6 +25,7 @@
 #include "lang.h"
 #include "ships.h"
 #include "officer.h"
+#include "tech.h"
 #include "galaxy.h"
 
 #define STARSEL_FRAMECOUNT 6
@@ -2158,7 +2159,9 @@ void GalaxyView::clickFleetInfo(int x, int y, int arg) STUB(this)
 
 void GalaxyView::clickFreighterInfo(int x, int y, int arg) STUB(this)
 
-void GalaxyView::clickResearchInfo(int x, int y, int arg) STUB(this)
+void GalaxyView::clickResearchInfo(int x, int y, int arg) {
+	new ResearchSelectWindow(this, _game, _activePlayer, 1);
+}
 
 SelectPlayerView::SelectPlayerView(const GameState *game,
 	const GuiCallback &callback) : _game(game), _callback(callback),
