@@ -59,8 +59,8 @@ private:
 	Mutex &_mutex;
 
 	// Do NOT implement
-	AutoMutex(const Mutex &other);
-	const Mutex &operator=(const Mutex &other);
+	AutoMutex(const AutoMutex &other);
+	const AutoMutex &operator=(const AutoMutex &other);
 
 public:
 	AutoMutex(Mutex &m);
