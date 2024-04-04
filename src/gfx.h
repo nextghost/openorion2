@@ -301,8 +301,17 @@ public:
 	~FontManager(void);
 
 	Font *getFont(unsigned id);
+	Font *fitFont(unsigned fontsize, unsigned maxwidth, const char *str);
 	unsigned fontCount(void) const;
 };
+
+// Render text into limited space, reduce font size to fit
+int fitText(int x, int y, unsigned maxwidth, unsigned fontsize, unsigned color,
+	const char *str, unsigned outline = OUTLINE_NONE,
+	unsigned charSpacing = 1);
+int centerFitText(int x, int y, unsigned maxwidth, unsigned fontsize,
+	unsigned color, const char *str, unsigned outline = OUTLINE_NONE,
+	unsigned charSpacing = 1);
 
 // Calculate frame for animation that loops from the last frame to the first
 unsigned loopFrame(unsigned ticks, unsigned frametime, unsigned framecount);

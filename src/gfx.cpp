@@ -888,8 +888,53 @@ Font *FontManager::getFont(unsigned id) {
 	return _fonts[id];
 }
 
+Font *FontManager::fitFont(unsigned fontsize, unsigned maxwidth,
+	const char *str) {
+	Font *ret;
+
+	fontsize++;
+
+	do {
+		fontsize--;
+		ret = getFont(fontsize);
+	} while (fontsize > 0 && ret->textWidth(str, 1) > maxwidth);
+
+	return ret;
+}
+
 unsigned FontManager::fontCount(void) const {
 	return _fontCount;
+}
+
+int fitText(int x, int y, unsigned maxwidth, unsigned fontsize, unsigned color,
+	const char *str, unsigned outline, unsigned charSpacing) {
+	unsigned width, len;
+	Font *fnt = gameFonts->fitFont(fontsize, maxwidth, str);
+
+	len = strlen(str);
+	width = fnt->textWidth(str, 0);
+
+	if (charSpacing * len > maxwidth - width) {
+		charSpacing = (maxwidth - width) / len;
+	}
+
+	return fnt->renderText(x, y, color, str, outline, charSpacing);
+}
+
+int centerFitText(int x, int y, unsigned maxwidth, unsigned fontsize,
+	unsigned color, const char *str, unsigned outline,
+	unsigned charSpacing) {
+	unsigned width, len;
+	Font *fnt = gameFonts->fitFont(fontsize, maxwidth, str);
+
+	len = strlen(str);
+	width = fnt->textWidth(str, 0);
+
+	if (charSpacing * len > maxwidth - width) {
+		charSpacing = (maxwidth - width) / len;
+	}
+
+	return fnt->centerText(x, y, color, str, outline, charSpacing);
 }
 
 unsigned loopFrame(unsigned ticks, unsigned frametime, unsigned framecount) {
