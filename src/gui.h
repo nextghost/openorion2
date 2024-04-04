@@ -397,6 +397,7 @@ class GuiView;
 class GuiWindow : public WidgetContainer {
 protected:
 	GuiView *_parent;
+	GuiCallback _onClose;
 	int _x, _y, _grabx, _graby;
 	unsigned _width, _height, _flags;
 
@@ -410,6 +411,7 @@ public:
 	int isModal(void) const;
 	int isGrabbed(void) const;
 
+	void setCloseCallback(const GuiCallback &callback);
 	virtual void close(int x = 0, int y = 0, int arg = 0);
 
 	void handleMouseMove(int x, int y, unsigned buttons);

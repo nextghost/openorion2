@@ -1273,7 +1273,12 @@ int GuiWindow::isGrabbed(void) const {
 	return _grabx >= 0;
 }
 
+void GuiWindow::setCloseCallback(const GuiCallback &callback) {
+	_onClose = callback;
+}
+
 void GuiWindow::close(int x, int y, int arg) {
+	_onClose(x, y);
 	discard();
 }
 
