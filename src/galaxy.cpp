@@ -141,8 +141,6 @@ static const int orbitRadiusX[MAX_ORBITS] = {46, 71, 95, 120, 142};
 
 static const int orbitRadiusY[MAX_ORBITS] = {25, 38, 51, 64, 76};
 
-const char *romanNumbers[] = { "I", "II", "III", "IV", "V"};
-
 const int planetClimateMap[PLANET_CLIMATE_COUNT] = {
 	ESTR_CLIMATE_TOXIC,
 	ESTR_CLIMATE_RADIATED,
@@ -1092,7 +1090,7 @@ void StarSystemWidget::highlightOrbit(int orbit) {
 	const Colony *cptr = NULL;
 	const char *str;
 	TextLayout *newinfo = NULL, *oldinfo = _info;
-	StringBuffer buf;
+	StringBuffer buf, num;
 
 	if (orbit < 0) {
 		_curOrbit = -1;
@@ -1137,8 +1135,8 @@ void StarSystemWidget::highlightOrbit(int orbit) {
 			_reticle->setVariant(MAX_PLAYERS);
 		}
 
-		buf.printf("%s %s", sptr->name,
-			romanNumbers[sptr->planetSeq(pptr->orbit)]);
+		num.roman(sptr->planetSeq(pptr->orbit) + 1);
+		buf.printf("%s %s", sptr->name, num.c_str());
 
 		if (cptr) {
 			buf.append_printf(" (%s)",
@@ -2596,7 +2594,7 @@ void PlanetsListView::redraw(unsigned curtick) {
 	unsigned i, y, climate, color, offset = _scroll->position();
 	int simpleY, fullY, smallY, owner, penalty, curstar;
 	const char *str, *foodstr, *prodstr, *popstr, *penaltystr;
-	StringBuffer buf;
+	StringBuffer buf, num;
 	const Image *img;
 	const Planet *ptr;
 	const Star *sptr;
@@ -2639,8 +2637,8 @@ void PlanetsListView::redraw(unsigned curtick) {
 		// Planet name and image
 		img = (const Image*)_planetimg[climate][ptr->size];
 		img->draw(61 - img->width() / 2, y + 21 - img->height() / 2);
-		buf.printf("%s %s", sptr->name,
-			romanNumbers[sptr->planetSeq(ptr->orbit)]);
+		num.roman(sptr->planetSeq(ptr->orbit) + 1);
+		buf.printf("%s %s", sptr->name, num.c_str());
 		fnt->centerText(61, y + 29, color, buf.c_str());
 
 		if (ptr->special && ptr->special < ORION_SPECIAL) {

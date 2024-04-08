@@ -22,6 +22,23 @@
 #include <cctype>
 #include "utils.h"
 
+struct RomanNumeral {
+	unsigned value;
+	unsigned reduction;
+	char letter;
+};
+
+static const struct RomanNumeral roman_values[] = {
+	{1000, 100, 'M'},
+	{500, 100, 'D'},
+	{100, 10, 'C'},
+	{50, 10, 'L'},
+	{10, 1, 'X'},
+	{5, 1, 'V'},
+	{1, 0, 'I'},
+	{0, 0, '0'},
+};
+
 Recyclable *GarbageCollector::_garbage = NULL;
 Mutex GarbageCollector::_garbageMutex;
 
@@ -154,12 +171,26 @@ const StringBuffer &StringBuffer::operator+=(const StringBuffer &other) {
 	return append(other._buf);
 }
 
+const StringBuffer &StringBuffer::operator+=(char ch) {
+	return append(ch);
+}
+
 const StringBuffer &StringBuffer::operator+=(const char *str) {
 	return append(str);
 }
 
 StringBuffer::operator const char *(void) const {
 	return _buf;
+}
+
+StringBuffer &StringBuffer::append(char ch) {
+	if (_length + 1 >= _size) {
+		resize(_length + 1);
+	}
+
+	_buf[_length++] = ch;
+	_buf[_length] = '\0';
+	return *this;
 }
 
 StringBuffer &StringBuffer::append(const char *str) {
@@ -209,6 +240,33 @@ StringBuffer &StringBuffer::append_ftime(const char *fmt,
 	return *this;
 }
 
+StringBuffer &StringBuffer::append_roman(unsigned val) {
+	const RomanNumeral *sub, *ptr;
+
+	if (!val) {
+		return append('0');
+	}
+
+	for (ptr = roman_values; val && ptr->value; ptr++) {
+		for (; val >= ptr->value; val -= ptr->value) {
+			append(ptr->letter);
+		}
+
+		if (val < ptr->value - ptr->reduction) {
+			continue;
+		}
+
+		for (sub = ptr; sub->value && sub->value != ptr->reduction;
+			sub++);
+
+		append(sub->letter);
+		append(ptr->letter);
+		val -= ptr->value - ptr->reduction;
+	}
+
+	return *this;
+}
+
 StringBuffer &StringBuffer::printf(const char *fmt, ...) {
 	va_list args;
 
@@ -228,6 +286,10 @@ StringBuffer &StringBuffer::printf(const char *fmt, ...) {
 
 StringBuffer &StringBuffer::ftime(const char *fmt, const struct tm *tbuf) {
 	return truncate(0).append_ftime(fmt, tbuf);
+}
+
+StringBuffer &StringBuffer::roman(unsigned val) {
+	return truncate(0).append_roman(val);
 }
 
 StringBuffer &StringBuffer::truncate(size_t len) {

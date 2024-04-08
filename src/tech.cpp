@@ -498,9 +498,11 @@ void ResearchSelectWidget::redraw(int x, int y, unsigned curtick) {
 			str = gameLang->techname(TNAME_TECH_NONE + _choices[i]);
 
 			if (isHyperTopic(_topic)) {
-				// TODO: Roman numerals
-				buf.printf("%s %d", str,
-					pptr->knowsTechnology(_choices[i]) + 1);
+				StringBuffer num;
+
+				num.roman(pptr->knowsTechnology(_choices[i]) +
+					1);
+				buf.printf("%s %s", str, num.c_str());
 				str = buf.c_str();
 			}
 		}

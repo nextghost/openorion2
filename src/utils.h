@@ -117,18 +117,22 @@ public:
 	const StringBuffer &operator=(StringBuffer &other);
 	const StringBuffer &operator=(const char *str);
 	const StringBuffer &operator+=(const StringBuffer &other);
+	const StringBuffer &operator+=(char ch);
 	const StringBuffer &operator+=(const char *str);
 
 	explicit operator const char *(void) const;
 
 	// Append to current string
+	StringBuffer &append(char ch);
 	StringBuffer &append(const char *str);
 	StringBuffer &append_printf(const char *fmt, ...);
 	StringBuffer &append_ftime(const char *fmt, const struct tm *tbuf);
+	StringBuffer &append_roman(unsigned val);
 
 	// Overwrite current string
 	StringBuffer &printf(const char *fmt, ...);
 	StringBuffer &ftime(const char *fmt, const struct tm *tbuf);
+	StringBuffer &roman(unsigned val);
 	StringBuffer &truncate(size_t len = 0);
 
 	StringBuffer &toLower(size_t start = 0, ssize_t length = -1);
