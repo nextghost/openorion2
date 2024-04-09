@@ -89,7 +89,7 @@ public:
 	void redraw(unsigned curtick);
 };
 
-extern const ResearchChoice research_choices[MAX_APPLIED_TECHS];
+extern const ResearchChoice research_choices[MAX_RESEARCH_TOPICS];
 
 int isHyperTopic(unsigned topic);
 

@@ -148,7 +148,7 @@ static const ResearchTopic techtree[MAX_RESEARCH_AREAS][MAX_AREA_TOPICS] = {
 	},
 };
 
-const ResearchChoice research_choices[MAX_APPLIED_TECHS] = {
+const ResearchChoice research_choices[MAX_RESEARCH_TOPICS] = {
 	// TOPIC_STARTING_TECH, already researched at game start
 	{0},
 	{400, 0, {TECH_CLONING_CENTER, TECH_DEATH_SPORES,
