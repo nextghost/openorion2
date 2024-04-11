@@ -17,6 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <cstring>
 #include "screen.h"
 #include "guimisc.h"
 #include "lang.h"
@@ -30,12 +31,20 @@
 #define ASSET_TECHSEL_BG 0
 #define ASSET_TECHSEL_AREA_BUTTONS 1
 #define ASSET_TECHSEL_CANCEL_BUTTON 27
+#define ASSET_TECHLIST_BG 23
+#define ASSET_TECHLIST_RETURN_BUTTON 24
+#define ASSET_TECHLIST_UP_BUTTON 25
+#define ASSET_TECHLIST_DOWN_BUTTON 26
 #define TECHSEL_CANCEL_OFFSET 14
 
 #define MAX_AREA_TOPICS 14
 
 #define TECH_HIGHLIGHT_FRAMECOUNT 6
 #define TECH_HIGHLIGHT_SPEED 80
+
+#define TECHLIST_TITLE_SPACING 4
+#define TECHLIST_ITEM_SPACING 2
+#define TECHLIST_GROUP_SPACING 8
 
 static const uint8_t techHighlightColors[TECH_HIGHLIGHT_FRAMECOUNT * 3] = {
 	RGB(0x248000), RGB(0x3c9804), RGB(0x44a008), RGB(0x5cb80c),
@@ -285,6 +294,361 @@ const ResearchChoice research_choices[MAX_RESEARCH_TOPICS] = {
 	{25000, 0, {TECH_HYPER_COMPUTERS}},
 	{25000, 0, {TECH_HYPER_SOCIOLOGY}},
 };
+
+TechListWidget::TechListGroup::TechListGroup(void) : title(NULL), itemCount(0),
+	height(0), color(FONT_COLOR_DEFAULT), items(NULL) {
+
+}
+
+TechListWidget::TechListGroup::~TechListGroup(void) {
+	clear();
+}
+
+void TechListWidget::TechListGroup::clear(void) {
+	unsigned i;
+
+	for (i = 0; i < itemCount; i++) {
+		delete[] items[i].name;
+	}
+
+	itemCount = 0;
+	delete[] items;
+	delete[] title;
+	items = NULL;
+	title = NULL;
+	height = 0;
+}
+
+TechListWidget::TechListWidget(unsigned x, unsigned y, unsigned width,
+	unsigned height, unsigned titleFont, unsigned itemFont) :
+	Widget(x, y, width, height), _curGroup(-1), _curItem(-1),
+	_selGroup(-1), _selItem(-1), _groupCount(0), _maxGroups(16),
+	_curPage(0), _pageCount(1), _maxPages(16), _titleFont(titleFont),
+	_itemFont(itemFont), _pages(NULL), _groups(NULL) {
+
+	_groups = new TechListGroup*[_maxGroups];
+
+	try {
+		_pages = new unsigned[_maxPages + 1];
+	} catch (...) {
+		delete[] _groups;
+		throw;
+	}
+
+	memset(_pages, 0, (_maxPages + 1) * sizeof(unsigned));
+}
+
+TechListWidget::~TechListWidget(void) {
+	clear();
+	delete[] _groups;
+	delete[] _pages;
+}
+
+int TechListWidget::updateHighlight(int x, int y) {
+	unsigned i;
+	int oldgroup = _curGroup, olditem = _curItem, ypos = 2;
+	int iheight, theight, tmp, newgroup = -1, newitem = -1;
+	Font *fnt, *titlefnt;
+
+	fnt = gameFonts->getFont(_itemFont);
+	titlefnt = gameFonts->getFont(_titleFont);
+	iheight = fnt->height() + TECHLIST_ITEM_SPACING;
+	theight = titlefnt->height() + TECHLIST_TITLE_SPACING;
+
+	for (i = _pages[_curPage]; i < _pages[_curPage + 1]; i++) {
+		if (y < ypos) {
+			break;
+		}
+
+		tmp = y - ypos - theight;
+
+		if (tmp < (int)_groups[i]->itemCount * iheight) {
+			newgroup = i;
+			newitem = tmp > 0 ? tmp / iheight : 0;
+			break;
+		}
+
+		ypos += _groups[i]->height + TECHLIST_GROUP_SPACING;
+	}
+
+	if (oldgroup != newgroup || olditem != newitem) {
+		highlightItem(newgroup, newitem);
+		return 1;
+	}
+
+	return 0;
+}
+
+void TechListWidget::clear(void) {
+	unsigned i, count = _groupCount;
+
+	_curGroup = -1;
+	_curItem = -1;
+	_selGroup = -1;
+	_selItem = -1;
+	_curPage = 0;
+	_pageCount = 1;
+	_pages[1] = 0;
+	_groupCount = 0;
+
+	for (i = 0; i < count; i++) {
+		delete _groups[i];
+	}
+}
+
+void TechListWidget::addGroup(const char *title, unsigned color,
+	const TechListItem *items, unsigned itemCount) {
+	unsigned i, newsize, ypos;
+	TechListGroup **tmp, **ptr, *group;
+	Font *fnt, *titlefnt;
+
+	if (_groupCount >= _maxGroups) {
+		newsize = _maxGroups * 2;
+		ptr = new TechListGroup*[newsize];
+		memcpy(ptr, _groups, _groupCount * sizeof(TechListGroup*));
+		tmp = _groups;
+		_groups = ptr;
+		delete[] tmp;
+		_maxGroups = newsize;
+	}
+
+	fnt = gameFonts->getFont(_itemFont);
+	titlefnt = gameFonts->getFont(_titleFont);
+	_groups[_groupCount] = group = new TechListGroup;
+
+	try {
+		group->title = copystr(title);
+		group->color = color;
+		group->height = titlefnt->height() + TECHLIST_TITLE_SPACING +
+			itemCount * (fnt->height() + TECHLIST_ITEM_SPACING);
+		group->items = new TechListItem[itemCount];
+		memset(group->items, 0, itemCount * sizeof(TechListItem));
+		group->itemCount = itemCount;
+
+		for (i = 0; i < itemCount; i++) {
+			group->items[i].tech_id = items[i].tech_id;
+			group->items[i].color = items[i].color;
+			group->items[i].name = copystr(items[i].name);
+		}
+	} catch (...) {
+		delete group;
+		throw;
+	}
+
+	for (i = _pages[_pageCount - 1], ypos = 2; i <= _groupCount; i++) {
+		ypos += _groups[i]->height + TECHLIST_GROUP_SPACING;
+	}
+
+	if (ypos < height() || !_groupCount) {
+		_pages[_pageCount]++;
+		_groupCount++;
+		return;
+	}
+
+	if (_pageCount >= _maxPages) {
+		unsigned *ptmp, *pptr;
+
+		newsize = _maxPages * 2;
+
+		try {
+			pptr = new unsigned[newsize + 1];
+		} catch (...) {
+			delete group;
+			throw;
+		}
+
+		memcpy(pptr, _pages, (_pageCount + 1) * sizeof(unsigned));
+		ptmp = _pages;
+		_pages = pptr;
+		delete[] ptmp;
+		_maxPages = newsize;
+	}
+
+	_pages[_pageCount + 1] = _groupCount + 1;
+	_pageCount++;
+	_groupCount++;
+}
+
+void TechListWidget::highlightItem(int group, int item) {
+	if (group < 0 || item < 0) {
+		_curGroup = _curItem = -1;
+	}
+
+	if (unsigned(group) >= _groupCount ||
+		unsigned(item) >= _groups[group]->itemCount) {
+		return;
+	}
+
+	_curGroup = group;
+	_curItem = item;
+}
+
+int TechListWidget::highlightedGroup(void) const {
+	return _curGroup;
+}
+
+int TechListWidget::highlightedItem(void) const {
+	return _curItem;
+}
+
+Technology TechListWidget::highlightedTechID(void) const {
+	if (_curGroup < 0 || _curItem < 0) {
+		return TECH_NONE;
+	}
+
+	return _groups[_curGroup]->items[_curItem].tech_id;
+}
+
+void TechListWidget::selectItem(int group, int item) {
+	if (group < 0 || item < 0) {
+		_selGroup = _selItem = -1;
+	}
+
+	if (unsigned(group) >= _groupCount ||
+		unsigned(item) >= _groups[group]->itemCount) {
+		return;
+	}
+
+	_selGroup = group;
+	_selItem = item;
+}
+
+int TechListWidget::selectedGroup(void) const {
+	return _selGroup;
+}
+
+int TechListWidget::selectedItem(void) const {
+	return _selItem;
+}
+
+Technology TechListWidget::selectedTechID(void) const {
+	if (_selGroup < 0 || _selItem < 0) {
+		return TECH_NONE;
+	}
+
+	return _groups[_selGroup]->items[_selItem].tech_id;
+}
+
+unsigned TechListWidget::currentPage(void) const {
+	return _curPage;
+}
+
+unsigned TechListWidget::pageCount(void) const {
+	return _pageCount;
+}
+
+void TechListWidget::setPage(unsigned page) {
+	if (page >= _pageCount) {
+		return;
+	}
+
+	_curPage = page;
+	highlightItem(-1, -1);
+	selectItem(-1, -1);
+}
+
+void TechListWidget::previousPage(void) {
+	if (_curPage > 0) {
+		setPage(_curPage - 1);
+	}
+}
+
+void TechListWidget::nextPage(void) {
+	setPage(_curPage + 1);
+}
+
+void TechListWidget::setItemHighlightCallback(const GuiCallback &callback) {
+	_onHighlightItem = callback;
+}
+
+void TechListWidget::setItemSelectionCallback(const GuiCallback &callback) {
+	_onSelectItem = callback;
+}
+
+void TechListWidget::setItemExamineCallback(const GuiCallback &callback) {
+	_onExamineItem = callback;
+}
+
+void TechListWidget::handleMouseMove(int x, int y, unsigned buttons) {
+	if (updateHighlight(x - getX(), y - getY())) {
+		_onHighlightItem(x, y);
+		return;
+	}
+
+	Widget::handleMouseMove(x, y, buttons);
+}
+
+void TechListWidget::handleMouseUp(int x, int y, unsigned button) {
+	if (updateHighlight(x - getX(), y - getY())) {
+		_onHighlightItem(x, y);
+	}
+
+	if (button == MBUTTON_LEFT && _curItem >= 0) {
+		_selGroup = _curGroup;
+		_selItem = _curItem;
+		_onSelectItem(x, y);
+		return;
+	} else if (button == MBUTTON_RIGHT && _curItem >= 0) {
+		_onExamineItem(x, y);
+		return;
+	}
+
+	Widget::handleMouseUp(x, y, button);
+}
+
+void TechListWidget::redraw(int x, int y, unsigned curtick) {
+	unsigned i, j, color, selcolor, maxw = width();
+	int ypos, tmpy;
+	Font *fnt, *titlefnt;
+	const uint8_t *pal;
+
+	fnt = gameFonts->getFont(_itemFont);
+	titlefnt = gameFonts->getFont(_titleFont);
+	x += getX();
+	y += getY() + 2;
+	// TODO: animated color
+	selcolor = FONT_COLOR_RESEARCH_BRIGHT;
+	pal = Font::fontPalette(selcolor);
+
+	for (i = _pages[_curPage]; i < _pages[_curPage + 1]; i++) {
+		if (_curGroup == (int)i || _selGroup == (int)i) {
+			color = selcolor;
+		} else {
+			color = _groups[i]->color;
+		}
+
+		fitText(x + 2, y, maxw - 4, _titleFont, color,
+			_groups[i]->title, OUTLINE_NONE, 2);
+		y += titlefnt->height() + TECHLIST_TITLE_SPACING;
+
+		for (j = 0, ypos = y; j < _groups[i]->itemCount; j++) {
+			if ((_curGroup == (int)i && _curItem == (int)j) ||
+				(_selGroup == (int)i && _selItem == (int)j)) {
+				color = selcolor;
+			} else {
+				color = _groups[i]->items[j].color;
+			}
+
+			fitText(x + 12, ypos, maxw - 14, _itemFont, color,
+				_groups[i]->items[j].name, OUTLINE_NONE, 2);
+			ypos += fnt->height() + TECHLIST_ITEM_SPACING;
+
+			if (_selGroup == (int)i && _selItem == (int)j) {
+				tmpy = ypos - 3 - fnt->height() / 2;
+				drawLine(x + 4, y - 3, x + 4, tmpy,
+					pal[9], pal[10], pal[11]);
+				drawLine(x + 5, tmpy, x + 10, tmpy,
+					pal[9], pal[10], pal[11]);
+				drawLine(x + 7, tmpy - 3, x + 9, tmpy - 1,
+					pal[9], pal[10], pal[11]);
+				drawLine(x + 7, tmpy + 3, x + 9, tmpy + 1,
+					pal[9], pal[10], pal[11]);
+			}
+		}
+
+		y = ypos + TECHLIST_GROUP_SPACING;
+	}
+}
 
 ResearchSelectWidget::ResearchSelectWidget(GuiView *parent, int x, int y,
 	unsigned width, unsigned height, GameState *game, int activePlayer,
@@ -608,10 +972,234 @@ void ResearchSelectWindow::techSelected(int x, int y, int arg) {
 	close();
 }
 
-void ResearchSelectWindow::clickTechArea(int x, int y, int arg) STUB(_parent)
+void ResearchSelectWindow::clickTechArea(int x, int y, int arg) {
+	new ResearchListWindow(_parent, _game, _activePlayer, area_list[arg]);
+}
 
 void ResearchSelectWindow::redraw(unsigned curtick) {
 	_bg->draw(_x, _y);
+	redrawWidgets(_x, _y, curtick);
+}
+
+ResearchListWindow::ResearchListWindow(GuiView *parent, GameState *game,
+	int activePlayer, ResearchArea area, unsigned flags) :
+	GuiWindow(parent, flags), _game(game), _topicOffset(0),
+	_activePlayer(activePlayer), _area(area) {
+
+	ImageAsset palImg1, palImg2;
+
+	palImg1 = gameAssets->getImage(GALAXY_ARCHIVE, ASSET_GALAXY_GUI);
+	palImg2 = gameAssets->getImage(TECHSEL_ARCHIVE,
+			ASSET_TECHSEL_BG + TECHSEL_CANCEL_OFFSET,
+			palImg1->palette());
+	_bg = gameAssets->getImage(TECHSEL_ARCHIVE, ASSET_TECHLIST_BG,
+		palImg2->palette());
+	_width = _bg->width();
+	_height = _bg->height();
+	_x = (SCREEN_WIDTH - _width) / 2;
+	_y = (SCREEN_HEIGHT - _height) / 2;
+
+	initWidgets();
+	initList();
+}
+
+ResearchListWindow::~ResearchListWindow(void) {
+
+}
+
+void ResearchListWindow::initWidgets(void) {
+	Widget *w;
+	const uint8_t *pal = _bg->palette();
+
+	_list = new TechListWidget(14, 40, 228, 354, FONTSIZE_BIG,
+		FONTSIZE_MEDIUM);
+	addWidget(_list);
+	_list->setMouseOutCallback(GuiMethod(*this,
+		&ResearchListWindow::clearHighlight));
+	_list->setItemSelectionCallback(GuiMethod(*this,
+		&ResearchListWindow::clearSelection));
+	_list->setItemExamineCallback(GuiMethod(*this,
+		&ResearchListWindow::showTechHelp));
+
+	_buttonUp = w = createWidget(247, 46, 9, 18);
+	w->setClickSprite(MBUTTON_LEFT, TECHSEL_ARCHIVE,
+		ASSET_TECHLIST_UP_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod(*this,
+		&ResearchListWindow::previousPage));
+
+	_buttonDown = w = createWidget(248, 367, 9, 18);
+	w->setClickSprite(MBUTTON_LEFT, TECHSEL_ARCHIVE,
+		ASSET_TECHLIST_DOWN_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod(*this,
+		&ResearchListWindow::nextPage));
+
+	w = createWidget(187, 403, 66, 17);
+	w->setClickSprite(MBUTTON_LEFT, TECHSEL_ARCHIVE,
+		ASSET_TECHLIST_RETURN_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod<ResearchListWindow>(*this,
+		&ResearchListWindow::close));
+}
+
+void ResearchListWindow::initList(void) {
+	unsigned i, j, count = 0, itemcolor, color = FONT_COLOR_RESEARCH_NORMAL;
+	int active;
+	Technology tech;
+	const ResearchChoice *techgroup;
+	const Player *pptr = _game->_players + _activePlayer;
+	const char *str;
+	TechListWidget::TechListItem items[MAX_RESEARCH_CHOICES];
+	StringBuffer buf, num;
+
+	for (i = 0; !isHyperTopic(techtree[_area][i]); i++) {
+		if (pptr->canResearchTopic(techtree[_area][i])) {
+			break;
+		}
+	}
+
+	_topicOffset = i;
+
+	for (; !isHyperTopic(techtree[_area][i]); i++) {
+		techgroup = research_choices + techtree[_area][i];
+		active = 0;
+
+		if (pptr->researchTopic == (unsigned)techtree[_area][i]) {
+			color = FONT_COLOR_RESEARCH_BRIGHTER;
+			active = 1;
+		}
+
+		try {
+			for (j = 0, count = 0; j < MAX_RESEARCH_CHOICES; j++) {
+				tech = techgroup->choices[j];
+
+				if (!tech) {
+					break;
+				}
+
+				itemcolor = color;
+
+				if (pptr->knowsTechnology(tech)) {
+					itemcolor = FONT_COLOR_RESEARCH_LIGHT;
+				} else if (!pptr->canResearchTech(tech)) {
+					continue;
+				}
+
+				str = gameLang->techname(TNAME_TECH_NONE+tech);
+				buf.printf("^%s", str);
+				items[count].tech_id = tech;
+				items[count].color = active ? color : itemcolor;
+				items[count].name = copystr(buf.c_str());
+				count++;
+			}
+
+			str = gameLang->techname(TNAME_RTOPIC_STARTING_TECH +
+				techtree[_area][i]);
+			_list->addGroup(str, color, items, count);
+		} catch (...) {
+			for (j = 0; j < count; j++) {
+				delete[] items[j].name;
+			}
+
+			throw;
+		}
+
+		for (j = 0; j < count; j++) {
+			delete[] items[j].name;
+		}
+
+		color = FONT_COLOR_RESEARCH_LIGHT;
+	}
+
+	// Add the hyper-advanced tech
+	if (pptr->researchTopic == (unsigned)techtree[_area][i]) {
+		color = FONT_COLOR_RESEARCH_BRIGHTER;
+	}
+
+	techgroup = research_choices + techtree[_area][i];
+	items[0].tech_id = tech = techgroup->choices[0];
+	items[0].color = color;
+	str = gameLang->techname(TNAME_TECH_NONE + tech);
+	num.roman(pptr->knowsTechnology(tech) + 1);
+	buf.printf("^%s %s", str, num.c_str());
+	items[0].name = copystr(buf.c_str());
+
+	try {
+		str = gameLang->estrings(ESTR_RTOPIC_HYPER);
+		_list->addGroup(str, color, items, 1);
+	} catch (...) {
+		delete[] items[0].name;
+		throw;
+	}
+
+	delete[] items[0].name;
+	enablePageButtons();
+}
+
+void ResearchListWindow::enablePageButtons(void) {
+	unsigned page = _list->currentPage();
+
+	_buttonUp->disable(!page);
+	_buttonDown->disable(page + 1 >= _list->pageCount());
+}
+
+void ResearchListWindow::showTechHelp(int x, int y, int arg) {
+	unsigned cost, group, item, topic;
+	Technology tech = _list->highlightedTechID();
+	GuiWindow *msg;
+
+	if (tech) {
+		group = _list->highlightedGroup();
+		item = _list->highlightedItem();
+		topic = techtree[_area][_topicOffset + group];
+		cost = _game->_players[_activePlayer].researchCost(topic, 1);
+		_list->selectItem(group, item);
+		_list->highlightItem(-1, -1);
+		msg = new MessageBoxWindow(_parent, tech, cost);
+		msg->setCloseCallback(GuiMethod(*this,
+			&ResearchListWindow::clearSelection, 1));
+	}
+}
+
+void ResearchListWindow::clearHighlight(int x, int y, int arg) {
+	_list->highlightItem(-1, -1);
+}
+
+void ResearchListWindow::clearSelection(int x, int y, int arg) {
+	_list->selectItem(-1, -1);
+
+	if (arg && isInRect(x, y, _x, _y, _width, _height)) {
+		handleMouseOver(x, y, 0);
+		handleMouseMove(x, y, 0);
+	}
+}
+
+void ResearchListWindow::previousPage(int x, int y, int arg) {
+	_list->previousPage();
+	enablePageButtons();
+}
+
+void ResearchListWindow::nextPage(int x, int y, int arg) {
+	_list->nextPage();
+	enablePageButtons();
+}
+
+void ResearchListWindow::redraw(unsigned curtick) {
+	int x;
+	const char *title, *str;
+	Font *fnt;
+
+	fnt = gameFonts->getFont(FONTSIZE_BIG);
+	title = gameLang->misctext(TXT_MISC_BILLTEXT,
+		BILL_RESEARCH_TOPIC_BIOLOGY + _area);
+	str = gameLang->misctext(TXT_MISC_BILLTEXT, BILL_RESEARCH_TOPIC_LIST);
+	x = _x + _width / 2;
+	x -= (fnt->textWidth(title, 2) + fnt->textWidth(str, 2) + 2) / 2 + 4;
+	_bg->draw(_x, _y);
+	x = fnt->renderText(x, _y + 16, FONT_COLOR_RESEARCH_NORMAL, title,
+		OUTLINE_NONE, 2);
+	fnt->renderText(x, _y + 16, FONT_COLOR_RESEARCH_NORMAL, str,
+		OUTLINE_NONE, 2);
+
 	redrawWidgets(_x, _y, curtick);
 }
 

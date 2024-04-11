@@ -32,6 +32,71 @@ struct ResearchChoice {
 	Technology choices[MAX_RESEARCH_CHOICES];
 };
 
+class TechListWidget : public Widget {
+public:
+	struct TechListItem {
+		Technology tech_id;
+		unsigned color;
+		char *name;
+	};
+
+private:
+	struct TechListGroup {
+		char *title;
+		unsigned itemCount, height, color;
+		TechListItem *items;
+
+		TechListGroup(void);
+		~TechListGroup(void);
+
+		void clear(void);
+	};
+
+	GuiCallback _onHighlightItem, _onSelectItem, _onExamineItem;
+	int _curGroup, _curItem, _selGroup, _selItem;
+	unsigned _groupCount, _maxGroups, _curPage, _pageCount, _maxPages;
+	unsigned _titleFont, _itemFont;
+	unsigned *_pages;
+	TechListGroup **_groups;
+
+protected:
+	int updateHighlight(int x, int y);
+
+public:
+	TechListWidget(unsigned x, unsigned y, unsigned width, unsigned height,
+		unsigned titleFont, unsigned itemFont);
+	~TechListWidget(void);
+
+	void clear(void);
+	void addGroup(const char *title, unsigned color,
+		const TechListItem *items, unsigned itemCount);
+
+	void highlightItem(int group, int item);
+	int highlightedGroup(void) const;
+	int highlightedItem(void) const;
+	Technology highlightedTechID(void) const;
+
+	void selectItem(int group, int item);
+	int selectedGroup(void) const;
+	int selectedItem(void) const;
+	Technology selectedTechID(void) const;
+
+	unsigned currentPage(void) const;
+	unsigned pageCount(void) const;
+	void setPage(unsigned page);
+	void previousPage(void);
+	void nextPage(void);
+
+	void setItemHighlightCallback(const GuiCallback &callback);
+	void setItemSelectionCallback(const GuiCallback &callback);
+	void setItemExamineCallback(const GuiCallback &callback);
+
+	void handleMouseMove(int x, int y, unsigned buttons);
+	void handleMouseUp(int x, int y, unsigned button);
+
+	void redraw(int x, int y, unsigned curtick);
+};
+
 class ResearchSelectWidget : public Widget {
 private:
 	GuiView *_parent;
@@ -85,6 +150,37 @@ public:
 	~ResearchSelectWindow(void);
 
 	void clickTechArea(int x, int y, int arg);
+
+	void redraw(unsigned curtick);
+};
+
+class ResearchListWindow : public GuiWindow {
+private:
+	ImageAsset _bg;
+	GameState *_game;
+	unsigned _topicOffset;
+	int _activePlayer;
+	ResearchArea _area;
+	Widget *_buttonUp, *_buttonDown;
+	TechListWidget *_list;
+
+	void initWidgets(void);
+	void initList(void);
+	void enablePageButtons(void);
+
+protected:
+	void showTechHelp(int x, int y, int arg);
+	void clearHighlight(int x, int y, int arg);
+	void clearSelection(int x, int y, int arg);
+
+public:
+	ResearchListWindow(GuiView *parent, GameState *game, int activePlayer,
+		ResearchArea area,
+		unsigned flags = WINDOW_MODAL | WINDOW_MOVABLE);
+	~ResearchListWindow(void);
+
+	void previousPage(int x, int y, int arg);
+	void nextPage(int x, int y, int arg);
 
 	void redraw(unsigned curtick);
 };
