@@ -113,7 +113,7 @@ void main_loop(void) {
 			case SDL_WINDOWEVENT:
 				switch (ev.window.event) {
 				case SDL_WINDOWEVENT_EXPOSED:
-					redrawScreen();
+					gameScreen->redraw();
 					break;
 				}
 
@@ -122,7 +122,7 @@ void main_loop(void) {
 		}
 
 		view->redraw(SDL_GetTicks());
-		updateScreen();
+		gameScreen->update();
 		SDL_Delay(10);
 	}
 }

@@ -495,7 +495,7 @@ void LeaderListView::redraw(unsigned curtick) {
 	const char *str;
 	StringBuffer buf, *namelist;
 
-	clearScreen();
+	gameScreen->clear();
 	_bg->draw(0, 0);
 	fnt = gameFonts->getFont(FONTSIZE_MEDIUM);
 	smallfnt = gameFonts->getFont(FONTSIZE_SMALL);

@@ -30,6 +30,7 @@
 AssetManager *gameAssets = NULL;
 TextManager *gameLang = NULL;
 FontManager *gameFonts = NULL;
+Screen *gameScreen = NULL;
 
 void prepare_main_menu(void) {
 	ImageAsset bg, anim;
@@ -59,7 +60,7 @@ void engine_shutdown(void) {
 	delete gameFonts;
 	delete gameLang;
 	delete gameAssets;
-	shutdownScreen();
+	delete gameScreen;
 	cleanup_paths();
 }
 
@@ -71,7 +72,7 @@ int main(int argc, char **argv) {
 		init_paths(argv[0]);
 		gameAssets = new AssetManager;
 		gui_stack = new ViewStack;
-		initScreen();
+		gameScreen = Screen::createScreen();
 		// FIXME: Select language from game config
 		selectLanguage(LANG_ENGLISH);
 	} catch(std::exception &e) {

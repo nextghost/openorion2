@@ -635,14 +635,14 @@ void TechListWidget::redraw(int x, int y, unsigned curtick) {
 
 			if (_selGroup == (int)i && _selItem == (int)j) {
 				tmpy = ypos - 3 - fnt->height() / 2;
-				drawLine(x + 4, y - 3, x + 4, tmpy,
+				gameScreen->drawLine(x + 4, y - 3, x + 4, tmpy,
 					pal[9], pal[10], pal[11]);
-				drawLine(x + 5, tmpy, x + 10, tmpy,
+				gameScreen->drawLine(x + 5, tmpy, x + 10, tmpy,
 					pal[9], pal[10], pal[11]);
-				drawLine(x + 7, tmpy - 3, x + 9, tmpy - 1,
-					pal[9], pal[10], pal[11]);
-				drawLine(x + 7, tmpy + 3, x + 9, tmpy + 1,
-					pal[9], pal[10], pal[11]);
+				gameScreen->drawLine(x + 7, tmpy - 3, x + 9,
+					tmpy - 1, pal[9], pal[10], pal[11]);
+				gameScreen->drawLine(x + 7, tmpy + 3, x + 9,
+					tmpy + 1, pal[9], pal[10], pal[11]);
 			}
 		}
 
@@ -816,7 +816,8 @@ void ResearchSelectWidget::redraw(int x, int y, unsigned curtick) {
 		color = bounceFrame(curtick - _startTick, TECH_HIGHLIGHT_SPEED,
 			TECH_HIGHLIGHT_FRAMECOUNT);
 		pix = techHighlightColors + 3 * color;
-		drawRect(x, y, width(), height(), pix[0], pix[1], pix[2]);
+		gameScreen->drawRect(x, y, width(), height(), pix[0], pix[1],
+			pix[2]);
 		lastArrow = i = _highlight;
 
 		if (research_choices[_topic].research_all ||
@@ -825,17 +826,18 @@ void ResearchSelectWidget::redraw(int x, int y, unsigned curtick) {
 			lastArrow = _choiceCount - 1;
 		}
 
-		drawLine(x + 3, y2, x + 3,
+		gameScreen->drawLine(x + 3, y2, x + 3,
 			y2 + lastArrow * (fnt->height() + 2) + 8, pix[0],
 			pix[1], pix[2]);
 		y2 += i * (fnt->height() + 2) + 8;
 
 		for (; i <= lastArrow; i++) {
-			drawLine(x + 3, y2, x + 10, y2, pix[0], pix[1], pix[2]);
-			drawLine(x + 7, y2 - 3, x + 9, y2 - 1, pix[0], pix[1],
-				pix[2]);
-			drawLine(x + 7, y2 + 3, x + 9, y2 + 1, pix[0], pix[1],
-				pix[2]);
+			gameScreen->drawLine(x + 3, y2, x + 10, y2, pix[0],
+				pix[1], pix[2]);
+			gameScreen->drawLine(x + 7, y2 - 3, x + 9, y2 - 1,
+				pix[0], pix[1], pix[2]);
+			gameScreen->drawLine(x + 7, y2 + 3, x + 9, y2 + 1,
+				pix[0], pix[1], pix[2]);
 			y2 += fnt->height() + 2;
 		}
 	}

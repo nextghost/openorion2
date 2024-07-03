@@ -158,15 +158,17 @@ void MessageBoxWindow::initWidgets(void) {
 void MessageBoxWindow::redraw(unsigned curtick) {
 	unsigned y, by = _header->height(), fh = _footer->height();
 
-	fillRect(_x + 9, _y + 9, _width - 18, _height - 40, 16, 16, 24);
+	gameScreen->fillRect(_x + 9, _y + 9, _width - 18, _height - 40,
+		16, 16, 24);
 
 	for (y = 10; y < _height - 31; y += 3) {
-		fillRect(_x + 9, _y + y, _width - 18, 1, 36, 36, 40);
+		gameScreen->fillRect(_x + 9, _y + y, _width - 18, 1,
+			36, 36, 40);
 	}
 
 	_header->draw(_x, _y);
-	drawTextureTile(_body->textureID(0), _x, _y + by, 0, 0, _width,
-		_height - by - fh);
+	gameScreen->drawTextureTile(_body->textureID(0), _x, _y + by, 0, 0,
+		_width, _height - by - fh);
 	_footer->draw(_x, _y + _height - fh);
 	_text.redraw(_x + 20, _y + 11, curtick);
 	redrawWidgets(_x, _y, curtick);
@@ -276,17 +278,23 @@ void ErrorWindow::handleMouseUp(int x, int y, unsigned button) {
 
 void drawFrame(int x, int y, unsigned width, unsigned height,
 	const uint8_t *clr) {
-	fillRect(x, y, width, 1, clr[0], clr[1], clr[2]);
-	fillRect(x + width - 1, y + 1, 1, height - 2, clr[0], clr[1], clr[2]);
+	gameScreen->fillRect(x, y, width, 1, clr[0], clr[1], clr[2]);
+	gameScreen->fillRect(x + width - 1, y + 1, 1, height - 2, clr[0],
+		clr[1], clr[2]);
 	clr += 3;
-	fillRect(x + 2, y + 1, width - 3, 1, clr[0], clr[1], clr[2]);
-	fillRect(x + width - 2, y + 2, 1, height - 4, clr[0], clr[1], clr[2]);
+	gameScreen->fillRect(x + 2, y + 1, width - 3, 1, clr[0], clr[1],
+		clr[2]);
+	gameScreen->fillRect(x + width - 2, y + 2, 1, height - 4, clr[0],
+		clr[1], clr[2]);
 	clr += 3;
-	fillRect(x, y + 1, 1, height - 1, clr[0], clr[1], clr[2]);
-	fillRect(x + 1, y + height - 1, width - 1, 1, clr[0], clr[1], clr[2]);
+	gameScreen->fillRect(x, y + 1, 1, height - 1, clr[0], clr[1], clr[2]);
+	gameScreen->fillRect(x + 1, y + height - 1, width - 1, 1, clr[0],
+		clr[1], clr[2]);
 	clr += 3;
-	fillRect(x + 1, y + 1, 1, height - 2, clr[0], clr[1], clr[2]);
-	fillRect(x + 2, y + height - 2, width - 3, 1, clr[0], clr[1], clr[2]);
+	gameScreen->fillRect(x + 1, y + 1, 1, height - 2, clr[0], clr[1],
+		clr[2]);
+	gameScreen->fillRect(x + 2, y + height - 2, width - 3, 1, clr[0],
+		clr[1], clr[2]);
 }
 
 void drawETA(int x, int y, unsigned color, const char *str) {
@@ -303,11 +311,11 @@ void drawETA(int x, int y, unsigned color, const char *str) {
 	// double outline
 	fnt->renderText(x + 1, y + 1, color, str, OUTLINE_FULL, 2);
 	fnt->renderText(x, y, color, str, OUTLINE_FULL, 2);
-	fillRect(x - 1, y - 4, w + 3, 1, pal[9], pal[10], pal[11]);
-	fillRect(x - 1, y - 3, w + 3, 1, pal[5], pal[6], pal[7]);
+	gameScreen->fillRect(x - 1, y - 4, w + 3, 1, pal[9], pal[10], pal[11]);
+	gameScreen->fillRect(x - 1, y - 3, w + 3, 1, pal[5], pal[6], pal[7]);
 	y += fnt->height();
-	fillRect(x - 1, y, w + 3, 1, pal[5], pal[6], pal[7]);
-	fillRect(x - 1, y + 1, w + 3, 1, pal[9], pal[10], pal[11]);
+	gameScreen->fillRect(x - 1, y, w + 3, 1, pal[5], pal[6], pal[7]);
+	gameScreen->fillRect(x - 1, y + 1, w + 3, 1, pal[9], pal[10], pal[11]);
 
 }
 

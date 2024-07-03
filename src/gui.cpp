@@ -228,8 +228,8 @@ void GuiSprite::redraw(unsigned x, unsigned y, unsigned curtick) {
 	}
 
 	fid += _variant * fcount;
-	drawTextureTile(_image->textureID(fid), x + _offsx, y + _offsy, _x,
-		_y, _width, _height);
+	gameScreen->drawTextureTile(_image->textureID(fid), x + _offsx,
+		y + _offsy, _x, _y, _width, _height);
 }
 
 Widget::Widget(unsigned x, unsigned y, unsigned width, unsigned height) :
@@ -1019,14 +1019,14 @@ void ScrollBarWidget::redraw(int x, int y, unsigned curtick) {
 	}
 
 	for (i = 0; i < thickness; i++, color += 3) {
-		drawRect(x + i * dx, y + i * dy, swidth, sheight, color[0],
-			color[1], color[2]);
+		gameScreen->drawRect(x + i * dx, y + i * dy, swidth, sheight,
+			color[0], color[1], color[2]);
 	}
 
 	color -= 3;
-	drawRect(x + dx, y + dy, ewidth, eheight, _texture[0], _texture[1],
-		_texture[2]);
-	drawRect(x + dx + dy * (_slideLength - 1),
+	gameScreen->drawRect(x + dx, y + dy, ewidth, eheight, _texture[0],
+		_texture[1], _texture[2]);
+	gameScreen->drawRect(x + dx + dy * (_slideLength - 1),
 		y + dy + dx * (_slideLength - 1), ewidth, eheight,
 		color[0], color[1], color[2]);
 }

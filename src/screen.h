@@ -26,41 +26,65 @@
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
 
-void initScreen(void);
-void redrawScreen(void); // Refresh the screen using the last frame
-void updateScreen(void); // Finish drawing a frame and copy it to screen
-void shutdownScreen(void);
+class Screen {
+protected:
+	unsigned _width, _height;
+	unsigned _clipX, _clipY, _clipW, _clipH;
 
-// registerTexture() must return (nearly) consecutive texture IDs.
-// If the backend does not guarantee consecutive integers, the implementation
-// must maintain an internal translation table.
-unsigned registerTexture(unsigned width, unsigned height, const uint32_t *data);
-unsigned registerTexture(unsigned width, unsigned height, const uint8_t *data,
-	const uint8_t *palette, unsigned firstcolor, unsigned colors);
-void setTexturePalette(unsigned id, const uint8_t *palette,
-	unsigned firstcolor, unsigned colors);
-void freeTexture(unsigned id);
+public:
+	Screen(unsigned width, unsigned height);
+	virtual ~Screen(void);
 
-// Draw whole texture
-void drawTexture(unsigned id, int x, int y);
+	unsigned width(void) const;
+	unsigned height(void) const;
 
-// Draw part of texture specified by rectangle (offsx,offsy)+(width,height)
-void drawTextureTile(unsigned id, int x, int y, int offsx, int offsy,
-	unsigned width, unsigned height);
+	// Refresh the screen using the last frame
+	virtual void redraw(void) = 0;
+	// Finish drawing a frame and copy it to screen
+	virtual void update(void) = 0;
 
-void drawLine(int x1, int y1, int x2, int y2, uint8_t r, uint8_t g, uint8_t b);
+	// registerTexture() must return (nearly) consecutive texture IDs.
+	// If the backend does not guarantee consecutive integers,
+	// the implementation must maintain an internal translation table.
+	virtual unsigned registerTexture(unsigned width, unsigned height,
+		const uint32_t *data) = 0;
+	virtual unsigned registerTexture(unsigned width, unsigned height,
+		const uint8_t *data, const uint8_t *palette,
+		unsigned firstcolor, unsigned colors) = 0;
+	virtual void setTexturePalette(unsigned id, const uint8_t *palette,
+		unsigned firstcolor, unsigned colors) = 0;
+	virtual void freeTexture(unsigned id) = 0;
 
-void drawRect(int x, int y, unsigned width, unsigned height, uint8_t r = 0,
-	uint8_t g = 0, uint8_t b = 0, unsigned thickness = 1);
-void fillRect(int x, int y, unsigned width, unsigned height, uint8_t r = 0,
-	uint8_t g = 0, uint8_t b = 0);
-void fillTransparentRect(int x, int y, unsigned width, unsigned height,
-	uint8_t a = 0xff, uint8_t r = 0, uint8_t g = 0, uint8_t b = 0);
-void clearScreen(uint8_t r = 0, uint8_t g = 0, uint8_t b = 0);
+	// Draw whole texture
+	virtual void drawTexture(unsigned id, int x, int y) = 0;
 
-// Set or remove clipping rectangle on the screen
-void setClipRegion(int x, int y, unsigned width, unsigned height);
-void unsetClipRegion(void);
+	// Draw part of texture specified by rectangle
+	// (offsx, offsy) + (width, height)
+	virtual void drawTextureTile(unsigned id, int x, int y, int offsx,
+		int offsy, unsigned width, unsigned height) = 0;
+
+	virtual void drawLine(int x1, int y1, int x2, int y2, uint8_t r,
+		uint8_t g, uint8_t b);
+
+	virtual void fillRect(int x, int y, unsigned width, unsigned height,
+		uint8_t r = 0, uint8_t g = 0, uint8_t b = 0) = 0;
+	virtual void drawRect(int x, int y, unsigned width, unsigned height,
+		uint8_t r = 0, uint8_t g = 0, uint8_t b = 0,
+		unsigned thickness = 1);
+	virtual void fillTransparentRect(int x, int y, unsigned width,
+		unsigned height, uint8_t a = 0xff, uint8_t r = 0,
+		uint8_t g = 0, uint8_t b = 0) = 0;
+	virtual void clear(uint8_t r = 0, uint8_t g = 0, uint8_t b = 0);
+
+	// Set or remove clipping rectangle on the screen
+	virtual void setClipRegion(unsigned x, unsigned y, unsigned width,
+		unsigned height);
+	virtual void unsetClipRegion(void);
+
+	static Screen *createScreen(void);
+};
+
+extern Screen *gameScreen;
 
 // Main event loop
 void main_loop(void);

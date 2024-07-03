@@ -440,7 +440,7 @@ void StarmapWidget::redraw(int x, int y, unsigned curtick) {
 
 			cdata = starmapHighlightColors + 3 * color;
 			drawStar(x, y, ptr, curtick);
-			drawRect(x + sx - 4, y + sy - 4, 9, 9,
+			gameScreen->drawRect(x + sx - 4, y + sy - 4, 9, 9,
 				cdata[0], cdata[1], cdata[2]);
 		} else {
 			drawStar(x, y, ptr, 0);
@@ -548,9 +548,10 @@ void GalaxyMinimapWidget::drawStar(int x, int y, const Star *s,
 		frame = bounceFrame(curtick - _startTick, 200,
 			STARSEL_FRAMECOUNT);
 		color = minimapStarSelColors + frame * 3;
-		drawRect(x - 5, y - 5, 11, 11, color[0], color[1], color[2]);
+		gameScreen->drawRect(x - 5, y - 5, 11, 11, color[0], color[1],
+			color[2]);
 	} else if (s == curptr) {
-		drawRect(x - 5, y - 5, 11, 11, RGB(0x006000));
+		gameScreen->drawRect(x - 5, y - 5, 11, 11, RGB(0x006000));
 	}
 }
 
@@ -1341,8 +1342,8 @@ void StarSystemWidget::redraw(int x, int y, unsigned curtick) {
 	if (info) {
 		x += getX();
 		y += getY();
-		fillTransparentRect(x + 13, y + 12, info->width() + 7,
-			info->height() + 2, RGBA(0x0, 0x80));
+		gameScreen->fillTransparentRect(x + 13, y + 12,
+			info->width() + 7, info->height() + 2, RGBA(0x0, 0x80));
 		info->redraw(x + 15, y + 15, curtick);
 		drawFrame(x + 11, y + 10, info->width() + 11,
 			info->height() + 6, planetInfoFrame);
@@ -1887,17 +1888,17 @@ void GalaxyView::drawStar(const Star *s, Font *fnt, unsigned curtick) {
 			step += colony_count[i];
 			tmp = (step * width) / total;
 
-			setClipRegion(x + xoff, y - 1, tmp + 1 - xoff,
-				fnt->height() + 2);
+			gameScreen->setClipRegion(x + xoff, y - 1,
+				tmp + 1 - xoff, fnt->height() + 2);
 			fnt->renderText(x, y, color, str, OUTLINE_FULL);
 			xoff = tmp;
 		}
 	} catch (...) {
-		unsetClipRegion();
+		gameScreen->unsetClipRegion();
 		throw;
 	}
 
-	unsetClipRegion();
+	gameScreen->unsetClipRegion();
 }
 
 void GalaxyView::drawFleet(const Fleet *f, unsigned curtick) {
@@ -2028,7 +2029,7 @@ void GalaxyView::redraw(unsigned curtick) {
 
 	fnt = gameFonts->getFont(font_sizes[_zoom]);
 
-	clearScreen();
+	gameScreen->clear();
 	_bg->draw(0, 0);
 
 	for (i = 0; i < _game->_galaxy.nebulaCount; i++) {
@@ -2050,7 +2051,7 @@ void GalaxyView::redraw(unsigned curtick) {
 		}
 
 		s2 = _game->_starSystems + s1->wormhole;
-		drawLine(transformX(s1->x), transformY(s1->y),
+		gameScreen->drawLine(transformX(s1->x), transformY(s1->y),
 			transformX(s2->x), transformY(s2->y), 36, 36, 40);
 	}
 
@@ -2612,7 +2613,7 @@ void PlanetsListView::redraw(unsigned curtick) {
 	popstr = gameLang->hstrings(HSTR_PLANET_POPULATION);
 	penaltystr = gameLang->hstrings(HSTR_PLANET_PRODUCTION_PENALTY);
 
-	clearScreen();
+	gameScreen->clear();
 	_bg->draw(0, 0);
 
 	for (i = 0; i < PLANET_LIST_ROWS && offset + i < _planetCount; i++) {

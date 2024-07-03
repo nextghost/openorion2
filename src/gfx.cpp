@@ -395,11 +395,11 @@ void Image::loadFrames(SeekableReadStream &stream, unsigned variant,
 			substream = stream.readStream(offsets[i+1]-offsets[i]);
 			decodeFrame(buffer, (uint32_t*)_palettes[variant],
 				*substream);
-			_textureIDs[fpos] = registerTexture(_width,
+			_textureIDs[fpos] = gameScreen->registerTexture(_width,
 				_height, buffer);
 		} catch (...) {
 			for (i = 0; i < fpos; i++) {
-				freeTexture(_textureIDs[i]);
+				gameScreen->freeTexture(_textureIDs[i]);
 			}
 
 			_frames = 0;
@@ -418,7 +418,7 @@ void Image::clear(void) {
 	unsigned i;
 
 	for (i = 0; i < _frames * _palcount; i++) {
-		freeTexture(_textureIDs[i]);
+		gameScreen->freeTexture(_textureIDs[i]);
 	}
 
 	for (i = 0; i < _palcount; i++) {
@@ -523,7 +523,7 @@ const uint8_t *Image::palette(unsigned id) const {
 }
 
 void Image::draw(int x, int y, unsigned frame) const {
-	drawTexture(textureID(frame), x, y);
+	gameScreen->drawTexture(textureID(frame), x, y);
 }
 
 void Image::drawCentered(int x, int y, unsigned frame) const {
@@ -545,11 +545,11 @@ Font::~Font(void) {
 	size_t i;
 
 	if (_outlineID >= 0) {
-		freeTexture(_outlineID);
+		gameScreen->freeTexture(_outlineID);
 	}
 
 	if (_shadowID >= 0) {
-		freeTexture(_shadowID);
+		gameScreen->freeTexture(_shadowID);
 	}
 
 	delete[] _glyphs;
@@ -557,7 +557,7 @@ Font::~Font(void) {
 
 	for (i = 0; i < FONT_COLOR_MAX; i++) {
 		if (_textureIDs[i] >= 0) {
-			freeTexture(_textureIDs[i]);
+			gameScreen->freeTexture(_textureIDs[i]);
 		}
 	}
 }
@@ -608,10 +608,10 @@ void Font::createOutline(void) {
 	}
 
 	try {
-		_shadowID = registerTexture(width, height, buf, shadowpal, 0,
-			3);
-		_outlineID = registerTexture(width, height, buf, outlinepal, 0,
-			3);
+		_shadowID = gameScreen->registerTexture(width, height, buf,
+			shadowpal, 0, 3);
+		_outlineID = gameScreen->registerTexture(width, height, buf,
+			outlinepal, 0, 3);
 	} catch (...) {
 		delete[] buf;
 		throw;
@@ -661,8 +661,9 @@ int Font::renderChar(int x, int y, unsigned color, char ch, unsigned outline) {
 		const uint8_t *pal;
 
 		pal = _title ? title_palettes[color] : font_palettes[color];
-		_textureIDs[color] = registerTexture(_width, _height, _bitmap,
-			pal, 0, _title ? TITLE_PALSIZE : FONT_PALSIZE);
+		_textureIDs[color] = gameScreen->registerTexture(_width,
+			_height, _bitmap, pal, 0,
+			_title ? TITLE_PALSIZE : FONT_PALSIZE);
 	}
 
 	if (outline != OUTLINE_NONE) {
@@ -676,12 +677,13 @@ int Font::renderChar(int x, int y, unsigned color, char ch, unsigned outline) {
 			throw std::runtime_error("Invalid outline type");
 		}
 
-		drawTextureTile(tex, x-1, y-1, _glyphs[idx].offset + 2*idx, 0,
-			_glyphs[idx].width + 2, _height + 2);
+		gameScreen->drawTextureTile(tex, x-1, y-1,
+			_glyphs[idx].offset + 2*idx, 0, _glyphs[idx].width + 2,
+			_height + 2);
 	}
 
-	drawTextureTile(_textureIDs[color], x, y, _glyphs[idx].offset, 0,
-		_glyphs[idx].width, _height);
+	gameScreen->drawTextureTile(_textureIDs[color], x, y,
+		_glyphs[idx].offset, 0, _glyphs[idx].width, _height);
 	return x + _glyphs[idx].width;
 }
 

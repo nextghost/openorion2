@@ -1156,7 +1156,7 @@ void FleetListView::redrawShipInfo(unsigned curtick) {
 }
 
 void FleetListView::redraw(unsigned curtick) {
-	clearScreen();
+	gameScreen->clear();
 	_bg->draw(0, 0);
 
 	redrawWidgets(0, 0, curtick);
