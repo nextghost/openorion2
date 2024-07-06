@@ -28,12 +28,43 @@ Screen::~Screen(void) {
 
 }
 
+unsigned Screen::drawPitch(void) const {
+	return 4 * _width;
+}
+
 unsigned Screen::width(void) const {
 	return _width;
 }
 
 unsigned Screen::height(void) const {
 	return _height;
+}
+
+int Screen::clipRect(int &x, int &y, unsigned &w, unsigned &h) {
+	if (x + (int)w <= (int)_clipX || y + (int)h <= (int)_clipY ||
+		x >= (int)(_clipX + _clipW) || y >= (int)(_clipY + _clipH)) {
+		return 0;
+	}
+
+	if (x < (int)_clipX) {
+		w -= _clipX - x;
+		x = _clipX;
+	}
+
+	if (y < (int)_clipY) {
+		h -= _clipY - y;
+		y = _clipY;
+	}
+
+	if (x + w > (int)_clipX + _clipW) {
+		w = _clipX + _clipW - x;
+	}
+
+	if (y + h > (int)_clipY + _clipH) {
+		h = _clipY + _clipH - y;
+	}
+
+	return 1;
 }
 
 void Screen::drawLine(int x1, int y1, int x2, int y2, uint8_t r, uint8_t g,
@@ -91,6 +122,38 @@ void Screen::drawRect(int x, int y, unsigned width, unsigned height, uint8_t r,
 	fillRect(x + width - thickness, y + thickness, thickness,
 		height - 2 * thickness, r, g, b);
 	fillRect(x, y + height - thickness, width, thickness, r, g, b);
+}
+
+void Screen::fillTransparentRect(int x, int y, unsigned w, unsigned h,
+	uint8_t a, uint8_t r, uint8_t g, uint8_t b) {
+
+	unsigned i, j, pitch;
+	uint32_t da, ra, ga, ba;
+	uint8_t *dest, *drawbuf;
+
+	if (!clipRect(x, y, w, h)) {
+		return;
+	}
+
+	da = 0xff - a;
+	ra = uint32_t(a) * r;
+	ga = uint32_t(a) * g;
+	ba = uint32_t(a) * b;
+
+	drawbuf = beginDraw();
+	pitch = drawPitch();
+
+	for (i = 0; i < h; i++) {
+		dest = drawbuf + (y + i) * pitch + x * 4;
+
+		for (j = 0; j < w; j++, dest += 4) {
+			dest[1] = (ra + dest[1] * da) / 0xff;
+			dest[2] = (ga + dest[2] * da) / 0xff;
+			dest[3] = (ba + dest[3] * da) / 0xff;
+		}
+	}
+
+	endDraw();
 }
 
 void Screen::clear(uint8_t r, uint8_t g, uint8_t b) {

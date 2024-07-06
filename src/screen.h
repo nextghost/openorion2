@@ -31,6 +31,17 @@ protected:
 	unsigned _width, _height;
 	unsigned _clipX, _clipY, _clipW, _clipH;
 
+	// Return pointer to 32bit xRGB pixel buffer for direct drawing
+	virtual uint8_t *beginDraw(void) = 0;
+	// Finish direct drawing into pixel buffer
+	virtual void endDraw(void) = 0;
+	// Length of pixel buffer line in bytes
+	virtual unsigned drawPitch(void) const;
+
+	// Apply current clip settings to parameters. Returns 1 if the clipped
+	// rectangle is not empty, otherwise returns 0.
+	int clipRect(int &x, int &y, unsigned &width, unsigned &height);
+
 public:
 	Screen(unsigned width, unsigned height);
 	virtual ~Screen(void);
@@ -73,7 +84,7 @@ public:
 		unsigned thickness = 1);
 	virtual void fillTransparentRect(int x, int y, unsigned width,
 		unsigned height, uint8_t a = 0xff, uint8_t r = 0,
-		uint8_t g = 0, uint8_t b = 0) = 0;
+		uint8_t g = 0, uint8_t b = 0);
 	virtual void clear(uint8_t r = 0, uint8_t g = 0, uint8_t b = 0);
 
 	// Set or remove clipping rectangle on the screen

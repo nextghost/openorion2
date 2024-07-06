@@ -40,6 +40,11 @@ private:
 	void resizeTextureRegistry(void);
 	void cleanup(void);
 
+protected:
+	uint8_t *beginDraw(void);
+	void endDraw(void);
+	unsigned drawPitch(void) const;
+
 public:
 	SDLScreen(unsigned width, unsigned height);
 	~SDLScreen(void);
@@ -65,8 +70,6 @@ public:
 
 	void fillRect(int x, int y, unsigned width, unsigned height,
 		uint8_t r = 0, uint8_t g = 0, uint8_t b = 0);
-	void fillTransparentRect(int x, int y, unsigned width, unsigned height,
-		uint8_t a = 0xff, uint8_t r = 0, uint8_t g = 0, uint8_t b = 0);
 
 	void setClipRegion(unsigned x, unsigned y, unsigned width,
 		unsigned height);
@@ -176,6 +179,19 @@ void SDLScreen::cleanup(void) {
 	}
 
 	SDL_Quit();
+}
+
+uint8_t *SDLScreen::beginDraw(void) {
+	SDL_LockSurface(_drawbuffer);
+	return (uint8_t*)_drawbuffer->pixels;
+}
+
+void SDLScreen::endDraw(void) {
+	SDL_UnlockSurface(_drawbuffer);
+}
+
+unsigned SDLScreen::drawPitch(void) const {
+	return _drawbuffer->pitch;
 }
 
 void SDLScreen::redraw(void) {
@@ -445,45 +461,6 @@ void SDLScreen::fillRect(int x, int y, unsigned w, unsigned h, uint8_t r,
 
 	SDL_FillRect(_drawbuffer, &rect,
 		SDL_MapRGB(_drawbuffer->format, r, g, b));
-}
-
-void SDLScreen::fillTransparentRect(int x, int y, unsigned w, unsigned h,
-	uint8_t a, uint8_t r, uint8_t g, uint8_t b) {
-
-	SDL_Rect argrect = {x, y, (int)w, (int)h};
-	SDL_Rect bufrect = {0, 0, _drawbuffer->w, _drawbuffer->h};
-	SDL_Rect drawrect;
-	unsigned i, j;
-	uint32_t da, ra, ga, ba;
-	uint8_t *dest;
-
-	if (!SDL_IntersectRect(&argrect, &bufrect, &drawrect)) {
-		return;
-	}
-
-	x = drawrect.x;
-	y = drawrect.y;
-	w = drawrect.w;
-	h = drawrect.h;
-	da = 0xff - a;
-	ra = uint32_t(a) * r;
-	ga = uint32_t(a) * g;
-	ba = uint32_t(a) * b;
-
-	SDL_LockSurface(_drawbuffer);
-
-	for (i = 0; i < h; i++) {
-		dest = (uint8_t*)_drawbuffer->pixels;
-		dest += (y + i) * _drawbuffer->pitch + x * 4;
-
-		for (j = 0; j < w; j++, dest += 4) {
-			dest[1] = (ra + dest[1] * da) / 0xff;
-			dest[2] = (ga + dest[2] * da) / 0xff;
-			dest[3] = (ba + dest[3] * da) / 0xff;
-		}
-	}
-
-	SDL_UnlockSurface(_drawbuffer);
 }
 
 void SDLScreen::setClipRegion(unsigned x, unsigned y, unsigned w, unsigned h) {
