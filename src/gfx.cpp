@@ -534,16 +534,9 @@ Font::Font(unsigned height) : _width(0), _height(height), _title(0),
 	_glyphCount(0), _glyphs(NULL), _bitmap(NULL), _shadowID(-1),
 	_outlineID(-1) {
 
-	size_t i;
-
-	for (i = 0; i < FONT_COLOR_MAX; i++) {
-		_textureIDs[i] = -1;
-	}
 }
 
 Font::~Font(void) {
-	size_t i;
-
 	if (_outlineID >= 0) {
 		gameScreen->freeTexture(_outlineID);
 	}
@@ -554,12 +547,6 @@ Font::~Font(void) {
 
 	delete[] _glyphs;
 	delete[] _bitmap;
-
-	for (i = 0; i < FONT_COLOR_MAX; i++) {
-		if (_textureIDs[i] >= 0) {
-			gameScreen->freeTexture(_textureIDs[i]);
-		}
-	}
 }
 
 void Font::createOutline(void) {
@@ -650,6 +637,7 @@ unsigned Font::textWidth(const char *str, unsigned charSpacing) const {
 
 int Font::renderChar(int x, int y, unsigned color, char ch, unsigned outline) {
 	unsigned idx = (unsigned char)ch;
+	const uint8_t *pal;
 
 	if (idx >= _glyphCount) {
 		return x;
@@ -657,13 +645,6 @@ int Font::renderChar(int x, int y, unsigned color, char ch, unsigned outline) {
 
 	if (color >= (_title ? TITLE_COLOR_MAX : FONT_COLOR_MAX)) {
 		throw std::invalid_argument("Invalid font color");
-	} else if (_textureIDs[color] < 0) {
-		const uint8_t *pal;
-
-		pal = _title ? title_palettes[color] : font_palettes[color];
-		_textureIDs[color] = gameScreen->registerTexture(_width,
-			_height, _bitmap, pal, 0,
-			_title ? TITLE_PALSIZE : FONT_PALSIZE);
 	}
 
 	if (outline != OUTLINE_NONE) {
@@ -682,8 +663,9 @@ int Font::renderChar(int x, int y, unsigned color, char ch, unsigned outline) {
 			_height + 2);
 	}
 
-	gameScreen->drawTextureTile(_textureIDs[color], x, y,
-		_glyphs[idx].offset, 0, _glyphs[idx].width, _height);
+	pal = _title ? title_palettes[color] : font_palettes[color];
+	gameScreen->drawBitmapTile(x, y, _bitmap, _glyphs[idx].offset, 0,
+		_glyphs[idx].width, _height, _width, pal);
 	return x + _glyphs[idx].width;
 }
 

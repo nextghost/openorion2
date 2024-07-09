@@ -252,7 +252,7 @@ protected:
 	unsigned _width, _height, _title, _glyphCount;
 	Glyph *_glyphs;
 	uint8_t *_bitmap;
-	int _textureIDs[FONT_COLOR_MAX], _shadowID, _outlineID;
+	int _shadowID, _outlineID;
 
 	explicit Font(unsigned height);
 

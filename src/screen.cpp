@@ -109,6 +109,48 @@ void Screen::drawLine(int x1, int y1, int x2, int y2, uint8_t r, uint8_t g,
 	}
 }
 
+void Screen::drawBitmap(int x, int y, const uint8_t *image, unsigned w,
+	unsigned h, const uint8_t *palette) {
+	drawBitmapTile(x, y, image, 0, 0, w, h, w, palette);
+}
+
+void Screen::drawBitmapTile(int x, int y, const uint8_t *image, unsigned offsx,
+	unsigned offsy, unsigned w, unsigned h, unsigned pitch,
+	const uint8_t *palette) {
+
+	int origx = x, origy = y;
+	unsigned i, j, destpitch;
+	uint8_t *drawbuf, *dest;
+	const uint8_t *src, *color;
+
+	if (!clipRect(x, y, w, h)) {
+		return;
+	}
+
+	offsx += x - origx;
+	offsy += y - origy;
+
+	drawbuf = beginDraw();
+	destpitch = drawPitch();
+
+	for (i = 0; i < h; i++) {
+		dest = drawbuf + (y + i) * destpitch + x * 4;
+		src = image + (offsy + i) * pitch + offsx;
+
+		for (j = 0; j < w; j++, dest += 4) {
+			color = palette + 4 * src[j];
+
+			if (color[0]) {
+				dest[1] = color[1];
+				dest[2] = color[2];
+				dest[3] = color[3];
+			}
+		}
+	}
+
+	endDraw();
+}
+
 void Screen::drawRect(int x, int y, unsigned width, unsigned height, uint8_t r,
 	uint8_t g, uint8_t b, unsigned thickness) {
 

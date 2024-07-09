@@ -74,6 +74,13 @@ public:
 	virtual void drawTextureTile(unsigned id, int x, int y, int offsx,
 		int offsy, unsigned width, unsigned height) = 0;
 
+	// Draw 8bit image data with palette
+	virtual void drawBitmap(int x, int y, const uint8_t *image,
+		unsigned width, unsigned height, const uint8_t *palette);
+	virtual void drawBitmapTile(int x, int y, const uint8_t *image,
+		unsigned offsx, unsigned offsy, unsigned width, unsigned height,
+		unsigned pitch, const uint8_t *palette);
+
 	virtual void drawLine(int x1, int y1, int x2, int y2, uint8_t r,
 		uint8_t g, uint8_t b);
 
