@@ -252,11 +252,11 @@ protected:
 	unsigned _width, _height, _title, _glyphCount;
 	Glyph *_glyphs;
 	uint8_t *_bitmap;
-	int _shadowID, _outlineID;
 
 	explicit Font(unsigned height);
 
-	void createOutline(void);
+	void setupPalette(uint8_t *palette, unsigned color, unsigned outline);
+	int renderGlyph(int x, int y, const uint8_t *pal, char ch);
 
 public:
 	~Font(void);
@@ -293,7 +293,7 @@ private:
 
 protected:
 	void decodeGlyph(uint8_t *buf, unsigned width, unsigned pitch,
-		unsigned height, ReadStream &stream);
+		unsigned height, unsigned colorCount, ReadStream &stream);
 	void loadFonts(SeekableReadStream &stream);
 	void clear(void);
 
@@ -320,5 +320,8 @@ unsigned loopFrame(unsigned ticks, unsigned frametime, unsigned framecount);
 // Calculate frame for animation that bounces back and forth between the first
 // and last frame
 unsigned bounceFrame(unsigned ticks, unsigned frametime, unsigned framecount);
+
+// Set pixel to color only if the current pixel value is zero
+void setBlankPixel(uint8_t *pixel, uint8_t color);
 
 #endif

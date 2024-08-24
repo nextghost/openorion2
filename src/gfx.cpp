@@ -531,81 +531,60 @@ void Image::drawCentered(int x, int y, unsigned frame) const {
 }
 
 Font::Font(unsigned height) : _width(0), _height(height), _title(0),
-	_glyphCount(0), _glyphs(NULL), _bitmap(NULL), _shadowID(-1),
-	_outlineID(-1) {
+	_glyphCount(0), _glyphs(NULL), _bitmap(NULL) {
 
 }
 
 Font::~Font(void) {
-	if (_outlineID >= 0) {
-		gameScreen->freeTexture(_outlineID);
-	}
-
-	if (_shadowID >= 0) {
-		gameScreen->freeTexture(_shadowID);
-	}
-
 	delete[] _glyphs;
 	delete[] _bitmap;
 }
 
-void Font::createOutline(void) {
-	unsigned i, j, x, y, width, height;
-	const uint8_t *src;
-	uint8_t *buf, *dst;
-	uint8_t shadowpal[3*4] = {TRANSPARENT, TRANSPARENT, SRGB(0x101018)};
-	uint8_t outlinepal[3*4] = {TRANSPARENT, SRGB(0x101018), SRGB(0x101018)};
+void Font::setupPalette(uint8_t *palette, unsigned color, unsigned outline) {
+	const uint8_t *src, black[4] = { SRGB(0) }, blank[4] = { TRANSPARENT };
+	unsigned count;
 
-	// Each glyph outline is 2 pixels wider and taller than the glyph
-	width = _width + 2 * _glyphCount;
-	height = _height + 2;
-	buf = new uint8_t[width * height];
-	memset(buf, 0, width * height * sizeof(uint8_t));
-
-	for (i = 0; i < _glyphCount; i++) {
-		src = _bitmap + _glyphs[i].offset;
-		dst = buf + _glyphs[i].offset + 2 * i;
-
-		for (y = 0; y < _height; y++) {
-			for (x = 0; x < _glyphs[i].width; x++) {
-				// Start from bottom right corner, otherwise
-				// the shadow texture will miss a lot of pixels
-				j = (_height - y - 1) * _width;
-				j += _glyphs[i].width - x - 1;
-
-				if (!src[j]) {
-					continue;
-				}
-
-				// Outline for each non-blank pixel:
-				// 111
-				// 122
-				// 122
-				j = (_height - y - 1) * width;
-				j += _glyphs[i].width - x - 1;
-				dst[j] = dst[j+1] = dst[j+2] = 1;
-				j += width;
-				dst[j] = 1;
-				dst[j+1] = dst[j+2] = 2;
-				j += width;
-				dst[j] = 1;
-				dst[j+1] = dst[j+2] = 2;
-			}
-		}
+	if (color >= (_title ? TITLE_COLOR_MAX : FONT_COLOR_MAX)) {
+		throw std::invalid_argument("Invalid font color");
 	}
 
-	try {
-		_shadowID = gameScreen->registerTexture(width, height, buf,
-			shadowpal, 0, 3);
-		_outlineID = gameScreen->registerTexture(width, height, buf,
-			outlinepal, 0, 3);
-	} catch (...) {
-		delete[] buf;
-		throw;
+	switch (outline) {
+	case OUTLINE_NONE:
+	case OUTLINE_SHADOW:
+	case OUTLINE_FULL:
+		break;
+
+	default:
+		throw std::runtime_error("Invalid outline type");
 	}
 
-	delete[] buf;
+	if (_title) {
+		src = title_palettes[color];
+		count = TITLE_PALSIZE;
+	} else {
+		src = font_palettes[color];
+		count = FONT_PALSIZE;
+	}
+
+	memcpy(palette, src, count * 4 * sizeof(uint8_t));
+	memcpy(palette + 4 * count, outline != OUTLINE_NONE ? black : blank,
+		4 * sizeof(uint8_t));
+	memcpy(palette + 4 * (count+1), outline == OUTLINE_FULL ? black : blank,
+		4 * sizeof(uint8_t));
 }
+
+int Font::renderGlyph(int x, int y, const uint8_t *palette, char ch) {
+	unsigned idx = (unsigned char)ch;
+
+	if (idx >= _glyphCount) {
+		return x;
+	}
+
+	gameScreen->drawBitmapTile(x - 1, y - 1, _bitmap, _glyphs[idx].offset,
+		0, _glyphs[idx].width + 2, _height + 2, _width, palette);
+	return x + _glyphs[idx].width;
+}
+
 
 unsigned Font::height(void) const {
 	return _height;
@@ -636,43 +615,21 @@ unsigned Font::textWidth(const char *str, unsigned charSpacing) const {
 }
 
 int Font::renderChar(int x, int y, unsigned color, char ch, unsigned outline) {
-	unsigned idx = (unsigned char)ch;
-	const uint8_t *pal;
+	uint8_t palette[4 * (TITLE_PALSIZE + 2)];
 
-	if (idx >= _glyphCount) {
-		return x;
-	}
-
-	if (color >= (_title ? TITLE_COLOR_MAX : FONT_COLOR_MAX)) {
-		throw std::invalid_argument("Invalid font color");
-	}
-
-	if (outline != OUTLINE_NONE) {
-		unsigned tex;
-
-		if (outline == OUTLINE_SHADOW) {
-			tex = _shadowID;
-		} else if (outline == OUTLINE_FULL) {
-			tex = _outlineID;
-		} else {
-			throw std::runtime_error("Invalid outline type");
-		}
-
-		gameScreen->drawTextureTile(tex, x-1, y-1,
-			_glyphs[idx].offset + 2*idx, 0, _glyphs[idx].width + 2,
-			_height + 2);
-	}
-
-	pal = _title ? title_palettes[color] : font_palettes[color];
-	gameScreen->drawBitmapTile(x, y, _bitmap, _glyphs[idx].offset, 0,
-		_glyphs[idx].width, _height, _width, pal);
-	return x + _glyphs[idx].width;
+	setupPalette(palette, color, outline);
+	return renderGlyph(x, y, palette, ch);
 }
 
 int Font::renderText(int x, int y, unsigned color, const char *str,
 	unsigned outline, unsigned charSpacing) {
+
+	uint8_t palette[4 * (TITLE_PALSIZE + 2)];
+
+	setupPalette(palette, color, outline);
+
 	for (; *str; str++) {
-		x = renderChar(x, y, color, *str, outline) + charSpacing;
+		x = renderGlyph(x, y, palette, *str) + charSpacing;
 	}
 
 	return x;
@@ -721,14 +678,14 @@ FontManager::~FontManager(void) {
 }
 
 void FontManager::decodeGlyph(uint8_t *buf, unsigned width, unsigned pitch,
-	unsigned height, ReadStream &stream) {
+	unsigned height, unsigned colorCount, ReadStream &stream) {
 
 	unsigned x, y;
 	uint8_t tmp, *ptr;
 
 	for (y = 0; y < height; y++) {
 		x = 0;
-		ptr = buf + y * pitch;
+		ptr = buf + (y + 1) * pitch + 1;
 
 		while ((tmp = stream.readUint8()) != 0x80) {
 			if (stream.eos()) {
@@ -745,6 +702,18 @@ void FontManager::decodeGlyph(uint8_t *buf, unsigned width, unsigned pitch,
 				throw std::runtime_error("Glyph line overflow");
 			}
 
+			if (tmp >= colorCount) {
+				throw std::runtime_error("Invalid color");
+			}
+
+			setBlankPixel(ptr - pitch - 1, colorCount + 1);
+			setBlankPixel(ptr - pitch, colorCount + 1);
+			setBlankPixel(ptr - pitch + 1, colorCount + 1);
+			setBlankPixel(ptr - 1, colorCount + 1);
+			ptr[1] = colorCount;
+			setBlankPixel(ptr + pitch - 1, colorCount + 1);
+			ptr[pitch] = colorCount;
+			ptr[pitch + 1] = colorCount;
 			*ptr++ = tmp;
 			x++;
 		}
@@ -753,11 +722,12 @@ void FontManager::decodeGlyph(uint8_t *buf, unsigned width, unsigned pitch,
 
 void FontManager::loadFonts(SeekableReadStream &stream) {
 	unsigned i, j, x, size, glyphCount, fontCount = FONTSIZE_COUNT;
-	unsigned offsets[256], magic[4] = {25, 50, 10, 0x404032};
+	unsigned colorCount, offsets[256], magic[4] = {25, 50, 10, 0x404032};
 	Font *ptr = NULL;
 	Font::Glyph *glyphs = NULL, *gptr = NULL;
 	uint8_t *bitmap = NULL;
 
+	colorCount = FONT_PALSIZE;
 	stream.seek(0, SEEK_SET);
 
 	for (i = 0; i < 4; i++) {
@@ -787,6 +757,10 @@ void FontManager::loadFonts(SeekableReadStream &stream) {
 	// Load font data
 	try {
 		for (i = 0; i < fontCount; i++, _fontCount++) {
+			if (i == FONTSIZE_TITLE) {
+				colorCount = TITLE_PALSIZE;
+			}
+
 			glyphs = NULL;
 			bitmap = NULL;
 			ptr = _fonts[_fontCount];
@@ -817,25 +791,23 @@ void FontManager::loadFonts(SeekableReadStream &stream) {
 			for (x = 0, j = 0; j < glyphCount; j++, gptr++) {
 				gptr->offset = x;
 				gptr->width = stream.readUint8();
-				x += gptr->width;
+				x += gptr->width + 2;
 			}
 
 			if (stream.eos()) {
 				throw std::runtime_error("Premature end of font data");
 			}
 
-			// Create glyph bitmap
-			// TODO: implement drawing glyphs with outline
 			size = x;
-			bitmap = new uint8_t[size * ptr->height()];
-			memset(bitmap, 0, size * ptr->height());
+			bitmap = new uint8_t[size * (ptr->height() + 2)];
+			memset(bitmap, 0, size * (ptr->height() + 2));
 			gptr = glyphs;
 
 			for (j = 0; j < glyphCount; j++, gptr++) {
 				stream.seek(0x239c + offsets[j], SEEK_SET);
 				decodeGlyph(bitmap + gptr->offset,
 					gptr->width, size, ptr->height(),
-					stream);
+					colorCount, stream);
 			}
 
 			ptr->_bitmap = bitmap;
@@ -845,7 +817,6 @@ void FontManager::loadFonts(SeekableReadStream &stream) {
 			ptr->_glyphCount = glyphCount;
 			glyphs = NULL;
 			bitmap = NULL;
-			ptr->createOutline();
 		}
 	} catch (...) {
 		delete[] glyphs;
@@ -931,4 +902,10 @@ unsigned bounceFrame(unsigned ticks, unsigned frametime, unsigned framecount) {
 
 	ret = (ticks / frametime) % (2 * framecount - 1);
 	return ret < framecount ? ret : 2 * framecount - ret - 1;
+}
+
+void setBlankPixel(uint8_t *pixel, uint8_t color) {
+	if (!*pixel) {
+		*pixel = color;
+	}
 }
