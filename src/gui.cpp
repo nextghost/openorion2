@@ -1131,6 +1131,23 @@ Widget *WidgetContainer::createWidget(unsigned x, unsigned y, unsigned width,
 	return w;
 }
 
+Widget *WidgetContainer::createWidget(unsigned x, unsigned y, Image *img,
+	int frame) {
+
+	Widget *w = createWidget(x, y, img->width(), img->height());
+
+	w->setClickSprite(MBUTTON_LEFT, img, frame);
+	return w;
+}
+
+Widget *WidgetContainer::createWidget(unsigned x, unsigned y,
+	const char *archive, unsigned id, const uint8_t *palette, int frame) {
+
+	ImageAsset img = gameAssets->getImage(archive, id, palette);
+
+	return createWidget(x, y, (Image*)img, frame);
+}
+
 void WidgetContainer::addWidget(Widget *w) {
 	if (_widgetCount >= _widgetMax) {
 		size_t size = _widgetMax ? 2 * _widgetMax : 32;

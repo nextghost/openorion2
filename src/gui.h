@@ -370,6 +370,14 @@ protected:
 	Widget *createWidget(unsigned x, unsigned y, unsigned width,
 		unsigned height);
 
+	// Create a generic widget with the same size as given image
+	// and automatically set the image as the click sprite
+	Widget *createWidget(unsigned x, unsigned y, Image *img,
+		int frame = ANIM_LOOP);
+	Widget *createWidget(unsigned x, unsigned y, const char *archive,
+		unsigned id, const uint8_t *palette = NULL,
+		int frame = ANIM_LOOP);
+
 	// Add new widget to the container. If the widget cannot be added,
 	// it'll be automatically deleted and excetpion will be thrown.
 	void addWidget(Widget *w);
