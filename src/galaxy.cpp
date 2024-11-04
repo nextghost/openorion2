@@ -1462,11 +1462,10 @@ void GalaxyView::initWidgets(void) {
 	w->setMouseMoveCallback(GuiMethod(*this, &GalaxyView::touchGalaxyMap));
 	w->setMouseOutCallback(GuiMethod(*this, &GalaxyView::leaveGalaxyMap));
 
-	w = createWidget(249, 5, 59, 17);
+	w = createWidget(249, 5, GALAXY_ARCHIVE, ASSET_GALAXY_GAME_BUTTON,
+		pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &GalaxyView::clickGameMenu));
-	w->setClickSprite(MBUTTON_LEFT, GALAXY_ARCHIVE,
-		ASSET_GALAXY_GAME_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &GalaxyView::showHelp,
 		HELP_GALAXY_GAME_BUTTON));
@@ -1525,29 +1524,26 @@ void GalaxyView::initWidgets(void) {
 		GuiMethod(*this, &GalaxyView::showHelp,
 		HELP_GALAXY_INFO_BUTTON));
 
-	w = createWidget(244, 428, 55, 16);
+	w = createWidget(244, 428, GALAXY_ARCHIVE, ASSET_GALAXY_ZOOMIN_BUTTON,
+		pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &GalaxyView::clickZoomInButton));
-	w->setClickSprite(MBUTTON_LEFT, GALAXY_ARCHIVE,
-		ASSET_GALAXY_ZOOMIN_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &GalaxyView::showHelp,
 		HELP_GALAXY_ZOOM_BUTTON));
 
-	w = createWidget(244, 455, 55, 19);
+	w = createWidget(244, 455, GALAXY_ARCHIVE, ASSET_GALAXY_ZOOMOUT_BUTTON,
+		pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &GalaxyView::clickZoomOutButton));
-	w->setClickSprite(MBUTTON_LEFT, GALAXY_ARCHIVE,
-		ASSET_GALAXY_ZOOMOUT_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &GalaxyView::showHelp,
 		HELP_GALAXY_ZOOM_BUTTON));
 
-	w = createWidget(544, 441, 65, 26);
+	w = createWidget(544, 441, GALAXY_ARCHIVE, ASSET_GALAXY_TURN_BUTTON,
+		pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &GalaxyView::clickTurnButton));
-	w->setClickSprite(MBUTTON_LEFT, GALAXY_ARCHIVE,
-		ASSET_GALAXY_TURN_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &GalaxyView::showHelp,
 		HELP_GALAXY_TURN_BUTTON));
@@ -2410,20 +2406,18 @@ void PlanetsListView::initWidgets(void) {
 		GuiMethod(*this, &PlanetsListView::showHelp,
 		HELP_PLANETLIST_SCROLLBAR));
 
-	w = createWidget(422, 16, 11, 19);
+	w = createWidget(422, 16, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_SCROLL_UP_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*_scroll, &ScrollBarWidget::scrollMinus));
-	w->setClickSprite(MBUTTON_LEFT, PLANET_ARCHIVE,
-		ASSET_PLANETLIST_SCROLL_UP_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &PlanetsListView::showHelp,
 		HELP_PLANETLIST_SCROLLBAR));
 
-	w = createWidget(421, 448, 12, 19);
+	w = createWidget(421, 448, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_SCROLL_DOWN_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*_scroll, &ScrollBarWidget::scrollPlus));
-	w->setClickSprite(MBUTTON_LEFT, PLANET_ARCHIVE,
-		ASSET_PLANETLIST_SCROLL_DOWN_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &PlanetsListView::showHelp,
 		HELP_PLANETLIST_SCROLLBAR));
@@ -2518,11 +2512,10 @@ void PlanetsListView::initWidgets(void) {
 		HELP_PLANETLIST_OUTPOST_TOGGLE));
 	_outpostToggle->disable(1);
 
-	w = createWidget(454, 440, 156, 25);
+	w = createWidget(454, 440, PLANET_ARCHIVE,
+		ASSET_PLANETLIST_RETURN_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &PlanetsListView::clickReturn));
-	w->setClickSprite(MBUTTON_LEFT, PLANET_ARCHIVE,
-		ASSET_PLANETLIST_RETURN_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &PlanetsListView::showHelp,
 		HELP_PLANETLIST_RETURN_BUTTON));
@@ -2943,61 +2936,53 @@ void MainMenuWindow::initWidgets(const uint8_t *pal) {
 	Widget *w;
 
 	// Save Game button
-	w = createWidget(40, 43, 91, 28);
+	w = createWidget(40, 43, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_SAVE, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &MainMenuWindow::clickSave));
-	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_SAVE,
-		pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &MainMenuWindow::showHelp,
 		HELP_GAMEMENU_SAVE));
 
 	// Load Game button
-	w = createWidget(147, 43, 91, 28);
+	w = createWidget(147, 43, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_LOAD,
+		pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &MainMenuWindow::clickLoad));
-	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_LOAD,
-		pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &MainMenuWindow::showHelp,
 		HELP_GAMEMENU_LOAD));
 
 	// New Game button
-	w = createWidget(40, 88, 91, 28);
+	w = createWidget(40, 88, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_NEW, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &MainMenuWindow::clickNew));
-	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_NEW,
-		pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &MainMenuWindow::showHelp,
 		HELP_GAMEMENU_NEWGAME));
 
 	// Quit Game button
-	w = createWidget(147, 88, 91, 28);
+	w = createWidget(147, 88, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_QUIT,
+		pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &MainMenuWindow::clickQuit));
-	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_QUIT,
-		pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &MainMenuWindow::showHelp,
 		HELP_GAMEMENU_QUIT));
 
 	// Settings button
-	w = createWidget(40, 307, 91, 27);
+	w = createWidget(40, 307, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_SETTINGS,
+		pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &MainMenuWindow::clickSettings));
-	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
-		ASSET_GAMEMENU_SETTINGS, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &MainMenuWindow::showHelp,
 		HELP_GAMEMENU_SETTINGS));
 
 	// Return button
-	w = createWidget(151, 307, 91, 27);
+	w = createWidget(151, 307, GAMEMENU_ARCHIVE, ASSET_GAMEMENU_RETURN,
+		pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod<GuiWindow>(*this, &MainMenuWindow::close));
-	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
-		ASSET_GAMEMENU_RETURN, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &MainMenuWindow::showHelp,
 		HELP_GAMEMENU_RETURN));

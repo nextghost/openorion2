@@ -920,9 +920,8 @@ void ResearchSelectWindow::initWidgets(int allow_cancel) {
 			ASSET_TECHSEL_AREA_BUTTONS + off + i, pal);
 
 		x = i % 2 ? 248 : 21;
-		w = createWidget(x, ypos[i / 2] - img->height(), img->width(),
-			img->height());
-		w->setClickSprite(MBUTTON_LEFT, (Image*)img, 1);
+		w = createWidget(x, ypos[i / 2] - img->height(),
+			(Image*)img, 1);
 		w->setMouseUpCallback(MBUTTON_LEFT,
 			GuiMethod(*this, &ResearchSelectWindow::clickTechArea,
 				i));
@@ -944,8 +943,7 @@ void ResearchSelectWindow::initWidgets(int allow_cancel) {
 	}
 
 	if (allow_cancel) {
-		w = createWidget(189, 452, 92, 19);
-		w->setClickSprite(MBUTTON_LEFT, TECHSEL_ARCHIVE,
+		w = createWidget(189, 452, TECHSEL_ARCHIVE,
 			ASSET_TECHSEL_CANCEL_BUTTON, pal, 1);
 		w->setMouseUpCallback(MBUTTON_LEFT,
 			GuiMethod<ResearchSelectWindow>(*this,
@@ -1023,20 +1021,17 @@ void ResearchListWindow::initWidgets(void) {
 	_list->setItemExamineCallback(GuiMethod(*this,
 		&ResearchListWindow::showTechHelp));
 
-	_buttonUp = w = createWidget(247, 46, 9, 18);
-	w->setClickSprite(MBUTTON_LEFT, TECHSEL_ARCHIVE,
+	_buttonUp = w = createWidget(247, 46, TECHSEL_ARCHIVE,
 		ASSET_TECHLIST_UP_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod(*this,
 		&ResearchListWindow::previousPage));
 
-	_buttonDown = w = createWidget(248, 367, 9, 18);
-	w->setClickSprite(MBUTTON_LEFT, TECHSEL_ARCHIVE,
+	_buttonDown = w = createWidget(248, 367, TECHSEL_ARCHIVE,
 		ASSET_TECHLIST_DOWN_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod(*this,
 		&ResearchListWindow::nextPage));
 
-	w = createWidget(187, 403, 66, 17);
-	w->setClickSprite(MBUTTON_LEFT, TECHSEL_ARCHIVE,
+	w = createWidget(187, 403, TECHSEL_ARCHIVE,
 		ASSET_TECHLIST_RETURN_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod<ResearchListWindow>(*this,

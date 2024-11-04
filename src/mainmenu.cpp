@@ -355,11 +355,10 @@ void LoadGameWindow::initWidgets(const uint8_t *pal) {
 	Widget *w;
 
 	// Load button
-	w = createWidget(37, 337, 68, 22);
+	w = createWidget(37, 337, GAMEMENU_ARCHIVE, ASSET_LOAD_LOADBUTTON,
+		pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &LoadGameWindow::handleLoad));
-	w->setClickSprite(MBUTTON_LEFT, GAMEMENU_ARCHIVE,
-		ASSET_LOAD_LOADBUTTON, pal, 1);
 
 	// Cancel button
 	w = createWidget(171, 338, 68, 22);

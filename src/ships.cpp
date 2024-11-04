@@ -627,80 +627,72 @@ void FleetListView::initWidgets(void) {
 		GuiMethod(*this, &FleetListView::showHelp,
 		HELP_FLEET_SCROLLBAR));
 
-	w = createWidget(606, 59, 13, 24);
+	w = createWidget(606, 59, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_SCROLL_UP_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*_scroll, &ScrollBarWidget::scrollMinus));
-	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
-		ASSET_FLEET_SCROLL_UP_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &FleetListView::showHelp,
 		HELP_FLEET_SCROLLBAR));
 
-	w = createWidget(605, 325, 14, 25);
+	w = createWidget(605, 325, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_SCROLL_DOWN_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*_scroll, &ScrollBarWidget::scrollPlus));
-	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
-		ASSET_FLEET_SCROLL_DOWN_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &FleetListView::showHelp,
 		HELP_FLEET_SCROLLBAR));
 
-	w = createWidget(19, 249, 32, 19);
+	w = createWidget(19, 249, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_PREV_FLEET_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &FleetListView::clickPrevFleet));
-	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
-		ASSET_FLEET_PREV_FLEET_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &FleetListView::showHelp,
 		HELP_FLEET_PREV_BUTTON));
 
-	w = createWidget(283, 249, 31, 19);
+	w = createWidget(283, 249, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_NEXT_FLEET_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &FleetListView::clickNextFleet));
-	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
-		ASSET_FLEET_NEXT_FLEET_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &FleetListView::showHelp,
 		HELP_FLEET_NEXT_BUTTON));
 
-	_allButton = createWidget(348, 380, 74, 28);
+	_allButton = createWidget(348, 380, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_ALL_BUTTON, pal, 1);
 	_allButton->setDisabledSprite(FLEETLIST_ARCHIVE,
 		ASSET_FLEET_ALL_BUTTON_DISABLED, pal, 0);
 	_allButton->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &FleetListView::clickAllButton));
-	_allButton->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
-		ASSET_FLEET_ALL_BUTTON, pal, 1);
 	_allButton->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &FleetListView::showHelp,
 		HELP_FLEET_ALL_BUTTON));
 	_allButton->disable(1);
 
-	w = createWidget(441, 380, 89, 28);
+	w = createWidget(441, 380, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_RELOCATE_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &FleetListView::clickRelocate));
-	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
-		ASSET_FLEET_RELOCATE_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &FleetListView::showHelp,
 		HELP_FLEET_RELOCATE_BUTTON));
 
-	_scrapButton = createWidget(549, 380, 73, 28);
+	_scrapButton = createWidget(549, 380, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_SCRAP_BUTTON, pal, 1);
 	_scrapButton->setDisabledSprite(FLEETLIST_ARCHIVE,
 		ASSET_FLEET_SCRAP_BUTTON_DISABLED, pal, 0);
 	_scrapButton->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &FleetListView::clickScrap));
-	_scrapButton->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
-		ASSET_FLEET_SCRAP_BUTTON, pal, 1);
 	_scrapButton->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &FleetListView::showHelp,
 		HELP_FLEET_SCRAP_BUTTON));
 	_scrapButton->disable(1);
 
-	w = createWidget(342, 430, 73, 27);
+	w = createWidget(342, 430, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_LEADERS_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &FleetListView::clickLeaders));
-	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
-		ASSET_FLEET_LEADERS_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &FleetListView::showHelp,
 		HELP_FLEET_LEADERS_BUTTON));
@@ -723,11 +715,10 @@ void FleetListView::initWidgets(void) {
 		GuiMethod(*this, &FleetListView::showHelp,
 		HELP_FLEET_COMBAT_TOGGLE));
 
-	w = createWidget(556, 430, 73, 27);
+	w = createWidget(556, 430, FLEETLIST_ARCHIVE,
+		ASSET_FLEET_RETURN_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*this, &FleetListView::clickReturn));
-	w->setClickSprite(MBUTTON_LEFT, FLEETLIST_ARCHIVE,
-		ASSET_FLEET_RETURN_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &FleetListView::showHelp,
 		HELP_FLEET_RETURN_BUTTON));

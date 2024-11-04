@@ -360,20 +360,18 @@ void LeaderListView::initWidgets(void) {
 		GuiMethod(*this, &LeaderListView::showHelp,
 		HELP_LEADERLIST_SCROLLBAR));
 
-	_scrollUp = createWidget(613, 22, 10, 19);
+	_scrollUp = createWidget(613, 22, LEADER_LIST_ARCHIVE,
+		ASSET_LEADERLIST_SCROLL_UP_BUTTON, pal, 1);
 	_scrollUp->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*_scroll, &ScrollBarWidget::scrollMinus));
-	_scrollUp->setClickSprite(MBUTTON_LEFT, LEADER_LIST_ARCHIVE,
-		ASSET_LEADERLIST_SCROLL_UP_BUTTON, pal, 1);
 	_scrollUp->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &LeaderListView::showHelp,
 		HELP_LEADERLIST_SCROLLBAR));
 
-	_scrollDown = createWidget(613, 170, 11, 21);
+	_scrollDown = createWidget(613, 170, LEADER_LIST_ARCHIVE,
+		ASSET_LEADERLIST_SCROLL_DOWN_BUTTON, pal, 1);
 	_scrollDown->setMouseUpCallback(MBUTTON_LEFT,
 		GuiMethod(*_scroll, &ScrollBarWidget::scrollPlus));
-	_scrollDown->setClickSprite(MBUTTON_LEFT, LEADER_LIST_ARCHIVE,
-		ASSET_LEADERLIST_SCROLL_DOWN_BUTTON, pal, 1);
 	_scrollDown->setMouseUpCallback(MBUTTON_RIGHT,
 		GuiMethod(*this, &LeaderListView::showHelp,
 		HELP_LEADERLIST_SCROLLBAR));
@@ -396,51 +394,45 @@ void LeaderListView::initWidgets(void) {
 	_minimap->setMouseUpCallback(MBUTTON_RIGHT, GuiMethod(*this,
 		&LeaderListView::showSelectionHelp, 3));
 
-	w = createWidget(313, 441, 74, 27);
+	w = createWidget(313, 441, LEADER_LIST_ARCHIVE,
+		ASSET_LEADERLIST_HIRE_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod(*this,
 		&LeaderListView::clickHireButton));
-	w->setClickSprite(MBUTTON_LEFT, LEADER_LIST_ARCHIVE,
-		ASSET_LEADERLIST_HIRE_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT, GuiMethod(*this,
 		&LeaderListView::showHelp, HELP_LEADERLIST_HIRE));
 
-	w = createWidget(388, 441, 74, 27);
+	w = createWidget(388, 441, LEADER_LIST_ARCHIVE,
+		ASSET_LEADERLIST_POOL_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod(*this,
 		&LeaderListView::clickPoolButton));
-	w->setClickSprite(MBUTTON_LEFT, LEADER_LIST_ARCHIVE,
-		ASSET_LEADERLIST_POOL_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT, GuiMethod(*this,
 		&LeaderListView::showHelp, HELP_LEADERLIST_POOL));
 
-	w = createWidget(463, 441, 74, 27);
+	w = createWidget(463, 441, LEADER_LIST_ARCHIVE,
+		ASSET_LEADERLIST_DISMISS_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod(*this,
 		&LeaderListView::clickDismissButton));
-	w->setClickSprite(MBUTTON_LEFT, LEADER_LIST_ARCHIVE,
-		ASSET_LEADERLIST_DISMISS_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT, GuiMethod(*this,
 		&LeaderListView::showHelp, HELP_LEADERLIST_DISMISS));
 
-	w = createWidget(538, 441, 80, 27);
+	w = createWidget(538, 441, LEADER_LIST_ARCHIVE,
+		ASSET_LEADERLIST_RETURN_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod(*this,
 		&LeaderListView::clickReturn));
-	w->setClickSprite(MBUTTON_LEFT, LEADER_LIST_ARCHIVE,
-		ASSET_LEADERLIST_RETURN_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT, GuiMethod(*this,
 		&LeaderListView::showHelp, HELP_LEADERLIST_RETURN));
 
-	w = createWidget(327, 205, 35, 21);
+	w = createWidget(327, 205, LEADER_LIST_ARCHIVE,
+		ASSET_LEADERLIST_PREV_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod(*this,
 		&LeaderListView::clickSelectPrevious));
-	w->setClickSprite(MBUTTON_LEFT, LEADER_LIST_ARCHIVE,
-		ASSET_LEADERLIST_PREV_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT, GuiMethod(*this,
 		&LeaderListView::showSelectionHelp, 1));
 
-	w = createWidget(568, 205, 35, 21);
+	w = createWidget(568, 205, LEADER_LIST_ARCHIVE,
+		ASSET_LEADERLIST_NEXT_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod(*this,
 		&LeaderListView::clickSelectNext));
-	w->setClickSprite(MBUTTON_LEFT, LEADER_LIST_ARCHIVE,
-		ASSET_LEADERLIST_NEXT_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT, GuiMethod(*this,
 		&LeaderListView::showSelectionHelp, 2));
 
@@ -1190,22 +1182,20 @@ void HireLeaderWindow::initWidgets(int can_hire) {
 	addWidget(sw);
 	sw->setLeader(_leaderID);
 
-	w = createWidget(44, 226, 92, 27);
+	w = createWidget(44, 226, POPUP_ARCHIVE,
+		ASSET_HIREDIALOG_REJECT_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod<HireLeaderWindow>(*this,
 		&HireLeaderWindow::close));
-	w->setClickSprite(MBUTTON_LEFT, POPUP_ARCHIVE,
-		ASSET_HIREDIALOG_REJECT_BUTTON, pal, 1);
 	w->setMouseUpCallback(MBUTTON_RIGHT, GuiMethod(*this,
 		&HireLeaderWindow::showHelp, 1));
 
 	if (can_hire) {
-		w = createWidget(175, 226, 85, 27);
+		w = createWidget(175, 226, POPUP_ARCHIVE,
+			ASSET_HIREDIALOG_HIRE_BUTTON, pal, 1);
 		w->setIdleSprite(POPUP_ARCHIVE, ASSET_HIREDIALOG_HIRE_BUTTON,
 			pal, 0);
 		w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod(*this,
 			&HireLeaderWindow::clickHire));
-		w->setClickSprite(MBUTTON_LEFT, POPUP_ARCHIVE,
-			ASSET_HIREDIALOG_HIRE_BUTTON, pal, 1);
 		w->setMouseUpCallback(MBUTTON_RIGHT, GuiMethod(*this,
 			&HireLeaderWindow::showHelp, 0));
 	}
