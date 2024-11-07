@@ -112,6 +112,17 @@
 #define PLANET_LIST_COLONY_X 88
 #define PLANET_LIST_OUTPOST_X 18
 
+#define COLONY_ARCHIVE "colsum.lbx"
+#define ASSET_COLONYLIST_BG 0
+#define ASSET_COLONYLIST_RETURN_BUTTON 1
+
+#define COLONY_LIST_ROWS 10
+#define COLONY_LIST_FIRST_ROW 39
+#define COLONY_LIST_ROW_HEIGHT 26
+#define COLONY_LIST_ROW_DIST 5
+#define COLONY_LIST_ROW_LEFT_PADDING 55
+#define COLONY_LIST_ROW_BOTTOM_PADDING 5
+
 static const uint8_t starmapHighlightColors[(MAX_PLAYERS + 1) * 3] {
 	RGB(0xfc0000), RGB(0xd4c418), RGB(0x209c1c), RGB(0xc8c8c8),
 	RGB(0x305ca0), RGB(0xa47050), RGB(0x8c6098), RGB(0xd0680c),
@@ -2124,7 +2135,9 @@ void GalaxyView::clickGameMenu(int x, int y, int arg) {
 	new MainMenuWindow(this, _game);
 }
 
-void GalaxyView::clickColoniesButton(int x, int y, int arg) STUB(this)
+void GalaxyView::clickColoniesButton(int x, int y, int arg) {
+	gui_stack->push(new ColoniesListView(_game, _activePlayer));
+}
 
 void GalaxyView::clickPlanetsButton(int x, int y, int arg) {
 	gui_stack->push(new PlanetsListView(_game, _activePlayer));
@@ -2908,6 +2921,95 @@ void PlanetsListView::clickOutpostToggle(int x, int y, int arg) {
 
 void PlanetsListView::clickReturn(int x, int y, int arg) {
 	exitView();
+}
+
+ColoniesListView::ColoniesListView(GameState *game, int activePlayer) :
+    _game(game), _scroll(NULL) {
+
+	_bg = gameAssets->getImage(COLONY_ARCHIVE, ASSET_COLONYLIST_BG);
+
+	initWidgets();
+}
+
+void ColoniesListView::initWidgets(void) {
+	unsigned i;
+	const uint8_t *pal = _bg->palette();
+	Widget *w = NULL;
+
+	for (i = 0; i < COLONY_LIST_ROWS; i++) {
+		w = createWidget(10,
+				 COLONY_LIST_FIRST_ROW + i * (COLONY_LIST_ROW_HEIGHT + COLONY_LIST_ROW_BOTTOM_PADDING),
+				 398,
+				 COLONY_LIST_ROW_HEIGHT);
+		w->setMouseOverCallback(GuiMethod(*this,
+			&ColoniesListView::highlightSlot, i));
+		w->setMouseMoveCallback(GuiMethod(*this,
+			&ColoniesListView::highlightSlot, i));
+		w->setMouseOutCallback(GuiMethod(*this,
+			&ColoniesListView::highlightSlot, -1));
+	}
+
+	w = createWidget(531, 445, 156, 25);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &ColoniesListView::clickReturn));
+	w->setClickSprite(MBUTTON_LEFT, COLONY_ARCHIVE,
+		ASSET_COLONYLIST_RETURN_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &ColoniesListView::showHelp,
+			HELP_RETURN_BUTTON));
+}
+
+void ColoniesListView::highlightSlot(int x, int y, int arg) {
+	if (arg >= 0 && arg < COLONY_LIST_ROWS && arg < _game->_colonyCount) {
+		_curslot = arg;
+	} else {
+		_curslot = -1;
+	}
+}
+
+void ColoniesListView::redraw(unsigned curtick) {
+	Font *fnt;
+	// unsigned i, offset = _scroll->position();
+	unsigned i, j, y, color;
+	int owner;
+	StringBuffer buf;
+	const Planet *planet_ptr;
+	const Star *star_ptr;
+
+	fnt = gameFonts->getFont(FONTSIZE_SMALL);
+
+	clearScreen();
+	_bg->draw(0, 0);
+
+	unsigned offset = 0; // FIXME: This should come from the scrollbar
+	int colony_row = 0;
+	for (i = 0; i < _game->_planetCount; i++) {
+		y = COLONY_LIST_FIRST_ROW + COLONY_LIST_ROW_DIST + colony_row * (COLONY_LIST_ROW_HEIGHT + COLONY_LIST_ROW_BOTTOM_PADDING);
+		planet_ptr = _game->_planets + offset + i;
+		if (planet_ptr->colony < 0) continue;
+
+		star_ptr = &_game->_starSystems[planet_ptr->star];
+		if (_curslot == colony_row) {
+			color = FONT_COLOR_COLONY_LIST_BRIGHT;
+		} else {
+			color = FONT_COLOR_COLONY_LIST;
+		}
+		buf.printf("%s %s", star_ptr->name,
+			   romanNumbers[star_ptr->planetSeq(planet_ptr->orbit)]);
+		fnt->centerText(COLONY_LIST_ROW_LEFT_PADDING, y, color, buf.c_str());
+		colony_row++;
+	}
+
+	redrawWidgets(0, 0, curtick);
+	redrawWindows(curtick);
+}
+
+void ColoniesListView::clickReturn(int x, int y, int arg) {
+	exitView();
+}
+
+void ColoniesListView::showHelp(int x, int y, int arg) {
+	new MessageBoxWindow(this, arg, _bg->palette());
 }
 
 MainMenuWindow::MainMenuWindow(GuiView *parent, GameState *game) :
