@@ -804,14 +804,14 @@ void ChoiceWidget::handleMouseUp(int x, int y, unsigned button) {
 void ChoiceWidget::redraw(int x, int y, unsigned curtick) {
 	unsigned i;
 
-	if (_valSprites[_value]) {
-		_valSprites[_value]->redraw(x + getX(), y + getY(), curtick);
-	}
-
 	for (i = 0; i < _count; i++) {
 		if (_buttons[i]) {
 			_buttons[i]->redraw(x + getX(), y + getY(), curtick);
 		}
+	}
+
+	if (_valSprites[_value]) {
+		_valSprites[_value]->redraw(x + getX(), y + getY(), curtick);
 	}
 }
 
