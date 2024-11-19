@@ -2979,7 +2979,7 @@ void ColoniesListView::redraw(unsigned curtick) {
 
 	fnt = gameFonts->getFont(FONTSIZE_SMALL);
 
-	clearScreen();
+	gameScreen->clear();
 	_bg->draw(0, 0);
 
 	unsigned offset = 0; // FIXME: This should come from the scrollbar
