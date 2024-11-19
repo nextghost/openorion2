@@ -301,6 +301,7 @@ private:
 	int _curslot;
 	ImageAsset _bg;
 	unsigned _colonies[MAX_COLONIES];
+	int _activePlayer;
 
 	void initWidgets(void);
 

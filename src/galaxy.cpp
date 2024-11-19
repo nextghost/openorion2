@@ -2924,7 +2924,7 @@ void PlanetsListView::clickReturn(int x, int y, int arg) {
 }
 
 ColoniesListView::ColoniesListView(GameState *game, int activePlayer) :
-    _game(game), _scroll(NULL) {
+    _game(game), _activePlayer(activePlayer),_scroll(NULL) {
 
 	_bg = gameAssets->getImage(COLONY_ARCHIVE, ASSET_COLONYLIST_BG);
 
@@ -2975,6 +2975,7 @@ void ColoniesListView::redraw(unsigned curtick) {
 	StringBuffer buf;
 	const Planet *planet_ptr;
 	const Star *star_ptr;
+	const Colony *colony_ptr;
 
 	fnt = gameFonts->getFont(FONTSIZE_SMALL);
 
@@ -2988,6 +2989,8 @@ void ColoniesListView::redraw(unsigned curtick) {
 		planet_ptr = _game->_planets + offset + i;
 		if (planet_ptr->colony < 0) continue;
 
+		colony_ptr = &_game->_colonies[planet_ptr->colony];
+		if (colony_ptr->owner != _activePlayer) continue;
 		star_ptr = &_game->_starSystems[planet_ptr->star];
 		if (_curslot == colony_row) {
 			color = FONT_COLOR_COLONY_LIST_BRIGHT;
