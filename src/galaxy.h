@@ -299,6 +299,7 @@ private:
 	GameState *_game;
 	ScrollBarWidget *_scroll;
 	int _curslot;
+	int _selectedSlot;
 	ImageAsset _bg;
 	unsigned _colonies[MAX_COLONIES];
 	int _activePlayer;
@@ -309,10 +310,12 @@ public:
 	ColoniesListView(GameState *game, int activePlayer);
 
 	void highlightSlot(int x, int y, int arg);
+	void clickSlot(int x, int y, int arg);
 	void redraw(unsigned curtick);
 
 	void showHelp(int x, int y, int arg);
 	void clickReturn(int x, int y, int arg);
+	void renderPlanetDetail(const Planet *planet_ptr, const Colony *colony_ptr);
 };
 
 class MainMenuWindow : public GuiWindow {

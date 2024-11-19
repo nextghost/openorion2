@@ -19,6 +19,7 @@
 
 #include <cstring>
 #include <cmath>
+#include "gamestate.h"
 #include "screen.h"
 #include "guimisc.h"
 #include "mainmenu.h"
@@ -122,6 +123,7 @@
 #define COLONY_LIST_ROW_DIST 5
 #define COLONY_LIST_ROW_LEFT_PADDING 55
 #define COLONY_LIST_ROW_BOTTOM_PADDING 5
+#define COLONY_LIST_DETAILS_LEFT_PADDING 15
 
 static const uint8_t starmapHighlightColors[(MAX_PLAYERS + 1) * 3] {
 	RGB(0xfc0000), RGB(0xd4c418), RGB(0x209c1c), RGB(0xc8c8c8),
@@ -2924,7 +2926,7 @@ void PlanetsListView::clickReturn(int x, int y, int arg) {
 }
 
 ColoniesListView::ColoniesListView(GameState *game, int activePlayer) :
-    _game(game), _activePlayer(activePlayer),_scroll(NULL) {
+    _game(game), _activePlayer(activePlayer),_scroll(NULL), _selectedSlot(-1) {
 
 	_bg = gameAssets->getImage(COLONY_ARCHIVE, ASSET_COLONYLIST_BG);
 
@@ -2947,6 +2949,8 @@ void ColoniesListView::initWidgets(void) {
 			&ColoniesListView::highlightSlot, i));
 		w->setMouseOutCallback(GuiMethod(*this,
 			&ColoniesListView::highlightSlot, -1));
+		w->setMouseUpCallback(MBUTTON_LEFT,
+			GuiMethod(*this, &ColoniesListView::clickSlot, i));
 	}
 
 	w = createWidget(531, 445, 156, 25);
@@ -2967,12 +2971,17 @@ void ColoniesListView::highlightSlot(int x, int y, int arg) {
 	}
 }
 
+void ColoniesListView::clickSlot(int x, int y, int arg) {
+	_selectedSlot = arg;
+}
+
+// FIXME: Render the colonies in alphanumeric order maybe
 void ColoniesListView::redraw(unsigned curtick) {
 	Font *fnt;
 	// unsigned i, offset = _scroll->position();
 	unsigned i, j, y, color;
 	int owner;
-	StringBuffer buf;
+	StringBuffer buf, num;
 	const Planet *planet_ptr;
 	const Star *star_ptr;
 	const Colony *colony_ptr;
@@ -2991,17 +3000,26 @@ void ColoniesListView::redraw(unsigned curtick) {
 
 		colony_ptr = &_game->_colonies[planet_ptr->colony];
 		if (colony_ptr->owner != _activePlayer) continue;
+
 		star_ptr = &_game->_starSystems[planet_ptr->star];
 		if (_curslot == colony_row) {
 			color = FONT_COLOR_COLONY_LIST_BRIGHT;
 		} else {
 			color = FONT_COLOR_COLONY_LIST;
 		}
-		buf.printf("%s %s", star_ptr->name,
-			   romanNumbers[star_ptr->planetSeq(planet_ptr->orbit)]);
+		num.roman(star_ptr->planetSeq(planet_ptr->orbit) + 1);
+		buf.printf("%s %s", star_ptr->name, num.c_str());
+
 		fnt->centerText(COLONY_LIST_ROW_LEFT_PADDING, y, color, buf.c_str());
+
+		// Fill the lower right box with the info from the selected colony, if any
+		if (_selectedSlot >= 0 && _selectedSlot == colony_row) {
+			renderPlanetDetail(planet_ptr, colony_ptr);
+		}
+
 		colony_row++;
 	}
+
 
 	redrawWidgets(0, 0, curtick);
 	redrawWindows(curtick);
@@ -3013,6 +3031,98 @@ void ColoniesListView::clickReturn(int x, int y, int arg) {
 
 void ColoniesListView::showHelp(int x, int y, int arg) {
 	new MessageBoxWindow(this, arg, _bg->palette());
+}
+
+void ColoniesListView::renderPlanetDetail(const Planet *planet_ptr, const Colony *colony_ptr) {
+	StringBuffer buf;
+	Font *fnt;
+
+	fnt = gameFonts->getFont(FONTSIZE_SMALLER);
+
+	switch(planet_ptr->size) {
+	case TINY_PLANET:
+		buf.printf("Tiny");
+		break;
+	case SMALL_PLANET:
+		buf.printf("Small");
+		break;
+	case MEDIUM_PLANET:
+		buf.printf("Medium");
+		break;
+	case LARGE_PLANET:
+		buf.printf("Large");
+		break;
+	default:
+		buf.printf("Huge");
+	}
+
+	switch(planet_ptr->climate) {
+	case TOXIC:
+		buf.append(" Toxic");
+		break;
+	case RADIATED:
+		buf.append(" Radiated");
+		break;
+	case BARREN:
+		buf.append(" Barren");
+		break;
+	case DESERT:
+		buf.append(" Desert");
+		break;
+	case TUNDRA:
+		buf.append(" Tundra");
+		break;
+	case OCEAN:
+		buf.append(" Ocean");
+		break;
+	case SWAMP:
+		buf.append(" Swamp");
+		break;
+	case ARID:
+		buf.append(" Arid");
+		break;
+	case TERRAN:
+		buf.append(" Terran");
+		break;
+	default:
+		buf.append(" Gaia");
+	}
+
+	fnt->renderText(COLONY_LIST_DETAILS_LEFT_PADDING, 354, FONT_COLOR_COLONY_LIST, buf.c_str());
+
+	switch(planet_ptr->gravity) {
+	case LOW_G:
+		buf.printf("Low Gravity");
+		break;
+	case NORMAL_G:
+		buf.printf("Normal Gravity");
+		break;
+	default:
+		buf.printf("Heavy Gravity");
+	}
+	fnt->renderText(COLONY_LIST_DETAILS_LEFT_PADDING, 365, FONT_COLOR_COLONY_LIST, buf.c_str());
+
+	switch(planet_ptr->minerals) {
+	case ULTRA_POOR:
+		buf.printf("Mineral Ultra poor");
+		break;
+	case POOR:
+		buf.printf("Mineral Poor");
+		break;
+	case ABUNDANT:
+		buf.printf("Mineral Abundant");
+		break;
+	case RICH :
+		buf.printf("Mineral Rich");
+		break;
+	default:
+		buf.printf("Mineral Ultra rich");
+	}
+	fnt->renderText(COLONY_LIST_DETAILS_LEFT_PADDING, 376, FONT_COLOR_COLONY_LIST, buf.c_str());
+
+	// FIXME: Max population always seems to be zero
+	buf.printf("Population (%d/%d)", colony_ptr->population, colony_ptr->max_population);
+	fnt->renderText(COLONY_LIST_DETAILS_LEFT_PADDING, 387, FONT_COLOR_COLONY_LIST, buf.c_str());
 }
 
 MainMenuWindow::MainMenuWindow(GuiView *parent, GameState *game) :
