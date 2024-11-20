@@ -22,6 +22,7 @@
 
 #include "stream.h"
 #include "utils.h"
+#include "lbx.h"
 
 #define PALSIZE 1024
 
@@ -198,7 +199,7 @@
 #define RGBA(x, a) ((a) & 0xff), (((x) >> 16) & 0xff), (((x) >> 8) & 0xff), ((x) & 0xff)
 #define TRANSPARENT 0, 0, 0, 0
 
-class Image {
+class Image : public LBXAsset {
 private:
 	unsigned _width, _height, _frames, _frametime, _flags, _palcount;
 	unsigned *_textureIDs;
@@ -305,6 +306,8 @@ public:
 	Font *fitFont(unsigned fontsize, unsigned maxwidth, const char *str);
 	unsigned fontCount(void) const;
 };
+
+extern FontManager *gameFonts;
 
 // Render text into limited space, reduce font size to fit
 int fitText(int x, int y, unsigned maxwidth, unsigned fontsize, unsigned color,

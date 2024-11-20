@@ -23,7 +23,6 @@
 #include <stdexcept>
 #include "stream.h"
 #include "utils.h"
-#include "gfx.h"
 
 #define LANG_ENGLISH 0
 #define LANG_GERMAN 1
@@ -202,14 +201,43 @@ public:
 };
 
 class AssetManager;
+class Image;
+
+class LBXCacheEntry {
+public:
+	LBXCacheEntry(void);
+	virtual ~LBXCacheEntry(void);
+
+	virtual void take(void) = 0;
+	virtual void release(void) = 0;
+};
+
+class LBXAsset {
+private:
+	LBXCacheEntry *_cacheRef;
+
+public:
+	LBXAsset(void);
+	virtual ~LBXAsset(void);
+
+	// Bump the asset reference counter to ensure it does not get deleted
+	// by another part of code. You must call release() later.
+	void take(void);
+
+	// Decrease the reference counter and delete the asset when it's
+	// no longer in use. Each take() must be paired with a matching
+	// release().
+	void release(void);
+
+	friend class AssetManager;
+};
 
 template <class C> class AssetPointer {
 private:
-	AssetManager *_manager;
 	C *_asset;
 
 protected:
-	AssetPointer(AssetManager *manager, C *asset);
+	AssetPointer(C *asset);
 
 public:
 	AssetPointer(void);
@@ -222,10 +250,12 @@ public:
 	// Explicit-only to avoid accidental asset release immediately after
 	// load. Image *img = (Image*)gameAssets->getImage(...) will not work
 	// because the AssetPointer gets destroyed before you can call
-	// gameAssets->takeAsset(img) and the just-loaded asset will be freed
-	// with it.
+	// img->take() and the just-loaded asset will be freed with it.
 	explicit operator C*(void);
 	explicit operator const C*(void) const;
+
+	// Safely get raw pointer to the asset and bump the reference counter.
+	C* take(void);
 
 	friend class AssetManager;
 };
@@ -234,9 +264,16 @@ typedef AssetPointer<Image> ImageAsset;
 
 class AssetManager {
 private:
-	template <class C> struct CacheEntry {
+	template <class C> class CacheEntry : public LBXCacheEntry {
+	public:
 		C *data;
 		unsigned refs;
+
+		CacheEntry(void);
+		~CacheEntry(void);
+
+		void take(void);
+		void release(void);
 	};
 
 	struct FileCache {
@@ -247,10 +284,7 @@ private:
 
 	LBXArchive *_curfile;
 	FileCache *_cache;
-
-	// Lookup table that maps texture IDs to _cache image entries
-	CacheEntry<Image> **_imageLookup;
-	size_t _cacheCount, _cacheSize, _imgLookupSize;
+	size_t _cacheCount, _cacheSize;
 
 protected:
 	FileCache *getCache(const char *filename);
@@ -269,63 +303,47 @@ public:
 	ImageAsset getImage(const char *filename, unsigned id,
 		const uint8_t **palettes, unsigned palcount);
 
-	// Bump the asset reference counter to ensure it does not get deleted
-	// by another part of code. You must call freeAsset() later.
-	// NULL values are silently ignored.
-	void takeAsset(const Image *img);
-
-	// Decrease the reference counter and delete the asset when it's
-	// no longer in use. NULL values are silently ignored.
-	void freeAsset(const Image *img);
-
 	MemoryReadStream *rawData(const char *filename, unsigned id);
 };
 
 template <class C>
-AssetPointer<C>::AssetPointer(void) : _manager(NULL), _asset(NULL) {
+AssetPointer<C>::AssetPointer(void) : _asset(NULL) {
 
 }
 
 template <class C>
-AssetPointer<C>::AssetPointer(AssetManager *manager, C *asset) :
-	_manager(manager), _asset(asset) {
-
+AssetPointer<C>::AssetPointer(C *asset) : _asset(asset) {
 	if (_asset) {
-		if (!_manager) {
-			throw std::invalid_argument("Non-null asset pointer needs manager");
-		}
-
-		_manager->takeAsset(asset);
+		_asset->take();
 	}
 }
 
 template <class C>
 AssetPointer<C>::AssetPointer(const AssetPointer &other) :
-	_manager(other._manager), _asset(other._asset) {
+	_asset(other._asset) {
 
 	if (_asset) {
-		_manager->takeAsset(_asset);
+		_asset->take();
 	}
 }
 
 template <class C>
 AssetPointer<C>::~AssetPointer(void) {
 	if (_asset) {
-		_manager->freeAsset(_asset);
+		_asset->release();
 	}
 }
 
 template <class C>
 const AssetPointer<C> &AssetPointer<C>::operator=(const AssetPointer &other) {
 	if (_asset) {
-		_manager->freeAsset(_asset);
+		_asset->release();
 	}
 
-	_manager = other._manager;
 	_asset = other._asset;
 
 	if (_asset) {
-		_manager->takeAsset(_asset);
+		_asset->take();
 	}
 
 	return *this;
@@ -351,9 +369,40 @@ AssetPointer<C>::operator const C*(void) const {
 	return _asset;
 }
 
+template <class C>
+C* AssetPointer<C>::take(void) {
+	if (_asset) {
+		_asset->take();
+	}
+
+	return _asset;
+}
+
+template <class C>
+AssetManager::CacheEntry<C>::CacheEntry(void) : data(NULL), refs(0) {
+
+}
+
+template <class C>
+AssetManager::CacheEntry<C>::~CacheEntry(void) {
+	delete data;
+}
+
+template <class C>
+void AssetManager::CacheEntry<C>::take(void) {
+	refs++;
+}
+
+template <class C>
+void AssetManager::CacheEntry<C>::release(void) {
+	if (!--refs) {
+		delete data;
+		data = NULL;
+	}
+}
+
 extern AssetManager *gameAssets;
 extern TextManager *gameLang;
-extern FontManager *gameFonts;
 
 void selectLanguage(unsigned lang_id);
 

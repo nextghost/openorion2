@@ -132,7 +132,7 @@ private:
 	GuiCallback _onPlanetHighlight, _onPlanetSelect;
 	GuiSprite *_reticle;
 	TextLayout *_info;
-	const Image *_bg;
+	Image *_bg;
 	const GameState *_game;
 	unsigned _star, _explored, _activePlayer, _startTick;
 	int _curOrbit;
@@ -152,7 +152,7 @@ protected:
 public:
 	StarSystemWidget(unsigned x, unsigned y, unsigned width,
 		unsigned height, GameState *game, unsigned activePlayer,
-		unsigned star, const Image *bg = NULL);
+		unsigned star, Image *bg = NULL);
 	~StarSystemWidget(void);
 
 	void setStar(unsigned star);

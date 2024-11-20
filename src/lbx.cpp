@@ -20,7 +20,7 @@
 #include <stdexcept>
 #include <cstring>
 #include "system.h"
-#include "lbx.h"
+#include "gfx.h"
 #include "gamestate.h"
 
 #define LBX_MAGIC 0xfead
@@ -761,37 +761,57 @@ const struct HelpLink *TextManager::helpIndex(unsigned section_id,
 	return _helpIndex[section_id] + entry_id;
 }
 
+LBXCacheEntry::LBXCacheEntry(void) {
+
+}
+
+LBXCacheEntry::~LBXCacheEntry(void) {
+
+}
+
+LBXAsset::LBXAsset(void) : _cacheRef(NULL) {
+
+}
+
+LBXAsset::~LBXAsset(void) {
+
+}
+
+void LBXAsset::take(void) {
+	if (!_cacheRef) {
+		throw std::runtime_error("Cannot take uncached asset");
+	}
+
+	_cacheRef->take();
+}
+
+void LBXAsset::release(void) {
+	LBXCacheEntry *ref = _cacheRef;
+
+	if (!ref) {
+		throw std::runtime_error("Cannot release uncached asset");
+	}
+
+	ref->release();
+}
+
 AssetManager::AssetManager(void) : _curfile(NULL), _cache(NULL),
-	_cacheCount(0), _cacheSize(32), _imgLookupSize(32) {
+	_cacheCount(0), _cacheSize(32) {
 
 	_cache = new FileCache[_cacheSize];
 	memset(_cache, 0, _cacheSize * sizeof(FileCache));
-
-	try {
-		_imageLookup = new CacheEntry<Image>*[_imgLookupSize];
-	} catch (...) {
-		delete[] _cache;
-		throw;
-	}
-
-	memset(_imageLookup, 0, _imgLookupSize * sizeof(size_t));
 }
 
 AssetManager::~AssetManager(void) {
-	size_t i, j;
+	size_t i;
 
 	for (i = 0; i < _cacheCount; i++) {
-		for (j = 0; j < _cache[i].size; j++) {
-			delete _cache[i].images[j].data;
-		}
-
 		delete[] _cache[i].filename;
 		delete[] _cache[i].images;
 	}
 
 	delete _curfile;
 	delete[] _cache;
-	delete[] _imageLookup;
 }
 
 AssetManager::FileCache *AssetManager::getCache(const char *filename) {
@@ -868,7 +888,6 @@ void AssetManager::openArchive(FileCache *entry) {
 		size_t size = _curfile->assetCount();
 
 		entry->images = new CacheEntry<Image>[size];
-		memset(entry->images, 0, size * sizeof(CacheEntry<Image>));
 		entry->size = size;
 	}
 }
@@ -879,7 +898,6 @@ AssetManager::FileCache *AssetManager::cacheImage(const char *filename,
 	FileCache *entry;
 	MemoryReadStream *stream;
 	Image *img = NULL;
-	unsigned texid;
 
 	entry = getCache(filename);
 
@@ -897,34 +915,15 @@ AssetManager::FileCache *AssetManager::cacheImage(const char *filename,
 
 	try {
 		img = new Image(*stream, palettes, palcount);
-		texid = img->textureID(0);
-
-		if (texid >= _imgLookupSize) {
-			CacheEntry<Image> **lookup = NULL;
-			size_t size;
-
-			size = _imgLookupSize;
-			size = (2 * size > texid) ? 2 * size : (texid + 1);
-			lookup = new CacheEntry<Image>*[size];
-			memcpy(lookup, _imageLookup,
-				_imgLookupSize * sizeof(*lookup));
-			memset(lookup + _imgLookupSize, 0,
-				(size - _imgLookupSize) * sizeof(*lookup));
-			delete[] _imageLookup;
-			_imageLookup = lookup;
-			_imgLookupSize = size;
-		}
 	} catch (...) {
-		delete img;
 		delete stream;
 		throw;
 	}
 
-
 	delete stream;
 	entry->images[id].data = img;
 	entry->images[id].refs = 0;
-	_imageLookup[texid] = entry->images + id;
+	img->_cacheRef = entry->images + id;
 	return entry;
 }
 
@@ -932,53 +931,14 @@ ImageAsset AssetManager::getImage(const char *filename, unsigned id,
 	const uint8_t *palette) {
 	FileCache *entry = cacheImage(filename, id, &palette, 1);
 
-	return ImageAsset(this, entry->images[id].data);
+	return ImageAsset(entry->images[id].data);
 }
 
 ImageAsset AssetManager::getImage(const char *filename, unsigned id,
 	const uint8_t **palettes, unsigned palcount) {
 	FileCache *entry = cacheImage(filename, id, palettes, palcount);
 
-	return ImageAsset(this, entry->images[id].data);
-}
-
-void AssetManager::takeAsset(const Image *img) {
-	unsigned texid;
-
-	if (!img) {
-		return;
-	}
-
-	texid = img->textureID(0);
-
-	if (texid >= _imgLookupSize || !_imageLookup[texid]) {
-		throw std::runtime_error("The image does not belong to this asset manager");
-	}
-
-	_imageLookup[texid]->refs++;
-}
-
-void AssetManager::freeAsset(const Image *img) {
-	unsigned texid;
-	CacheEntry<Image> *entry;
-
-	if (!img) {
-		return;
-	}
-
-	texid = img->textureID(0);
-
-	if (texid >= _imgLookupSize || !_imageLookup[texid]) {
-		throw std::runtime_error("The image does not belong to this asset manager");
-	}
-
-	entry = _imageLookup[texid];
-
-	if (!--entry->refs) {
-		delete entry->data;
-		entry->data = NULL;
-		_imageLookup[texid] = NULL;
-	}
+	return ImageAsset(entry->images[id].data);
 }
 
 MemoryReadStream *AssetManager::rawData(const char *filename, unsigned id) {

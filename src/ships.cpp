@@ -195,13 +195,13 @@ ShipGridWidget::ShipGridWidget(GuiView *parent, unsigned x, unsigned y,
 	}
 
 	_shipimg.load(_slotsel->palette());
-	gameAssets->takeAsset(_slotsel);
+	_slotsel->take();
 
 	if (_slotframe) {
 		try {
-			gameAssets->takeAsset(_slotframe);
+			_slotframe->take();
 		} catch (...) {
-			gameAssets->freeAsset(_slotsel);
+			_slotsel->release();
 			throw;
 		}
 	}
@@ -210,10 +210,10 @@ ShipGridWidget::ShipGridWidget(GuiView *parent, unsigned x, unsigned y,
 }
 
 ShipGridWidget::~ShipGridWidget(void) {
-	gameAssets->freeAsset(_slotsel);
+	_slotsel->release();
 
 	if (_slotframe) {
-		gameAssets->freeAsset(_slotframe);
+		_slotframe->release();
 	}
 }
 

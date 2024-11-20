@@ -801,7 +801,7 @@ void GalaxyMinimapWidget::redraw(int x, int y, unsigned curtick) {
 
 StarSystemWidget::StarSystemWidget(unsigned x, unsigned y, unsigned width,
 	unsigned height, GameState *game, unsigned activePlayer, unsigned star,
-	const Image *bg) : Widget(x, y, width, height), _reticle(NULL),
+	Image *bg) : Widget(x, y, width, height), _reticle(NULL),
 	_info(NULL), _bg(bg), _game(game), _activePlayer(activePlayer),
 	_startTick(0), _curOrbit(-1) {
 
@@ -883,7 +883,7 @@ StarSystemWidget::StarSystemWidget(unsigned x, unsigned y, unsigned width,
 
 	if (bg) {
 		try {
-			gameAssets->takeAsset(bg);
+			bg->take();
 		} catch (...) {
 			delete _reticle;
 			throw;
@@ -896,7 +896,7 @@ StarSystemWidget::~StarSystemWidget(void) {
 	delete _reticle;
 
 	if (_bg) {
-		gameAssets->freeAsset(_bg);
+		_bg->release();
 	}
 }
 

@@ -111,20 +111,20 @@ GuiSprite::GuiSprite(const GuiSprite &other) : _image(other._image),
 	_variant(other._variant), _frameTime(other._frameTime), _startTick(0),
 	_offsx(other._offsx), _offsy(other._offsy), _frame(other._frame) {
 
-	gameAssets->takeAsset(_image);
+	_image->take();
 }
 
 GuiSprite::~GuiSprite(void) {
-	gameAssets->freeAsset(_image);
+	_image->release();
 }
 
 const GuiSprite &GuiSprite::operator=(const GuiSprite &other) {
-	gameAssets->takeAsset(other._image);
+	other._image->take();
 
 	try {
-		gameAssets->freeAsset(_image);
+		_image->release();
 	} catch (...) {
-		gameAssets->freeAsset(other._image);
+		other._image->release();
 		throw;
 	}
 
@@ -154,7 +154,7 @@ void GuiSprite::initImage(Image *img, unsigned width, unsigned height) {
 		throw std::out_of_range("Image frame out of range");
 	}
 
-	gameAssets->takeAsset(img);
+	img->take();
 	_image = img;
 	_width = width ? width : _image->width() - _x;
 	_height = height ? height : _image->height() - _y;
@@ -586,7 +586,7 @@ ToggleWidget::ToggleWidget(unsigned x, unsigned y, unsigned width,
 	}
 
 	setValue(_value);
-	gameAssets->takeAsset(_valImg);
+	_valImg->take();
 }
 
 ToggleWidget::ToggleWidget(unsigned x, unsigned y, unsigned width,
@@ -604,11 +604,11 @@ ToggleWidget::ToggleWidget(unsigned x, unsigned y, unsigned width,
 
 	_valImg = (Image*)img;
 	setValue(_value);
-	gameAssets->takeAsset(_valImg);
+	_valImg->take();
 }
 
 ToggleWidget::~ToggleWidget(void) {
-	gameAssets->freeAsset(_valImg);
+	_valImg->release();
 }
 
 void ToggleWidget::setValue(unsigned val) {
@@ -1523,13 +1523,23 @@ TransitionView::TransitionView(Image *background, Image *animation, int x,
 	int y) : _background(background), _animation(animation), _x(x), _y(y),
 	_startTick(0) {
 
-	gameAssets->takeAsset(_background);
-	gameAssets->takeAsset(_animation);
+	if (_background) {
+		_background->take();
+	}
+
+	if (_animation) {
+		_animation->take();
+	}
 }
 
 TransitionView::~TransitionView(void) {
-	gameAssets->freeAsset(_background);
-	gameAssets->freeAsset(_animation);
+	if (_background) {
+		_background->release();
+	}
+
+	if (_animation) {
+		_animation->release();
+	}
 }
 
 void TransitionView::redraw(unsigned curtick) {
