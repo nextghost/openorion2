@@ -3020,7 +3020,6 @@ void ColoniesListView::redraw(unsigned curtick) {
 		colony_row++;
 	}
 
-
 	redrawWidgets(0, 0, curtick);
 	redrawWindows(curtick);
 }
@@ -3121,7 +3120,9 @@ void ColoniesListView::renderPlanetDetail(const Planet *planet_ptr, const Colony
 	fnt->renderText(COLONY_LIST_DETAILS_LEFT_PADDING, 376, FONT_COLOR_COLONY_LIST, buf.c_str());
 
 	// FIXME: Max population always seems to be zero
-	buf.printf("Population (%d/%d)", colony_ptr->population, colony_ptr->max_population);
+	buf.printf("Population (%d/%d)",
+	    colony_ptr->population,
+	    _game->planetMaxPop(colony_ptr->planet, _activePlayer));
 	fnt->renderText(COLONY_LIST_DETAILS_LEFT_PADDING, 387, FONT_COLOR_COLONY_LIST, buf.c_str());
 }
 
