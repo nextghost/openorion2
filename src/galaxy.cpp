@@ -3017,6 +3017,48 @@ void ColoniesListView::redraw(unsigned curtick) {
 
 		drawColonistsJobs(colony_ptr, curtick);
 
+		int empireDetailLeftPosition = 520;
+		int empireDetailRightPosition = 625;
+		int empireDetailTopPosition = 353;
+		int empireDetailRowMargin = 13;
+		buf.printf("Reserve:");
+		fnt->renderText(empireDetailLeftPosition, empireDetailTopPosition + empireDetailRowMargin * 0, color, buf.c_str());
+		buf.printf("%d", _game->_players[_activePlayer].BC);
+		fnt->rightText(empireDetailRightPosition, empireDetailTopPosition + empireDetailRowMargin * 0, color, buf.c_str());
+
+		buf.printf("Income:");
+		fnt->renderText(empireDetailLeftPosition, empireDetailTopPosition + empireDetailRowMargin * 1, color, buf.c_str());
+		if (_game->_players[_activePlayer].BC > 0) {
+			buf.printf("+%d", _game->_players[_activePlayer].surplusBC);
+		} else {
+			buf.printf("-%d", _game->_players[_activePlayer].surplusBC);
+		}
+		fnt->rightText(empireDetailRightPosition, empireDetailTopPosition + empireDetailRowMargin * 1, color, buf.c_str());
+
+		buf.printf("Population:");
+		fnt->renderText(empireDetailLeftPosition, empireDetailTopPosition + empireDetailRowMargin * 2, color, buf.c_str());
+		buf.printf("%d", _game->_players[_activePlayer].totalPop);
+		fnt->rightText(empireDetailRightPosition, empireDetailTopPosition + empireDetailRowMargin * 2, color, buf.c_str());
+
+		buf.printf("Freighters:");
+		fnt->renderText(empireDetailLeftPosition, empireDetailTopPosition + empireDetailRowMargin * 3, color, buf.c_str());
+		buf.printf("%d", _game->_players[_activePlayer].surplusFreighters);
+		fnt->rightText(empireDetailRightPosition, empireDetailTopPosition + empireDetailRowMargin * 3, color, buf.c_str());
+
+		buf.printf("Food:");
+		fnt->renderText(empireDetailLeftPosition, empireDetailTopPosition + empireDetailRowMargin * 4, color, buf.c_str());
+		if (_game->_players[_activePlayer].surplusFood >= 0) {
+			buf.printf("+%d", _game->_players[_activePlayer].surplusFood);
+		} else {
+			buf.printf("-%d", _game->_players[_activePlayer].surplusFood);
+		}
+		fnt->rightText(empireDetailRightPosition, empireDetailTopPosition + empireDetailRowMargin * 4, color, buf.c_str());
+
+		buf.printf("Research:");
+		fnt->renderText(empireDetailLeftPosition, empireDetailTopPosition + empireDetailRowMargin * 5, color, buf.c_str());
+		buf.printf("%d", _game->_players[_activePlayer].researchProduced);
+		fnt->rightText(empireDetailRightPosition, empireDetailTopPosition + empireDetailRowMargin * 5, color, buf.c_str());
+
 		colony_row++;
 	}
 
