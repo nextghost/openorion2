@@ -19,6 +19,7 @@
 
 #include <cstring>
 #include <cmath>
+#include "colony.h"
 #include "gamestate.h"
 #include "screen.h"
 #include "guimisc.h"
@@ -3014,6 +3015,8 @@ void ColoniesListView::redraw(unsigned curtick) {
 
 		fnt->centerText(COLONY_LIST_ROW_LEFT_PADDING, y, color, buf.c_str());
 
+		drawColonistsJobs(colony_ptr, curtick);
+
 		colony_row++;
 	}
 
@@ -3121,6 +3124,39 @@ void ColoniesListView::renderPlanetDetail(const Planet *planet_ptr, const Colony
 	    colony_ptr->population,
 	    _game->planetMaxPop(colony_ptr->planet, _activePlayer));
 	fnt->renderText(COLONY_LIST_DETAILS_LEFT_PADDING, 387, FONT_COLOR_COLONY_LIST, buf.c_str());
+}
+
+void ColoniesListView::drawColonistsJobs(const Colony* colony_ptr, int curtick) {
+	int farmers = 0;
+	int workers = 0;
+	int scientists = 0;
+	int j = 0;
+
+	for (j = 0; j < MAX_POPULATION; j++) {
+		if (colony_ptr->colonists[j].job == FARMER) {
+			farmers++;
+		} else if (colony_ptr->colonists[j].job == WORKER) {
+			workers++;
+		} else if (colony_ptr->colonists[j].job == SCIENTIST) {
+			scientists++;
+		}
+	}
+
+	farmers = colony_ptr->population - workers + scientists;
+
+	if (farmers > colony_ptr->population) {
+		farmers = colony_ptr->population;
+	}
+
+	ColonistPickerWidget* f = new ColonistPickerWidget(0, 0, 100, 90, colony_ptr, FARMER, _game->_players, _game->_playerCount);
+	f->redraw(103, 38, curtick);
+
+	// FIXME: This is showing no workers on some colonies...
+	ColonistPickerWidget* w = new ColonistPickerWidget(0, 0, 100, 90, colony_ptr, WORKER, _game->_players, _game->_playerCount);
+	w->redraw(237, 38, curtick);
+
+	ColonistPickerWidget* s = new ColonistPickerWidget(0, 0, 100, 90, colony_ptr, SCIENTIST, _game->_players, _game->_playerCount);
+	s->redraw(377, 38, curtick);
 }
 
 MainMenuWindow::MainMenuWindow(GuiView *parent, GameState *game) :

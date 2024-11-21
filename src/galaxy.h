@@ -305,6 +305,8 @@ private:
 	int _activePlayer;
 
 	void initWidgets(void);
+	void renderPlanetDetail(const Planet *planet_ptr, const Colony *colony_ptr);
+	void drawColonistsJobs(const Colony* colony_ptr, int curtick);
 
 public:
 	ColoniesListView(GameState *game, int activePlayer);
@@ -315,7 +317,6 @@ public:
 
 	void showHelp(int x, int y, int arg);
 	void clickReturn(int x, int y, int arg);
-	void renderPlanetDetail(const Planet *planet_ptr, const Colony *colony_ptr);
 };
 
 class MainMenuWindow : public GuiWindow {
