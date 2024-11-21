@@ -124,7 +124,17 @@
 #define COLONY_LIST_ROW_DIST 5
 #define COLONY_LIST_ROW_LEFT_PADDING 55
 #define COLONY_LIST_ROW_BOTTOM_PADDING 5
+#define COLONY_LIST_ROW_MARGIN 13
 #define COLONY_LIST_DETAILS_LEFT_PADDING 15
+#define COLONY_LIST_EMPIRE_DETAILS_LEFT_POSITION 520
+#define COLONY_LIST_EMPIRE_DETAILS_RIGHT_POSITION 625
+#define COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION 353
+#define COLONY_LIST_EMPIRE_DETAILS_RESERVE_SLOT 0
+#define COLONY_LIST_EMPIRE_DETAILS_INCOME_SLOT 1
+#define COLONY_LIST_EMPIRE_DETAILS_POPULATION_SLOT 2
+#define COLONY_LIST_EMPIRE_DETAILS_FREIGHTERS_SLOT 3
+#define COLONY_LIST_EMPIRE_DETAILS_FOOD_SLOT 4
+#define COLONY_LIST_EMPIRE_DETAILS_RESEARCH_SLOT 5
 
 static const uint8_t starmapHighlightColors[(MAX_PLAYERS + 1) * 3] {
 	RGB(0xfc0000), RGB(0xd4c418), RGB(0x209c1c), RGB(0xc8c8c8),
@@ -3017,47 +3027,44 @@ void ColoniesListView::redraw(unsigned curtick) {
 
 		drawColonistsJobs(colony_ptr, curtick);
 
-		int empireDetailLeftPosition = 520;
-		int empireDetailRightPosition = 625;
-		int empireDetailTopPosition = 353;
-		int empireDetailRowMargin = 13;
+		color = FONT_COLOR_COLONY_LIST;
 		buf.printf("Reserve:");
-		fnt->renderText(empireDetailLeftPosition, empireDetailTopPosition + empireDetailRowMargin * 0, color, buf.c_str());
+		fnt->renderText(COLONY_LIST_EMPIRE_DETAILS_LEFT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_RESERVE_SLOT, color, buf.c_str());
 		buf.printf("%d", _game->_players[_activePlayer].BC);
-		fnt->rightText(empireDetailRightPosition, empireDetailTopPosition + empireDetailRowMargin * 0, color, buf.c_str());
+		fnt->rightText(COLONY_LIST_EMPIRE_DETAILS_RIGHT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_RESERVE_SLOT, color, buf.c_str());
 
 		buf.printf("Income:");
-		fnt->renderText(empireDetailLeftPosition, empireDetailTopPosition + empireDetailRowMargin * 1, color, buf.c_str());
+		fnt->renderText(COLONY_LIST_EMPIRE_DETAILS_LEFT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_INCOME_SLOT, color, buf.c_str());
 		if (_game->_players[_activePlayer].BC > 0) {
 			buf.printf("+%d", _game->_players[_activePlayer].surplusBC);
 		} else {
 			buf.printf("-%d", _game->_players[_activePlayer].surplusBC);
 		}
-		fnt->rightText(empireDetailRightPosition, empireDetailTopPosition + empireDetailRowMargin * 1, color, buf.c_str());
+		fnt->rightText(COLONY_LIST_EMPIRE_DETAILS_RIGHT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_INCOME_SLOT, color, buf.c_str());
 
 		buf.printf("Population:");
-		fnt->renderText(empireDetailLeftPosition, empireDetailTopPosition + empireDetailRowMargin * 2, color, buf.c_str());
+		fnt->renderText(COLONY_LIST_EMPIRE_DETAILS_LEFT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_POPULATION_SLOT, color, buf.c_str());
 		buf.printf("%d", _game->_players[_activePlayer].totalPop);
-		fnt->rightText(empireDetailRightPosition, empireDetailTopPosition + empireDetailRowMargin * 2, color, buf.c_str());
+		fnt->rightText(COLONY_LIST_EMPIRE_DETAILS_RIGHT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_POPULATION_SLOT, color, buf.c_str());
 
 		buf.printf("Freighters:");
-		fnt->renderText(empireDetailLeftPosition, empireDetailTopPosition + empireDetailRowMargin * 3, color, buf.c_str());
+		fnt->renderText(COLONY_LIST_EMPIRE_DETAILS_LEFT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_FREIGHTERS_SLOT, color, buf.c_str());
 		buf.printf("%d", _game->_players[_activePlayer].surplusFreighters);
-		fnt->rightText(empireDetailRightPosition, empireDetailTopPosition + empireDetailRowMargin * 3, color, buf.c_str());
+		fnt->rightText(COLONY_LIST_EMPIRE_DETAILS_RIGHT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_FREIGHTERS_SLOT, color, buf.c_str());
 
 		buf.printf("Food:");
-		fnt->renderText(empireDetailLeftPosition, empireDetailTopPosition + empireDetailRowMargin * 4, color, buf.c_str());
+		fnt->renderText(COLONY_LIST_EMPIRE_DETAILS_LEFT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_FOOD_SLOT, color, buf.c_str());
 		if (_game->_players[_activePlayer].surplusFood >= 0) {
 			buf.printf("+%d", _game->_players[_activePlayer].surplusFood);
 		} else {
 			buf.printf("-%d", _game->_players[_activePlayer].surplusFood);
 		}
-		fnt->rightText(empireDetailRightPosition, empireDetailTopPosition + empireDetailRowMargin * 4, color, buf.c_str());
+		fnt->rightText(COLONY_LIST_EMPIRE_DETAILS_RIGHT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_FOOD_SLOT, color, buf.c_str());
 
 		buf.printf("Research:");
-		fnt->renderText(empireDetailLeftPosition, empireDetailTopPosition + empireDetailRowMargin * 5, color, buf.c_str());
+		fnt->renderText(COLONY_LIST_EMPIRE_DETAILS_LEFT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_RESEARCH_SLOT, color, buf.c_str());
 		buf.printf("%d", _game->_players[_activePlayer].researchProduced);
-		fnt->rightText(empireDetailRightPosition, empireDetailTopPosition + empireDetailRowMargin * 5, color, buf.c_str());
+		fnt->rightText(COLONY_LIST_EMPIRE_DETAILS_RIGHT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_RESEARCH_SLOT, color, buf.c_str());
 
 		colony_row++;
 	}
