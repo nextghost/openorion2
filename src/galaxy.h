@@ -307,6 +307,8 @@ private:
 	void initWidgets(void);
 	void renderPlanetDetail(const Planet *planet_ptr, const Colony *colony_ptr);
 	void drawColonistsJobs(const Colony* colony_ptr, int curtick);
+	void drawEmpireDetails();
+
 
 public:
 	ColoniesListView(GameState *game, int activePlayer);
