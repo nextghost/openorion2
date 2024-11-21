@@ -3004,6 +3004,8 @@ void ColoniesListView::redraw(unsigned curtick) {
 		star_ptr = &_game->_starSystems[planet_ptr->star];
 		if (_curslot == colony_row) {
 			color = FONT_COLOR_COLONY_LIST_BRIGHT;
+			// Fill the lower right box with the info from the selected colony, if any
+			renderPlanetDetail(planet_ptr, colony_ptr);
 		} else {
 			color = FONT_COLOR_COLONY_LIST;
 		}
@@ -3011,11 +3013,6 @@ void ColoniesListView::redraw(unsigned curtick) {
 		buf.printf("%s %s", star_ptr->name, num.c_str());
 
 		fnt->centerText(COLONY_LIST_ROW_LEFT_PADDING, y, color, buf.c_str());
-
-		// Fill the lower right box with the info from the selected colony, if any
-		if (_selectedSlot >= 0 && _selectedSlot == colony_row) {
-			renderPlanetDetail(planet_ptr, colony_ptr);
-		}
 
 		colony_row++;
 	}
