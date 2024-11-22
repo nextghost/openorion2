@@ -1232,7 +1232,9 @@ void Player::load(SeekableReadStream &stream) {
 		spies[i] = stream.readUint8();
 	}
 
-	stream.seek(22, SEEK_CUR);
+	infoPanel = stream.readUint8();
+
+	stream.seek(21, SEEK_CUR);
 
 	galaxyCharted = stream.readUint8();
 

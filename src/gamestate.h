@@ -1140,6 +1140,7 @@ struct Player {
 	uint8_t buildingHistory[MAX_HISTORY_LENGTH];
 
 	uint8_t spies[MAX_PLAYERS];
+	uint8_t infoPanel;	// Info screen UI state
 	uint8_t galaxyCharted;
 
 	Player(void);
