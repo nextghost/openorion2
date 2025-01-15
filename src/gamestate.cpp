@@ -992,40 +992,6 @@ void ShipDesign::validate(void) const {
 	}
 }
 
-void RaceTraits::load(ReadStream &stream) {
-	government = stream.readUint8();
-	population = stream.readSint8();
-	farming = stream.readSint8();
-	industry = stream.readSint8();
-	science = stream.readSint8();
-	money = stream.readSint8();
-	shipDefense = stream.readSint8();
-	shipAttack = stream.readSint8();
-	groundCombat = stream.readSint8();
-	spying = stream.readSint8();
-	lowG = stream.readUint8();
-	highG = stream.readUint8();
-	aquatic = stream.readUint8();
-	subterranean = stream.readUint8();
-	largeHomeworld = stream.readUint8();
-	richHomeworld = stream.readSint8();
-	artifactsHomeworld = stream.readUint8();
-	cybernetic = stream.readUint8();
-	lithovore = stream.readUint8();
-	repulsive = stream.readUint8();
-	charismatic = stream.readUint8();
-	uncreative = stream.readUint8();
-	creative = stream.readUint8();
-	tolerant = stream.readUint8();
-	fantasticTraders = stream.readUint8();
-	telepathic = stream.readUint8();
-	lucky = stream.readUint8();
-	omniscience = stream.readUint8();
-	stealthyShips = stream.readUint8();
-	transDimensional = stream.readUint8();
-	warlord = stream.readUint8();
-}
-
 void SettlerInfo::load(ReadStream &stream) {
 	BitStream data(stream);
 
@@ -1208,7 +1174,9 @@ void Player::load(SeekableReadStream &stream) {
 
 	stream.seek(608, SEEK_CUR);
 
-	traits.load(stream);
+	for (i = 0; i < TRAITS_COUNT; i++) {
+		traits[i] = stream.readSint8();
+	}
 
 	stream.seek(33, SEEK_CUR);
 
@@ -1248,9 +1216,9 @@ int Player::gravityPenalty(unsigned gravity) const {
 		throw std::out_of_range("Invalid gravity level");
 	}
 
-	if (traits.lowG) {
+	if (traits[TRAIT_LOW_G]) {
 		homegrav = PlanetGravity::LOW_G;
-	} else if (traits.highG) {
+	} else if (traits[TRAIT_HIGH_G]) {
 		homegrav = PlanetGravity::HEAVY_G;
 	} else {
 		homegrav = PlanetGravity::NORMAL_G;
@@ -1318,7 +1286,7 @@ unsigned Player::blueprintCombatSpeed(unsigned id) const {
 }
 
 unsigned Player::blueprintCombatSpeed(const ShipDesign *design) const {
-	return design->combatSpeed(traits.transDimensional);
+	return design->combatSpeed(traits[TRAIT_TRANS_DIMENSIONAL]);
 }
 
 int Player::blueprintBeamOffense(unsigned id) const {
@@ -1330,7 +1298,7 @@ int Player::blueprintBeamOffense(unsigned id) const {
 }
 
 int Player::blueprintBeamOffense(const ShipDesign *design) const {
-	return design->beamOffense() + traits.shipAttack;
+	return design->beamOffense() + traits[TRAIT_SHIP_ATTACK];
 }
 
 int Player::blueprintBeamDefense(unsigned id) const {
@@ -1342,9 +1310,9 @@ int Player::blueprintBeamDefense(unsigned id) const {
 }
 
 int Player::blueprintBeamDefense(const ShipDesign *design) const {
-	int ret = design->beamDefense(traits.transDimensional);
+	int ret = design->beamDefense(traits[TRAIT_TRANS_DIMENSIONAL]);
 
-	return ret + traits.shipDefense;
+	return ret + traits[TRAIT_SHIP_DEFENSE];
 }
 
 int Player::isPlayerVisible(unsigned player_id) const {
@@ -1352,7 +1320,8 @@ int Player::isPlayerVisible(unsigned player_id) const {
 		throw std::out_of_range("Invalid player ID");
 	}
 
-	return traits.omniscience || galaxyCharted || playerContacts[player_id];
+	return traits[TRAIT_OMNISCIENCE] || galaxyCharted ||
+		playerContacts[player_id];
 }
 
 void Player::validate(void) const {
@@ -2287,7 +2256,7 @@ StarKnowledge GameState::isStarExplored(const Star *s,
 
 	p = _players + player_id;
 
-	if (p->galaxyCharted || p->traits.omniscience) {
+	if (p->galaxyCharted || p->traits[TRAIT_OMNISCIENCE]) {
 		return STAR_CHARTED;
 	}
 
@@ -2336,20 +2305,20 @@ unsigned GameState::planetMaxPop(unsigned planet_id, unsigned player_id) const {
 
 	pptr = _players + player_id;
 
-	if (pptr->traits.aquatic) {
+	if (pptr->traits[TRAIT_AQUATIC]) {
 		climateFactor = aquaticPopFactors[climate];
 	} else {
 		climateFactor = climatePopFactors[climate];
 	}
 
-	if (pptr->traits.tolerant) {
+	if (pptr->traits[TRAIT_TOLERANT]) {
 		climateFactor += 25;
 	}
 
 	climateFactor = climateFactor > 100 ? 100 : climateFactor;
 	ret = ((ptr->size + 1) * 5 * climateFactor + 50) / 100;
 
-	if (pptr->traits.subterranean) {
+	if (pptr->traits[TRAIT_SUBTERRANEAN]) {
 		ret += 2 * (ptr->size + 1);
 	}
 
@@ -2375,7 +2344,7 @@ unsigned GameState::shipCombatSpeed(const Ship *sptr, int ignoreDamage) const {
 	int td = 0;
 
 	if (sptr->owner < _playerCount) {
-		td = _players[sptr->owner].traits.transDimensional;
+		td = _players[sptr->owner].traits[TRAIT_TRANS_DIMENSIONAL];
 	}
 
 	return sptr->combatSpeed(td, ignoreDamage);
@@ -2393,7 +2362,7 @@ int GameState::shipBeamOffense(const Ship *sptr, int ignoreDamage) const {
 	int ret = sptr->beamOffense(ignoreDamage);
 
 	if (sptr->owner < _playerCount) {
-		ret += _players[sptr->owner].traits.shipAttack;
+		ret += _players[sptr->owner].traits[TRAIT_SHIP_ATTACK];
 	}
 
 	if (sptr->officer >= 0) {
@@ -2417,9 +2386,9 @@ int GameState::shipBeamDefense(const Ship *sptr, int ignoreDamage) const {
 	if (sptr->owner < _playerCount) {
 		const Player *owner = _players + sptr->owner;
 
-		ret = sptr->beamDefense(owner->traits.transDimensional,
+		ret = sptr->beamDefense(owner->traits[TRAIT_TRANS_DIMENSIONAL],
 			ignoreDamage);
-		ret += owner->traits.shipDefense;
+		ret += owner->traits[TRAIT_SHIP_DEFENSE];
 	} else {
 		ret = sptr->beamDefense(0, ignoreDamage);
 	}
@@ -2504,6 +2473,17 @@ void GameState::sort_ids(unsigned *id_list, unsigned length, int player,
 }
 
 void GameState::dump(void) const {
+	const char *trait_names[] = {
+		"Government", "Population", "Farming", "Industry", "Science",
+		"Money", "Ship defense", "Ship attack", "Ground combat",
+		"Spying", "Low G homeworld", "High G homeworld", "Aquatic",
+		"Subterranean", "Large homeworld", "Rich homeworld",
+		"Artifacts homeworld", "Cybernetic", "Lithovore", "Repulsive",
+		"Charismatic", "Uncreative", "Creative", "Tolerant",
+		"Fantastic traders", "Telepathic", "Lucky", "Omniscience",
+		"Stealthy ships", "Trans-dimensional", "Warlord"
+	};
+
 	fprintf(stdout, "=== Config ===\n");
 	fprintf(stdout, "Version: %d\n", _gameConfig.version);
 	fprintf(stdout, "Save game name: %s\n", _gameConfig.saveGameName);
@@ -2566,29 +2546,15 @@ void GameState::dump(void) const {
 			_players[i].researchItem);
 
 		fprintf(stdout, "--- Traits ---\n");
-		fprintf(stdout, "Government:\t\t%d\tPopulation:\t\t%d\tFarming:\t\t%d\tScience:\t\t%d\n",
-			_players[i].traits.government, _players[i].traits.population,
-			_players[i].traits.farming, _players[i].traits.science);
-		fprintf(stdout, "Money:\t\t\t%d\tShip defense:\t\t%d\tShip attack:\t\t%d\tGround combat:\t\t%d\n",
-			_players[i].traits.money, _players[i].traits.shipDefense,
-			_players[i].traits.shipAttack, _players[i].traits.groundCombat);
-		fprintf(stdout, "Spying:\t\t\t%d\tLow G:\t\t\t%d\tHigh G:\t\t\t%d\tAquatic:\t\t%d\n",
-			_players[i].traits.spying, _players[i].traits.lowG,
-			_players[i].traits.highG, _players[i].traits.aquatic);
-		fprintf(stdout, "Subterranian:\t\t%d\tLarge homeworld:\t%d\tRich/Poor homeworld:\t%d\tArtifacts homeworld:\t%d\n",
-			_players[i].traits.subterranean, _players[i].traits.largeHomeworld,
-			_players[i].traits.richHomeworld, _players[i].traits.artifactsHomeworld);
-		fprintf(stdout, "Cybernetic:\t\t%d\tLithovore:\t\t%d\tRepulsive:\t\t%d\tCharismatic:\t\t%d\n",
-			_players[i].traits.cybernetic, _players[i].traits.lithovore,
-			_players[i].traits.repulsive, _players[i].traits.charismatic);
-		fprintf(stdout, "Uncreative:\t\t%d\tCreative:\t\t%d\tTolerant:\t\t%d\tFantastic traders:\t%d\n",
-			_players[i].traits.uncreative, _players[i].traits.creative,
-			_players[i].traits.tolerant, _players[i].traits.fantasticTraders);
-		fprintf(stdout, "Telepathic:\t\t%d\tLucky:\t\t\t%d\tOmniscience:\t\t%d\tStealthy ships:\t\t%d\n",
-			_players[i].traits.telepathic, _players[i].traits.lucky,
-			_players[i].traits.omniscience, _players[i].traits.stealthyShips);
-		fprintf(stdout, "Transdimensional:\t%d\tWarlord:\t\t%d\n\n",
-			_players[i].traits.transDimensional, _players[i].traits.warlord);
+		printf("- Government: %d\n",
+			_players[i].traits[TRAIT_GOVERNMENT]);
+
+		for (int j = 1; j < TRAITS_COUNT; j++) {
+			if (_players[i].traits[j]) {
+				printf("- %s: %d\n", trait_names[j],
+					_players[i].traits[j]);
+			}
+		}
 	}
 
 	fprintf(stdout, "Number of stars: %d\n", _starSystemCount);

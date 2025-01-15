@@ -51,6 +51,7 @@
 #define PLAYER_RACE_SIZE 15
 #define RACE_COUNT 13
 #define GRAVITY_LEVEL_COUNT 3
+#define TRAITS_COUNT 31
 
 #define OBJECTIVE_HUMAN 100
 
@@ -723,6 +724,41 @@ enum SpecialDevices {
 	SPEC_REGENERATION
 };
 
+enum RaceTrait {
+	TRAIT_GOVERNMENT,
+	TRAIT_POPULATION,
+	TRAIT_FARMING,
+	TRAIT_INDUSTRY,
+	TRAIT_SCIENCE,
+	TRAIT_MONEY,
+	TRAIT_SHIP_DEFENSE,
+	TRAIT_SHIP_ATTACK,
+	TRAIT_GROUND_COMBAT,
+	TRAIT_SPYING,
+	TRAIT_LOW_G,
+	TRAIT_HIGH_G,
+	TRAIT_AQUATIC,
+	TRAIT_SUBTERRANEAN,
+	TRAIT_LARGE_HOMEWORLD,
+	TRAIT_RICH_HOMEWORLD,
+	TRAIT_ARTIFACTS_HOMEWORLD,
+	TRAIT_CYBERNETIC,
+	TRAIT_LITHOVORE,
+	TRAIT_REPULSIVE,
+	TRAIT_CHARISMATIC,
+	TRAIT_UNCREATIVE,
+	TRAIT_CREATIVE,
+	TRAIT_TOLERANT,
+	TRAIT_FANTASTIC_TRADERS,
+	TRAIT_TELEPATHIC,
+	TRAIT_LUCKY,
+	TRAIT_OMNISCIENCE,
+	TRAIT_STEALTHY_SHIPS,
+	TRAIT_TRANS_DIMENSIONAL,
+	TRAIT_WARLORD,
+	TRAIT_POOR_HOMEWORLD // encoded as traits[TRAIT_RICH_HOMEWORLD] = -1;
+};
+
 enum SelectionFilter {
 	SELFILTER_NONE = 0,
 	SELFILTER_OWNED,
@@ -1029,43 +1065,6 @@ struct ShipDesign {
 	void validate(void) const;
 };
 
-struct RaceTraits {
-	uint8_t government;
-	int8_t population;
-	int8_t farming;
-	int8_t industry;
-	int8_t science;
-	int8_t money;
-	int8_t shipDefense;
-	int8_t shipAttack;
-	int8_t groundCombat;
-	int8_t spying;
-	uint8_t lowG;
-	uint8_t highG;
-	uint8_t aquatic;
-	uint8_t subterranean;
-	uint8_t largeHomeworld;
-	int8_t richHomeworld;
-	uint8_t artifactsHomeworld;
-	uint8_t cybernetic;
-	uint8_t lithovore;
-	uint8_t repulsive;
-	uint8_t charismatic;
-	uint8_t uncreative;
-	uint8_t creative;
-	uint8_t tolerant;
-	uint8_t fantasticTraders;
-	uint8_t telepathic;
-	uint8_t lucky;
-	uint8_t omniscience;
-	uint8_t stealthyShips;
-	uint8_t transDimensional;
-	uint8_t warlord;
-	uint8_t poorHomeworld;
-
-	void load(ReadStream &stream);
-};
-
 // Maybe we have padding after job field to fill until 32bits
 struct SettlerInfo {
 	unsigned sourceColony;
@@ -1131,7 +1130,7 @@ struct Player {
 	uint8_t foreignPolicies[MAX_PLAYERS];	// ForeignPolicy enum
 	uint8_t tradeTreaties[MAX_PLAYERS];
 	uint8_t researchTreaties[MAX_PLAYERS];
-	RaceTraits traits;
+	int8_t traits[TRAITS_COUNT];
 
 	// circular history graph buffers
 	uint8_t fleetHistory[MAX_HISTORY_LENGTH];

@@ -821,7 +821,7 @@ void ResearchSelectWidget::redraw(int x, int y, unsigned curtick) {
 		lastArrow = i = _highlight;
 
 		if (research_choices[_topic].research_all ||
-			pptr->traits.creative) {
+			pptr->traits[TRAIT_CREATIVE]) {
 			i = 0;
 			lastArrow = _choiceCount - 1;
 		}
@@ -851,7 +851,8 @@ void ResearchSelectWidget::redraw(int x, int y, unsigned curtick) {
 			color = FONT_COLOR_RESEARCH_BRIGHT;
 		} else if (_selection == (int)i ||
 			(pptr->researchTopic == _topic &&
-			!isHyperTopic(_topic) && (pptr->traits.creative ||
+			!isHyperTopic(_topic) &&
+			(pptr->traits[TRAIT_CREATIVE] ||
 			research_choices[_topic].research_all))) {
 
 			color = FONT_COLOR_RESEARCH_BRIGHTER;
