@@ -892,6 +892,16 @@ void AssetManager::openArchive(FileCache *entry) {
 	}
 }
 
+MemoryReadStream *AssetManager::rawData(FileCache *entry, unsigned id) {
+	openArchive(entry);
+
+	if (id >= entry->size) {
+		throw std::out_of_range("Invalid asset ID");
+	}
+
+	return _curfile->loadAsset(id);
+}
+
 AssetManager::FileCache *AssetManager::cacheImage(const char *filename,
 	unsigned id, const uint8_t **palettes, unsigned palcount) {
 
@@ -905,13 +915,7 @@ AssetManager::FileCache *AssetManager::cacheImage(const char *filename,
 		return entry;
 	}
 
-	openArchive(entry);
-
-	if (id >= entry->size) {
-		throw std::out_of_range("Invalid asset ID");
-	}
-
-	stream = _curfile->loadAsset(id);
+	stream = rawData(entry, id);
 
 	try {
 		img = new Image(*stream, palettes, palcount);
@@ -945,13 +949,7 @@ MemoryReadStream *AssetManager::rawData(const char *filename, unsigned id) {
 	FileCache *entry;
 
 	entry = getCache(filename);
-	openArchive(entry);
-
-	if (id >= entry->size) {
-		throw std::out_of_range("Invalid asset ID");
-	}
-
-	return _curfile->loadAsset(id);
+	return rawData(entry, id);
 }
 
 void selectLanguage(unsigned lang_id) {

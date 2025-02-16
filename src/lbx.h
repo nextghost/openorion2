@@ -289,6 +289,7 @@ private:
 protected:
 	FileCache *getCache(const char *filename);
 	void openArchive(FileCache *entry);
+	MemoryReadStream *rawData(FileCache *entry, unsigned id);
 	FileCache *cacheImage(const char *filename, unsigned id,
 		const uint8_t **palettes, unsigned palcount);
 
