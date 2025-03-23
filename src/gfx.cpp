@@ -239,6 +239,45 @@ static const uint8_t font_palettes[FONT_COLOR_MAX][FONT_PALSIZE * 4] = {
 	{TRANSPARENT, SRGB(0x181818), SRGB(0x64d000), SRGB(0x64d000)},
 };
 
+static size_t *loadFrameOffsets(SeekableReadStream &stream, unsigned count) {
+	unsigned i;
+	size_t *ret = new size_t[count + 1];
+
+	for (i = 0; i <= count; i++) {
+		ret[i] = stream.readUint32LE();
+
+		if (i && ret[i] <= ret[i-1]) {
+			delete[] ret;
+			throw std::runtime_error("Invalid image frame offset");
+		}
+	}
+
+	if (ret[count] != (size_t)stream.size()) {
+		delete[] ret;
+		throw std::runtime_error("Image data size mismatch");
+	}
+
+	return ret;
+}
+
+static void loadPalette(SeekableReadStream &stream, uint8_t *palette,
+	size_t offset, size_t colors) {
+	size_t i;
+
+	if (offset + colors > 256) {
+		throw std::runtime_error("Palette buffer overflow");
+	}
+
+	stream.read(palette + 4 * offset, colors * 4);
+
+	for (i = offset; i < offset + colors; i++) {
+		palette[4*i] = 0xff;
+		palette[4*i+1] <<= 2;
+		palette[4*i+2] <<= 2;
+		palette[4*i+3] <<= 2;
+	}
+}
+
 Image::Image(SeekableReadStream &stream, const uint8_t *base_palette) :
 	_width(0), _height(0), _frames(0), _palcount(0), _textureIDs(NULL),
 	_palettes(NULL) {
@@ -278,22 +317,7 @@ void Image::load(SeekableReadStream &stream, const uint8_t **base_palettes,
 		throw std::runtime_error("Palette missing");
 	}
 
-	offsets = new size_t[framecount + 1];
-
-	for (i = 0; i <= framecount; i++) {
-		offsets[i] = stream.readUint32LE();
-
-		if (i && offsets[i] <= offsets[i-1]) {
-			delete[] offsets;
-			throw std::runtime_error("Invalid image frame offset");
-		}
-	}
-
-	if (offsets[framecount] != (size_t)stream.size()) {
-		delete[] offsets;
-		throw std::runtime_error("Image data size mismatch");
-	}
-
+	offsets = loadFrameOffsets(stream, framecount);
 	_palcount = palcount ? palcount : 1;
 
 	try {
@@ -329,19 +353,12 @@ void Image::load(SeekableReadStream &stream, const uint8_t **base_palettes,
 		palstart = stream.readUint16LE();
 		palsize = stream.readUint16LE();
 
-		if (palstart + palsize > 256) {
+		try {
+			loadPalette(stream, _palettes[0], palstart, palsize);
+		} catch (...) {
 			delete[] offsets;
 			clear();
-			throw std::runtime_error("Palette buffer overflow");
-		}
-
-		stream.read(_palettes[0] + 4 * palstart, palsize * 4);
-
-		for (i = palstart; i < palstart + palsize; i++) {
-			_palettes[0][4*i] = 0xff;
-			_palettes[0][4*i+1] <<= 2;
-			_palettes[0][4*i+2] <<= 2;
-			_palettes[0][4*i+3] <<= 2;
+			throw;
 		}
 
 		for (i = 1; i < _palcount; i++) {
