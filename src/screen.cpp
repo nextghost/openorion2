@@ -18,6 +18,40 @@
  */
 
 #include "screen.h"
+#include <stdexcept>
+
+int Rect::intersect(const Rect &other) {
+	if (x + (int)width <= other.x || y + (int)height <= other.y ||
+		x >= (int)(other.x + other.width) ||
+		y >= (int)(other.y + other.height)) {
+
+		x = 0;
+		y = 0;
+		width = 0;
+		height = 0;
+		return 0;
+	}
+
+	if (x < other.x) {
+		width -= other.x - x;
+		x = other.x;
+	}
+
+	if (y < other.y) {
+		height -= other.y - y;
+		y = other.y;
+	}
+
+	if (x + width > other.x + other.width) {
+		width = other.x + other.width - x;
+	}
+
+	if (y + height > other.y + other.height) {
+		height = other.y + other.height - y;
+	}
+
+	return 1;
+}
 
 Screen::Screen(unsigned w, unsigned h) : _width(w), _height(h), _clipX(0),
 	_clipY(0), _clipW(w), _clipH(h) {
@@ -144,6 +178,127 @@ void Screen::drawBitmapTile(int x, int y, const uint8_t *image, unsigned offsx,
 				dest[1] = color[1];
 				dest[2] = color[2];
 				dest[3] = color[3];
+			}
+		}
+	}
+
+	endDraw();
+}
+
+void Screen::drawSparseBitmap(int x, int y, const uint8_t *image, unsigned w,
+	unsigned h, const uint8_t *palette, const Rect *blocks,
+	unsigned blockcount, int keycolor) {
+
+	drawSparseBitmapTile(x, y, image, 0, 0, w, h, w, palette, blocks,
+		blockcount, keycolor);
+}
+
+void Screen::drawSparseBitmapTile(int x, int y, const uint8_t *image,
+	unsigned offsx, unsigned offsy, unsigned w, unsigned h, unsigned pitch,
+	const uint8_t *palette, const Rect *blocks, unsigned blockcount,
+	int keycolor) {
+
+	int origx = x, origy = y, dx, dy;
+	unsigned i, j, bpos, destpitch;
+	uint8_t *drawbuf, *dest;
+	const uint8_t *src, *color;
+	Rect cb, tile;
+
+	if (!clipRect(x, y, w, h)) {
+		return;
+	}
+
+	tile.x = offsx + x - origx;
+	tile.y = offsy + y - origy;
+	tile.width = w;
+	tile.height = h;
+
+	drawbuf = beginDraw();
+	destpitch = drawPitch();
+
+	for (bpos = 0; bpos < blockcount; bpos++) {
+		cb = blocks[bpos];
+
+		if (!cb.intersect(tile)) {
+			continue;
+		}
+
+		dx = cb.x - tile.x;
+		dy = cb.y - tile.y;
+
+		for (i = 0; i < cb.height; i++) {
+			dest = drawbuf + (y + dy + i) * destpitch + (x+dx) * 4;
+			src = image + (cb.y + i) * pitch + cb.x;
+
+			for (j = 0; j < cb.width; j++, dest += 4) {
+				color = palette + 4 * src[j];
+
+				if (color[0] && keycolor != (int)src[j]) {
+					dest[1] = color[1];
+					dest[2] = color[2];
+					dest[3] = color[3];
+				}
+			}
+		}
+	}
+
+	endDraw();
+}
+
+void Screen::drawSparseBitmapTileMasked(int x, int y, const uint8_t *image,
+	unsigned offsx, unsigned offsy, unsigned w, unsigned h, unsigned pitch,
+	const uint8_t *palette, const Rect *blocks, unsigned blockcount,
+	const uint8_t *mask, unsigned maskx, unsigned masky,
+	unsigned maskpitch, unsigned maskheight, int keycolor) {
+
+	int origx = x, origy = y, dx, dy;
+	unsigned i, j, mx, my, bpos, destpitch;
+	uint8_t *drawbuf, *dest;
+	const uint8_t *src, *color;
+	Rect cb, tile;
+
+	if (!clipRect(x, y, w, h)) {
+		return;
+	}
+
+	tile.x = offsx + x - origx;
+	tile.y = offsy + y - origy;
+	tile.width = w;
+	tile.height = h;
+
+	drawbuf = beginDraw();
+	destpitch = drawPitch();
+
+	for (bpos = 0; bpos < blockcount; bpos++) {
+		cb = blocks[bpos];
+
+		if (!cb.intersect(tile)) {
+			continue;
+		}
+
+		dx = cb.x - tile.x;
+		dy = cb.y - tile.y;
+		my = masky + dy;
+
+		for (i = 0; i < cb.height && my < maskheight; i++, my++) {
+			dest = drawbuf + (y + dy + i) * destpitch + (x+dx) * 4;
+			src = image + (cb.y + i) * pitch + cb.x;
+			mx = maskx + dx;
+
+			for (j = 0; j < cb.width && mx < maskpitch;
+				j++, mx++, dest += 4) {
+
+				if (!mask[my * maskpitch + mx]) {
+					continue;
+				}
+
+				color = palette + 4 * src[j];
+
+				if (color[0] && keycolor != (int)src[j]) {
+					dest[1] = color[1];
+					dest[2] = color[2];
+					dest[3] = color[3];
+				}
 			}
 		}
 	}

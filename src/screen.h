@@ -26,6 +26,13 @@
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
 
+struct Rect {
+	int x, y;
+	unsigned width, height;
+
+	int intersect(const Rect &other);
+};
+
 class Screen {
 protected:
 	unsigned _width, _height;
@@ -80,6 +87,20 @@ public:
 	virtual void drawBitmapTile(int x, int y, const uint8_t *image,
 		unsigned offsx, unsigned offsy, unsigned width, unsigned height,
 		unsigned pitch, const uint8_t *palette);
+	virtual void drawSparseBitmap(int x, int y, const uint8_t *image,
+		unsigned width, unsigned height, const uint8_t *palette,
+		const Rect *blocks, unsigned blockcount, int keycolor = -1);
+	virtual void drawSparseBitmapTile(int x, int y, const uint8_t *image,
+		unsigned offsx, unsigned offsy, unsigned width, unsigned height,
+		unsigned pitch, const uint8_t *palette, const Rect *blocks,
+		unsigned blockcount, int keycolor = -1);
+	virtual void drawSparseBitmapTileMasked(int x, int y,
+		const uint8_t *image, unsigned offsx, unsigned offsy,
+		unsigned width, unsigned height, unsigned pitch,
+		const uint8_t *palette, const Rect *blocks,
+		unsigned blockcount, const uint8_t *mask, unsigned maskx,
+		unsigned masky, unsigned maskpitch, unsigned maskheight,
+		int keycolor = -1);
 
 	virtual void drawLine(int x1, int y1, int x2, int y2, uint8_t r,
 		uint8_t g, uint8_t b);
