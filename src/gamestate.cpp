@@ -1917,7 +1917,7 @@ void GameState::validate(void) const {
 	}
 
 	if (_shipCount > MAX_SHIPS) {
-		throw std::out_of_range("Invalid star system count");
+		throw std::out_of_range("Invalid ship count");
 	}
 
 	_galaxy.validate();
@@ -1996,6 +1996,10 @@ void GameState::validate(void) const {
 		}
 
 		for (j = i + 1; j < _playerCount; j++) {
+			if (_players[j].eliminated) {
+				continue;
+			}
+
 			if (_players[i].playerContacts[j] !=
 				_players[j].playerContacts[i]) {
 				throw std::runtime_error("Player contact mismatch");
