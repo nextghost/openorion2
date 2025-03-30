@@ -23,6 +23,7 @@
 #include "stream.h"
 #include "utils.h"
 #include "lbx.h"
+#include "screen.h"
 
 #define PALSIZE 1024
 
@@ -235,6 +236,51 @@ public:
 
 	void draw(int x, int y, unsigned frame = 0) const;
 	void drawCentered(int x, int y, unsigned frame = 0) const;
+};
+
+class Bitmap : public LBXAsset {
+private:
+	unsigned _width, _height, _frames, _frametime, _flags;
+	unsigned _palStart, _palLength, *_blockCounts;
+	uint8_t **_data, *_palette;
+	Rect **_blocks;
+
+	// Do NOT implement
+	Bitmap(const Bitmap &other);
+	const Bitmap &operator=(const Bitmap &other);
+
+protected:
+	void load(SeekableReadStream &stream);
+	unsigned loadFrame(SeekableReadStream &stream, uint8_t *buffer,
+		Rect *blocks, const Rect *oldBlocks, unsigned blockCount);
+	void clear(void);
+
+public:
+	explicit Bitmap(SeekableReadStream &stream);
+	~Bitmap(void);
+
+	unsigned width(void) const;
+	unsigned height(void) const;
+	unsigned frameCount(void) const;
+	unsigned frameTime(void) const;
+	const uint8_t *frameData(unsigned frame = 0) const;
+	const uint8_t *palette(void) const;
+	unsigned paletteStart(void) const;
+	unsigned paletteLength(void) const;
+
+	void draw(int x, int y, const uint8_t *pal, unsigned frame = 0) const;
+	void drawCentered(int x, int y, const uint8_t *pal,
+		unsigned frame = 0) const;
+	void drawTile(int x, int y, unsigned offsx, unsigned offsy,
+		unsigned width, unsigned height, const uint8_t *pal,
+		unsigned frame = 0) const;
+
+	void drawMasked(int x, int y, const uint8_t *pal, const Bitmap *mask,
+		unsigned frame = 0, unsigned maskframe = 0) const;
+	void drawTileMasked(int x, int y, unsigned offsx, unsigned offsy,
+		unsigned width, unsigned height, const uint8_t *pal,
+		const Bitmap *mask, unsigned frame = 0,
+		unsigned maskframe = 0) const;
 };
 
 class FontManager;

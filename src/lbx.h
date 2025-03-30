@@ -202,6 +202,7 @@ public:
 
 class AssetManager;
 class Image;
+class Bitmap;
 
 class LBXCacheEntry {
 public:
@@ -261,6 +262,7 @@ public:
 };
 
 typedef AssetPointer<Image> ImageAsset;
+typedef AssetPointer<Bitmap> BitmapAsset;
 
 class AssetManager {
 private:
@@ -280,6 +282,7 @@ private:
 		char *filename;
 		size_t size;
 		CacheEntry<Image> *images;
+		CacheEntry<Bitmap> *bitmaps;
 	};
 
 	LBXArchive *_curfile;
@@ -292,6 +295,7 @@ protected:
 	MemoryReadStream *rawData(FileCache *entry, unsigned id);
 	FileCache *cacheImage(const char *filename, unsigned id,
 		const uint8_t **palettes, unsigned palcount);
+	FileCache *cacheBitmap(const char *filename, unsigned id);
 
 public:
 	AssetManager(void);
@@ -303,6 +307,7 @@ public:
 		const uint8_t *palette = NULL);
 	ImageAsset getImage(const char *filename, unsigned id,
 		const uint8_t **palettes, unsigned palcount);
+	BitmapAsset getBitmap(const char *filename, unsigned id);
 
 	MemoryReadStream *rawData(const char *filename, unsigned id);
 };

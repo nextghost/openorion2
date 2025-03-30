@@ -808,6 +808,7 @@ AssetManager::~AssetManager(void) {
 	for (i = 0; i < _cacheCount; i++) {
 		delete[] _cache[i].filename;
 		delete[] _cache[i].images;
+		delete[] _cache[i].bitmaps;
 	}
 
 	delete _curfile;
@@ -860,6 +861,7 @@ AssetManager::FileCache *AssetManager::getCache(const char *filename) {
 	_cache[i].filename = realname;
 	_cache[i].size = 0;
 	_cache[i].images = NULL;
+	_cache[i].bitmaps = NULL;
 	return _cache + i;
 }
 
@@ -888,6 +890,7 @@ void AssetManager::openArchive(FileCache *entry) {
 		size_t size = _curfile->assetCount();
 
 		entry->images = new CacheEntry<Image>[size];
+		entry->bitmaps = new CacheEntry<Bitmap>[size];
 		entry->size = size;
 	}
 }
@@ -931,6 +934,35 @@ AssetManager::FileCache *AssetManager::cacheImage(const char *filename,
 	return entry;
 }
 
+AssetManager::FileCache *AssetManager::cacheBitmap(const char *filename,
+	unsigned id) {
+
+	FileCache *entry;
+	MemoryReadStream *stream;
+	Bitmap *bmp = NULL;
+
+	entry = getCache(filename);
+
+	if (entry->bitmaps && id < entry->size && entry->bitmaps[id].data) {
+		return entry;
+	}
+
+	stream = rawData(entry, id);
+
+	try {
+		bmp = new Bitmap(*stream);
+	} catch (...) {
+		delete stream;
+		throw;
+	}
+
+	delete stream;
+	entry->bitmaps[id].data = bmp;
+	entry->bitmaps[id].refs = 0;
+	bmp->_cacheRef = entry->bitmaps + id;
+	return entry;
+}
+
 ImageAsset AssetManager::getImage(const char *filename, unsigned id,
 	const uint8_t *palette) {
 	FileCache *entry = cacheImage(filename, id, &palette, 1);
@@ -943,6 +975,12 @@ ImageAsset AssetManager::getImage(const char *filename, unsigned id,
 	FileCache *entry = cacheImage(filename, id, palettes, palcount);
 
 	return ImageAsset(entry->images[id].data);
+}
+
+BitmapAsset AssetManager::getBitmap(const char *filename, unsigned id) {
+	FileCache *entry = cacheBitmap(filename, id);
+
+	return BitmapAsset(entry->bitmaps[id].data);
 }
 
 MemoryReadStream *AssetManager::rawData(const char *filename, unsigned id) {

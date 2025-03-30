@@ -547,6 +547,292 @@ void Image::drawCentered(int x, int y, unsigned frame) const {
 	draw(x - _width / 2, y - _height / 2, frame);
 }
 
+Bitmap::Bitmap(SeekableReadStream &stream) : _width(0), _height(0), _frames(0),
+	_palStart(0), _palLength(0), _blockCounts(NULL), _data(NULL),
+	_palette(NULL), _blocks(NULL) {
+
+	load(stream);
+}
+
+Bitmap::~Bitmap(void) {
+	clear();
+}
+
+void Bitmap::load(SeekableReadStream &stream) {
+	unsigned i, j, framecount, bcount, prevCount;
+	size_t *offsets;
+	Rect *blockBuf = NULL;
+	const Rect *prevBlocks = NULL;
+	MemoryReadStream *substream = NULL;
+
+	_width = stream.readUint16LE();
+	_height = stream.readUint16LE();
+	stream.readUint16LE();
+	framecount = stream.readUint16LE();
+	_frametime = stream.readUint16LE();
+	_flags = stream.readUint16LE();
+
+	if (!_width || !_height || !framecount) {
+		throw std::runtime_error("Invalid image header");
+	}
+
+	offsets = loadFrameOffsets(stream, framecount);
+
+	try {
+		if (_flags & FLAG_PALETTE) {
+			_palStart = stream.readUint16LE();
+			_palLength = stream.readUint16LE();
+
+			_palette = new uint8_t[4 * _palLength];
+			loadPalette(stream, _palette, 0, _palLength);
+		}
+
+		_data = new uint8_t*[framecount];
+		_blocks = new Rect*[framecount];
+		_blockCounts = new unsigned[framecount];
+		memset(_data, 0, framecount * sizeof(uint8_t*));
+		memset(_blocks, 0, framecount * sizeof(Rect*));
+		memset(_blockCounts, 0, framecount * sizeof(unsigned));
+		_frames = framecount;
+		blockBuf = new Rect[(offsets[framecount] - offsets[0]) / 4];
+
+		for (i = 0; i < framecount; i++) {
+			_data[i] = new uint8_t[_width * _height];
+
+			if (i && !(_flags & FLAG_FILLBG)) {
+				prevBlocks = _blocks[i - 1];
+				prevCount = _blockCounts[i - 1];
+				memcpy(_data[i], _data[i - 1],
+					_width * _height * sizeof(uint8_t));
+			} else {
+				prevBlocks = NULL;
+				prevCount = 0;
+				memset(_data[i], 0,
+					_width * _height * sizeof(uint8_t));
+			}
+
+			stream.seek(offsets[i], SEEK_SET);
+			substream = stream.readStream(offsets[i+1]-offsets[i]);
+			bcount = loadFrame(*substream, _data[i], blockBuf,
+				prevBlocks, prevCount);
+			delete substream;
+			substream = NULL;
+
+			if (bcount) {
+				_blocks[i] = new Rect[bcount];
+
+				for (j = 0; j < bcount; j++) {
+					_blocks[i][j] = blockBuf[j];
+				}
+
+				_blockCounts[i] = bcount;
+			}
+		}
+	} catch (...) {
+		delete substream;
+		delete[] offsets;
+		delete[] blockBuf;
+		clear();
+		throw;
+	}
+
+	delete substream;
+	delete[] offsets;
+	delete[] blockBuf;
+}
+
+unsigned Bitmap::loadFrame(SeekableReadStream &stream, uint8_t *buffer,
+	Rect *blocks, const Rect *oldBlocks, unsigned blockCount) {
+	int x, y;
+	unsigned i, skip, size, tmp, bpos = 0, ret = 0;
+	uint8_t *ptr;
+
+	if (_flags & FLAG_NOCOMPRESS) {
+		for (i = 0; i < _width * _height; i++) {
+			buffer[i] = stream.readUint8();
+		}
+
+		blocks[0].x = 0;
+		blocks[0].y = 0;
+		blocks[0].width = _width;
+		blocks[0].height = _height;
+		return 1;
+	}
+
+	size = stream.readUint16LE();
+	y = stream.readUint16LE();
+
+	if (size != 1) {
+		throw std::runtime_error("First line marker != 1");
+	}
+
+	while (y < (int)_height) {
+		ptr = buffer + y * _width;
+
+		while (bpos < blockCount && oldBlocks[bpos].y < y) {
+			blocks[ret++] = oldBlocks[bpos++];
+		}
+
+		for (x = 0; x < (int)_width;) {
+			size = stream.readUint16LE();
+			skip = stream.readUint16LE();
+
+			if (!size) {
+				y += skip;
+				break;
+			}
+
+			if (x + skip + size > _width) {
+				throw std::runtime_error("Scan line overflow");
+			}
+
+			x += skip;
+
+			/* Copy non-intersected blocks */
+			while (bpos < blockCount && oldBlocks[bpos].y == y &&
+				oldBlocks[bpos].x +
+				(int)oldBlocks[bpos].width < x) {
+				blocks[ret++] = oldBlocks[bpos++];
+			}
+
+			blocks[ret].x = x;
+			blocks[ret].y = y;
+			blocks[ret].width = size;
+			blocks[ret].height = 1;
+
+			/* Merge any intersected blocks */
+			while  (bpos < blockCount && oldBlocks[bpos].y == y &&
+				oldBlocks[bpos].x <= x + (int)size) {
+				blocks[ret].x = MIN(blocks[ret].x,
+					oldBlocks[bpos].x);
+				tmp = oldBlocks[bpos].x + oldBlocks[bpos].width;
+				tmp = MAX(tmp, x + size);
+				blocks[ret].width = tmp - blocks[ret].x;
+				bpos++;
+			}
+
+			ret++;
+			x += size;
+			ptr += skip;
+
+			for (i = 0; i < size; i++, ptr++) {
+				*ptr = stream.readUint8();
+			}
+
+			if (size % 2) {
+				stream.readUint8();
+			}
+
+			if (stream.eos()) {
+				throw std::runtime_error("Premature end of stream");
+			}
+		}
+	}
+
+	/* Copy all remaining blocks */
+	while (bpos < blockCount) {
+		blocks[ret++] = oldBlocks[bpos++];
+	}
+
+	return ret;
+}
+
+void Bitmap::clear(void) {
+	unsigned i;
+
+	for (i = 0; i < _frames; i++) {
+		delete[] _data[i];
+		delete[] _blocks[i];
+	}
+
+	delete[] _data;
+	delete[] _palette;
+	delete[] _blocks;
+	delete[] _blockCounts;
+}
+
+unsigned Bitmap::width(void) const {
+	return _width;
+}
+
+unsigned Bitmap::height(void) const {
+	return _height;
+}
+
+unsigned Bitmap::frameCount(void) const {
+	return _frames;
+}
+
+unsigned Bitmap::frameTime(void) const {
+	return _frametime;
+}
+
+const uint8_t *Bitmap::frameData(unsigned frame) const {
+	if (frame >= _frames) {
+		throw std::out_of_range("Bitmap frame ID out of range");
+	}
+
+	return _data[frame];
+}
+
+const uint8_t *Bitmap::palette(void) const {
+	return _palette;
+}
+
+unsigned Bitmap::paletteStart(void) const {
+	return _palStart;
+}
+
+unsigned Bitmap::paletteLength(void) const {
+	return _palLength;
+}
+
+void Bitmap::draw(int x, int y, const uint8_t *pal, unsigned frame) const {
+	if (frame >= _frames) {
+		throw std::out_of_range("Bitmap frame ID out of range");
+	}
+
+	gameScreen->drawSparseBitmap(x, y, _data[frame], _width, _height, pal,
+		_blocks[frame], _blockCounts[frame],
+		(_flags & FLAG_KEYCOLOR) ? 0 : -1);
+}
+
+void Bitmap::drawCentered(int x, int y, const uint8_t *pal,
+	unsigned frame) const {
+	draw(x - _width / 2, y - _height / 2, pal, frame);
+}
+
+void Bitmap::drawTile(int x, int y, unsigned offsx, unsigned offsy,
+	unsigned width, unsigned height, const uint8_t *pal,
+	unsigned frame) const {
+	if (frame >= _frames) {
+		throw std::out_of_range("Bitmap frame ID out of range");
+	}
+
+	gameScreen->drawSparseBitmapTile(x, y, _data[frame], offsx, offsy,
+		width, height, _width, pal, _blocks[frame],
+		_blockCounts[frame], (_flags & FLAG_KEYCOLOR) ? 0 : -1);
+}
+
+void Bitmap::drawMasked(int x, int y, const uint8_t *pal, const Bitmap *mask,
+	unsigned frame, unsigned maskframe) const {
+	drawTileMasked(x, y, 0, 0, _width, _height, pal, mask, frame,
+		maskframe);
+}
+
+void Bitmap::drawTileMasked(int x, int y, unsigned offsx, unsigned offsy,
+	unsigned width, unsigned height, const uint8_t *pal,
+	const Bitmap *mask, unsigned frame, unsigned maskframe) const {
+	if (frame >= _frames || maskframe >= mask->_frames) {
+		throw std::out_of_range("Bitmap frame ID out of range");
+	}
+
+	gameScreen->drawSparseBitmapTileMasked(x, y, _data[frame], offsx,
+		offsy, width, height, _width, pal, _blocks[frame],
+		_blockCounts[frame], mask->_data[maskframe], 0, 0,
+		mask->_width, mask->_height, (_flags & FLAG_KEYCOLOR) ? 0 : -1);
+}
+
 Font::Font(unsigned height) : _width(0), _height(height), _title(0),
 	_glyphCount(0), _glyphs(NULL), _bitmap(NULL) {
 
