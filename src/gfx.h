@@ -41,7 +41,8 @@
 
 #define TITLE_COLOR_DEFAULT 0
 #define TITLE_COLOR_HELP 1
-#define TITLE_COLOR_MAX 2
+#define TITLE_COLOR_INFO 2
+#define TITLE_COLOR_MAX 3
 
 #define FONT_COLOR_DEFAULT 0
 #define FONT_COLOR_HELP 1
@@ -193,7 +194,24 @@
 #define FONT_COLOR_RESEARCH_BRIGHT 137
 #define FONT_COLOR_RESEARCH_BRIGHTER 138
 
-#define FONT_COLOR_MAX 139
+#define FONT_COLOR_INFO_NORMAL 139
+#define FONT_COLOR_INFO_BRIGHT1 140
+#define FONT_COLOR_INFO_BRIGHT2 141
+#define FONT_COLOR_INFO_BRIGHT3 142
+#define FONT_COLOR_INFO_BRIGHT4 143
+#define FONT_COLOR_INFO_BLACK 144
+
+#define FONT_COLOR_INFO_RED 145
+#define FONT_COLOR_INFO_YELLOW 146
+#define FONT_COLOR_INFO_GREEN 147
+#define FONT_COLOR_INFO_SILVER 148
+#define FONT_COLOR_INFO_BLUE 149
+#define FONT_COLOR_INFO_BROWN 150
+#define FONT_COLOR_INFO_PURPLE 151
+#define FONT_COLOR_INFO_ORANGE 152
+#define FONT_COLOR_INFO_ELIMINATED 153
+
+#define FONT_COLOR_MAX 154
 
 #define RGB(x) (((x) >> 16) & 0xff), (((x) >> 8) & 0xff), ((x) & 0xff)
 #define SRGB(x) 0xff, RGB(x)
@@ -372,5 +390,9 @@ unsigned bounceFrame(unsigned ticks, unsigned frametime, unsigned framecount);
 
 // Set pixel to color only if the current pixel value is zero
 void setBlankPixel(uint8_t *pixel, uint8_t color);
+
+// Copy selected colors from source palette to beginning of destination palette
+void remapColors(uint8_t *dest, const uint8_t *src, const uint8_t *colormap,
+	size_t mapsize, size_t destoffset = 0);
 
 #endif

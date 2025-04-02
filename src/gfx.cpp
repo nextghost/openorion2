@@ -40,7 +40,10 @@ static const uint8_t title_palettes[TITLE_COLOR_MAX][TITLE_PALSIZE * 4] = {
 	{TRANSPARENT, SRGB(0), SRGB(0x302804), SRGB(0x187814), SRGB(0x187814),
 		SRGB(0x187814), SRGB(0x209c1c), SRGB(0x209c1c), SRGB(0x209c1c)},
 	{TRANSPARENT, SRGB(0), SRGB(0x043804), SRGB(0x087008), SRGB(0x087008),
-		SRGB(0x087008), SRGB(0x489038), SRGB(0x489038), SRGB(0x489038)}
+		SRGB(0x087008), SRGB(0x489038), SRGB(0x489038), SRGB(0x489038)},
+	{TRANSPARENT, SRGB(0x082808), SRGB(0x0c840c), SRGB(0x0c6c0c),
+		SRGB(0x0c600c), SRGB(0x0c780c), SRGB(0x0c840c), SRGB(0x0c840c),
+		SRGB(0x0c940c)}
 };
 
 static const uint8_t font_palettes[FONT_COLOR_MAX][FONT_PALSIZE * 4] = {
@@ -237,6 +240,25 @@ static const uint8_t font_palettes[FONT_COLOR_MAX][FONT_PALSIZE * 4] = {
 	{TRANSPARENT, SRGB(0x181818), SRGB(0x089400), SRGB(0x089400)},
 	{TRANSPARENT, SRGB(0x181818), SRGB(0x28c800), SRGB(0x28c800)},
 	{TRANSPARENT, SRGB(0x181818), SRGB(0x64d000), SRGB(0x64d000)},
+
+	// FONT_COLOR_INFO_NORMAL
+	{TRANSPARENT, SRGB(0x082808), SRGB(0x0c840c), SRGB(0x0c6c0c)},
+	{TRANSPARENT, SRGB(0x082808), SRGB(0x44a008), SRGB(0x0c6c0c)},
+	{TRANSPARENT, SRGB(0x082808), SRGB(0x5cb80c), SRGB(0x0c6c0c)},
+	{TRANSPARENT, SRGB(0x082808), SRGB(0x64c010), SRGB(0x0c6c0c)},
+	{TRANSPARENT, SRGB(0x082808), SRGB(0x84e018), SRGB(0x0c6c0c)},
+	{TRANSPARENT, TRANSPARENT, SRGB(0x101010), TRANSPARENT},
+
+	// FONT_COLOR_INFO_RED
+	{TRANSPARENT, SRGB(0x082808), SRGB(0xc80000), SRGB(0x800c0c)},
+	{TRANSPARENT, SRGB(0x082808), SRGB(0xbcb404), SRGB(0x908c00)},
+	{TRANSPARENT, SRGB(0x082808), SRGB(0x04b804), SRGB(0x007c00)},
+	{TRANSPARENT, SRGB(0x082808), SRGB(0x949498), SRGB(0x606068)},
+	{TRANSPARENT, SRGB(0x082808), SRGB(0x1820fc), SRGB(0x0404c4)},
+	{TRANSPARENT, SRGB(0x082808), SRGB(0x9c5840), SRGB(0x643c28)},
+	{TRANSPARENT, SRGB(0x082808), SRGB(0x8000ac), SRGB(0x540074)},
+	{TRANSPARENT, SRGB(0x082808), SRGB(0xd07404), SRGB(0x945000)},
+	{TRANSPARENT, SRGB(0x082808), SRGB(0x900c0c)},
 };
 
 static size_t *loadFrameOffsets(SeekableReadStream &stream, unsigned count) {
@@ -1210,5 +1232,21 @@ unsigned bounceFrame(unsigned ticks, unsigned frametime, unsigned framecount) {
 void setBlankPixel(uint8_t *pixel, uint8_t color) {
 	if (!*pixel) {
 		*pixel = color;
+	}
+}
+
+void remapColors(uint8_t *dest, const uint8_t *src, const uint8_t *colormap,
+	size_t mapsize, size_t destoffset) {
+	size_t i;
+
+	if (mapsize + destoffset >= 256) {
+		throw std::overflow_error("Palette remap size out of range");
+	}
+
+	dest += 4 * destoffset;
+
+	for (i = 0; i < mapsize; i++) {
+		memcpy(dest + 4 * i, src + 4 * colormap[i],
+			4 * sizeof(uint8_t));
 	}
 }
