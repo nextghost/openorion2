@@ -19,6 +19,8 @@
 
 #include <cstring>
 #include <cmath>
+#include "colony.h"
+#include "gamestate.h"
 #include "screen.h"
 #include "guimisc.h"
 #include "mainmenu.h"
@@ -112,6 +114,28 @@
 #define PLANET_LIST_SHIP_YOFF 36
 #define PLANET_LIST_COLONY_X 88
 #define PLANET_LIST_OUTPOST_X 18
+
+#define COLONY_ARCHIVE "colsum.lbx"
+#define ASSET_COLONYLIST_BG 0
+#define ASSET_COLONYLIST_RETURN_BUTTON 1
+
+#define COLONY_LIST_ROWS 10
+#define COLONY_LIST_FIRST_ROW 39
+#define COLONY_LIST_ROW_HEIGHT 26
+#define COLONY_LIST_ROW_DIST 5
+#define COLONY_LIST_ROW_LEFT_PADDING 55
+#define COLONY_LIST_ROW_BOTTOM_PADDING 5
+#define COLONY_LIST_ROW_MARGIN 13
+#define COLONY_LIST_DETAILS_LEFT_PADDING 15
+#define COLONY_LIST_EMPIRE_DETAILS_LEFT_POSITION 520
+#define COLONY_LIST_EMPIRE_DETAILS_RIGHT_POSITION 625
+#define COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION 353
+#define COLONY_LIST_EMPIRE_DETAILS_RESERVE_SLOT 0
+#define COLONY_LIST_EMPIRE_DETAILS_INCOME_SLOT 1
+#define COLONY_LIST_EMPIRE_DETAILS_POPULATION_SLOT 2
+#define COLONY_LIST_EMPIRE_DETAILS_FREIGHTERS_SLOT 3
+#define COLONY_LIST_EMPIRE_DETAILS_FOOD_SLOT 4
+#define COLONY_LIST_EMPIRE_DETAILS_RESEARCH_SLOT 5
 
 static const uint8_t starmapHighlightColors[(MAX_PLAYERS + 1) * 3] {
 	RGB(0xfc0000), RGB(0xd4c418), RGB(0x209c1c), RGB(0xc8c8c8),
@@ -2125,7 +2149,9 @@ void GalaxyView::clickGameMenu(int x, int y, int arg) {
 	new MainMenuWindow(this, _game);
 }
 
-void GalaxyView::clickColoniesButton(int x, int y, int arg) STUB(this)
+void GalaxyView::clickColoniesButton(int x, int y, int arg) {
+	gui_stack->push(new ColoniesListView(_game, _activePlayer));
+}
 
 void GalaxyView::clickPlanetsButton(int x, int y, int arg) {
 	gui_stack->push(new PlanetsListView(_game, _activePlayer));
@@ -2911,6 +2937,286 @@ void PlanetsListView::clickOutpostToggle(int x, int y, int arg) {
 
 void PlanetsListView::clickReturn(int x, int y, int arg) {
 	exitView();
+}
+
+ColoniesListView::ColoniesListView(GameState *game, int activePlayer) :
+    _game(game), _activePlayer(activePlayer),_scroll(NULL), _selectedSlot(-1) {
+
+	_bg = gameAssets->getImage(COLONY_ARCHIVE, ASSET_COLONYLIST_BG);
+
+	initWidgets();
+}
+
+void ColoniesListView::initWidgets(void) {
+	unsigned i;
+	const uint8_t *pal = _bg->palette();
+	Widget *w = NULL;
+
+	for (i = 0; i < COLONY_LIST_ROWS; i++) {
+		w = createWidget(10,
+				 COLONY_LIST_FIRST_ROW + i * (COLONY_LIST_ROW_HEIGHT + COLONY_LIST_ROW_BOTTOM_PADDING),
+				 398,
+				 COLONY_LIST_ROW_HEIGHT);
+		w->setMouseOverCallback(GuiMethod(*this,
+			&ColoniesListView::highlightSlot, i));
+		w->setMouseMoveCallback(GuiMethod(*this,
+			&ColoniesListView::highlightSlot, i));
+		w->setMouseOutCallback(GuiMethod(*this,
+			&ColoniesListView::highlightSlot, -1));
+		w->setMouseUpCallback(MBUTTON_LEFT,
+			GuiMethod(*this, &ColoniesListView::clickSlot, i));
+	}
+
+	w = createWidget(531, 445, 156, 25);
+	w->setMouseUpCallback(MBUTTON_LEFT,
+		GuiMethod(*this, &ColoniesListView::clickReturn));
+	w->setClickSprite(MBUTTON_LEFT, COLONY_ARCHIVE,
+		ASSET_COLONYLIST_RETURN_BUTTON, pal, 1);
+	w->setMouseUpCallback(MBUTTON_RIGHT,
+		GuiMethod(*this, &ColoniesListView::showHelp,
+			HELP_RETURN_BUTTON));
+}
+
+void ColoniesListView::highlightSlot(int x, int y, int arg) {
+	if (arg >= 0 && arg < COLONY_LIST_ROWS && arg < _game->_colonyCount) {
+		_curslot = arg;
+	} else {
+		_curslot = -1;
+	}
+}
+
+void ColoniesListView::clickSlot(int x, int y, int arg) {
+	_selectedSlot = arg;
+}
+
+// FIXME: Render the colonies in alphanumeric order maybe
+void ColoniesListView::redraw(unsigned curtick) {
+	Font *fnt;
+	// unsigned i, offset = _scroll->position();
+	unsigned i, j, y, color;
+	int owner;
+	StringBuffer buf, num;
+	const Planet *planet_ptr;
+	const Star *star_ptr;
+	const Colony *colony_ptr;
+
+	fnt = gameFonts->getFont(FONTSIZE_SMALL);
+
+	gameScreen->clear();
+	_bg->draw(0, 0);
+
+	unsigned offset = 0; // FIXME: This should come from the scrollbar
+	int colony_row = 0;
+	for (i = 0; i < _game->_planetCount; i++) {
+		y = COLONY_LIST_FIRST_ROW + COLONY_LIST_ROW_DIST + colony_row * (COLONY_LIST_ROW_HEIGHT + COLONY_LIST_ROW_BOTTOM_PADDING);
+		planet_ptr = _game->_planets + offset + i;
+		if (planet_ptr->colony < 0) continue;
+
+		colony_ptr = &_game->_colonies[planet_ptr->colony];
+		if (colony_ptr->owner != _activePlayer) continue;
+
+		star_ptr = &_game->_starSystems[planet_ptr->star];
+		if (_curslot == colony_row) {
+			color = FONT_COLOR_COLONY_LIST_BRIGHT;
+			// Fill the lower right box with the info from the selected colony, if any
+			renderPlanetDetail(planet_ptr, colony_ptr);
+		} else {
+			color = FONT_COLOR_COLONY_LIST;
+		}
+		num.roman(star_ptr->planetSeq(planet_ptr->orbit) + 1);
+		buf.printf("%s %s", star_ptr->name, num.c_str());
+
+		fnt->centerText(COLONY_LIST_ROW_LEFT_PADDING, y, color, buf.c_str());
+
+		drawColonistsJobs(colony_ptr, curtick);
+		drawEmpireDetails();
+
+		colony_row++;
+	}
+
+	redrawWidgets(0, 0, curtick);
+	redrawWindows(curtick);
+}
+
+void ColoniesListView::clickReturn(int x, int y, int arg) {
+	exitView();
+}
+
+void ColoniesListView::showHelp(int x, int y, int arg) {
+	new MessageBoxWindow(this, arg, _bg->palette());
+}
+
+void ColoniesListView::renderPlanetDetail(const Planet *planet_ptr, const Colony *colony_ptr) {
+	StringBuffer buf;
+	Font *fnt;
+
+	fnt = gameFonts->getFont(FONTSIZE_SMALLER);
+
+	switch(planet_ptr->size) {
+	case TINY_PLANET:
+		buf.printf("Tiny");
+		break;
+	case SMALL_PLANET:
+		buf.printf("Small");
+		break;
+	case MEDIUM_PLANET:
+		buf.printf("Medium");
+		break;
+	case LARGE_PLANET:
+		buf.printf("Large");
+		break;
+	default:
+		buf.printf("Huge");
+	}
+
+	switch(planet_ptr->climate) {
+	case TOXIC:
+		buf.append(" Toxic");
+		break;
+	case RADIATED:
+		buf.append(" Radiated");
+		break;
+	case BARREN:
+		buf.append(" Barren");
+		break;
+	case DESERT:
+		buf.append(" Desert");
+		break;
+	case TUNDRA:
+		buf.append(" Tundra");
+		break;
+	case OCEAN:
+		buf.append(" Ocean");
+		break;
+	case SWAMP:
+		buf.append(" Swamp");
+		break;
+	case ARID:
+		buf.append(" Arid");
+		break;
+	case TERRAN:
+		buf.append(" Terran");
+		break;
+	default:
+		buf.append(" Gaia");
+	}
+
+	fnt->renderText(COLONY_LIST_DETAILS_LEFT_PADDING, 354, FONT_COLOR_COLONY_LIST, buf.c_str());
+
+	switch(planet_ptr->gravity) {
+	case LOW_G:
+		buf.printf("Low Gravity");
+		break;
+	case NORMAL_G:
+		buf.printf("Normal Gravity");
+		break;
+	default:
+		buf.printf("Heavy Gravity");
+	}
+	fnt->renderText(COLONY_LIST_DETAILS_LEFT_PADDING, 365, FONT_COLOR_COLONY_LIST, buf.c_str());
+
+	switch(planet_ptr->minerals) {
+	case ULTRA_POOR:
+		buf.printf("Mineral Ultra poor");
+		break;
+	case POOR:
+		buf.printf("Mineral Poor");
+		break;
+	case ABUNDANT:
+		buf.printf("Mineral Abundant");
+		break;
+	case RICH :
+		buf.printf("Mineral Rich");
+		break;
+	default:
+		buf.printf("Mineral Ultra rich");
+	}
+	fnt->renderText(COLONY_LIST_DETAILS_LEFT_PADDING, 376, FONT_COLOR_COLONY_LIST, buf.c_str());
+
+	// FIXME: Max population always seems to be zero
+	buf.printf("Population (%d/%d)",
+	    colony_ptr->population,
+	    _game->planetMaxPop(colony_ptr->planet, _activePlayer));
+	fnt->renderText(COLONY_LIST_DETAILS_LEFT_PADDING, 387, FONT_COLOR_COLONY_LIST, buf.c_str());
+}
+
+void ColoniesListView::drawColonistsJobs(const Colony* colony_ptr, int curtick) {
+	int farmers = 0;
+	int workers = 0;
+	int scientists = 0;
+	int j = 0;
+
+	for (j = 0; j < MAX_POPULATION; j++) {
+		if (colony_ptr->colonists[j].job == FARMER) {
+			farmers++;
+		} else if (colony_ptr->colonists[j].job == WORKER) {
+			workers++;
+		} else if (colony_ptr->colonists[j].job == SCIENTIST) {
+			scientists++;
+		}
+	}
+
+	farmers = colony_ptr->population - workers + scientists;
+
+	if (farmers > colony_ptr->population) {
+		farmers = colony_ptr->population;
+	}
+
+	ColonistPickerWidget* f = new ColonistPickerWidget(0, 0, 100, 90, colony_ptr, FARMER, _game->_players, _game->_playerCount);
+	f->redraw(103, 38, curtick);
+
+	// FIXME: This is showing no workers on some colonies...
+	ColonistPickerWidget* w = new ColonistPickerWidget(0, 0, 100, 90, colony_ptr, WORKER, _game->_players, _game->_playerCount);
+	w->redraw(237, 38, curtick);
+
+	ColonistPickerWidget* s = new ColonistPickerWidget(0, 0, 100, 90, colony_ptr, SCIENTIST, _game->_players, _game->_playerCount);
+	s->redraw(377, 38, curtick);
+}
+
+void ColoniesListView::drawEmpireDetails() {
+	int color;
+	StringBuffer buf;
+	Font* fnt = gameFonts->getFont(FONTSIZE_SMALL);
+
+	color = FONT_COLOR_COLONY_LIST;
+	buf.printf("Reserve:");
+	fnt->renderText(COLONY_LIST_EMPIRE_DETAILS_LEFT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_RESERVE_SLOT, color, buf.c_str());
+	buf.printf("%d", _game->_players[_activePlayer].BC);
+	fnt->rightText(COLONY_LIST_EMPIRE_DETAILS_RIGHT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_RESERVE_SLOT, color, buf.c_str());
+
+	buf.printf("Income:");
+	fnt->renderText(COLONY_LIST_EMPIRE_DETAILS_LEFT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_INCOME_SLOT, color, buf.c_str());
+	if (_game->_players[_activePlayer].BC > 0) {
+		buf.printf("+%d", _game->_players[_activePlayer].surplusBC);
+	} else {
+		buf.printf("-%d", _game->_players[_activePlayer].surplusBC);
+	}
+	fnt->rightText(COLONY_LIST_EMPIRE_DETAILS_RIGHT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_INCOME_SLOT, color, buf.c_str());
+
+	buf.printf("Population:");
+	fnt->renderText(COLONY_LIST_EMPIRE_DETAILS_LEFT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_POPULATION_SLOT, color, buf.c_str());
+	buf.printf("%d", _game->_players[_activePlayer].totalPop);
+	fnt->rightText(COLONY_LIST_EMPIRE_DETAILS_RIGHT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_POPULATION_SLOT, color, buf.c_str());
+
+	buf.printf("Freighters:");
+	fnt->renderText(COLONY_LIST_EMPIRE_DETAILS_LEFT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_FREIGHTERS_SLOT, color, buf.c_str());
+	buf.printf("%d", _game->_players[_activePlayer].surplusFreighters);
+	fnt->rightText(COLONY_LIST_EMPIRE_DETAILS_RIGHT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_FREIGHTERS_SLOT, color, buf.c_str());
+
+	buf.printf("Food:");
+	fnt->renderText(COLONY_LIST_EMPIRE_DETAILS_LEFT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_FOOD_SLOT, color, buf.c_str());
+	if (_game->_players[_activePlayer].surplusFood >= 0) {
+		buf.printf("+%d", _game->_players[_activePlayer].surplusFood);
+	} else {
+		buf.printf("-%d", _game->_players[_activePlayer].surplusFood);
+	}
+	fnt->rightText(COLONY_LIST_EMPIRE_DETAILS_RIGHT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_FOOD_SLOT, color, buf.c_str());
+
+	buf.printf("Research:");
+	fnt->renderText(COLONY_LIST_EMPIRE_DETAILS_LEFT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_RESEARCH_SLOT, color, buf.c_str());
+	buf.printf("%d", _game->_players[_activePlayer].researchProduced);
+	fnt->rightText(COLONY_LIST_EMPIRE_DETAILS_RIGHT_POSITION, COLONY_LIST_EMPIRE_DETAILS_TOP_POSITION + COLONY_LIST_ROW_MARGIN * COLONY_LIST_EMPIRE_DETAILS_RESEARCH_SLOT, color, buf.c_str());
+
 }
 
 MainMenuWindow::MainMenuWindow(GuiView *parent, GameState *game) :

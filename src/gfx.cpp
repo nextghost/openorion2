@@ -966,6 +966,12 @@ int Font::centerText(int x, int y, unsigned color, const char *str,
 		outline, charSpacing);
 }
 
+int Font::rightText(int x, int y, unsigned color, const char *str,
+	unsigned outline, unsigned charSpacing) {
+	return renderText(x - textWidth(str, charSpacing), y, color, str,
+		outline, charSpacing);
+}
+
 const uint8_t *Font::titlePalette(unsigned color) {
 	if (color >= TITLE_COLOR_MAX) {
 		throw std::out_of_range("Invalid title font color ID");
