@@ -52,16 +52,23 @@ public:
 	void redraw(int x, int y, unsigned curtick);
 };
 
-class RaceInfoWidget : public Widget {
+class RaceInfoWidget : public CompositeWidget {
 private:
 	const GameState *_game;
 	int _activePlayer;
 	unsigned _page;
 
+	void initWidgets(void);
+
+protected:
+	unsigned playerCount(void) const;
+
 public:
 	RaceInfoWidget(unsigned x, unsigned y, unsigned width, unsigned height,
 		const GameState *game, int _activePlayer);
 	~RaceInfoWidget(void);
+
+	void nextPage(int x, int y, int arg);
 
 	void redraw(int x, int y, unsigned curtick);
 };

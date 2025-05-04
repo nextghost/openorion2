@@ -27,6 +27,7 @@
 #define ASSET_INFO_CURSOR 1
 #define ASSET_INFO_RETURN_BUTTON 2
 #define ASSET_INFO_HISTORY_BUTTON 3
+#define ASSET_INFO_MORE_BUTTON 20
 #define ASSET_INFO_VBAR 22
 #define ASSET_INFO_VBAR_MASK 23
 #define ASSET_INFO_BAR_LABEL 24
@@ -145,13 +146,48 @@ void TechReviewWidget::redraw(int x, int y, unsigned curtick) {
 
 RaceInfoWidget::RaceInfoWidget(unsigned x, unsigned y, unsigned width,
 	unsigned height, const GameState *game, int activePlayer) :
-	Widget(x, y, width, height), _game(game), _activePlayer(activePlayer),
-	_page(0) {
+	CompositeWidget(x, y, width, height), _game(game),
+	_activePlayer(activePlayer), _page(0) {
 
+	initWidgets();
 }
 
 RaceInfoWidget::~RaceInfoWidget(void) {
 
+}
+
+void RaceInfoWidget::initWidgets(void) {
+	if (playerCount() > 4) {
+		ImageAsset cursor;
+		Widget *w;
+
+		cursor = gameAssets->getImage(INFO_ARCHIVE, ASSET_INFO_CURSOR);
+		w = createWidget(179, 427, INFO_ARCHIVE, ASSET_INFO_MORE_BUTTON,
+			cursor->palette(), 1);
+		w->setIdleSprite(INFO_ARCHIVE, ASSET_INFO_MORE_BUTTON,
+			cursor->palette(), 0);
+		w->setMouseUpCallback(MBUTTON_LEFT, GuiMethod(*this,
+			&RaceInfoWidget::nextPage));
+	}
+}
+
+unsigned RaceInfoWidget::playerCount(void) const {
+	unsigned i, ret;
+
+	for (i = 0, ret = 0; i < _game->_playerCount; i++) {
+		if (_activePlayer == (int)i || _game->_players[i].eliminated ||
+			_game->_players[_activePlayer].isPlayerVisible(i)) {
+			ret++;
+		}
+	}
+
+	return ret;
+}
+
+void RaceInfoWidget::nextPage(int x, int y, int arg) {
+	unsigned pagecount = (playerCount() + 3) / 4;
+
+	_page = pagecount ? (_page + 1) % pagecount : 0;
 }
 
 void RaceInfoWidget::redraw(int x, int y, unsigned curtick) {
@@ -259,6 +295,8 @@ void RaceInfoWidget::redraw(int x, int y, unsigned curtick) {
 				OUTLINE_NONE, 2);
 		}
 	}
+
+	redrawWidgets(x, y, curtick);
 }
 
 TurnSummaryWidget::TurnSummaryWidget(unsigned x, unsigned y, unsigned width,
