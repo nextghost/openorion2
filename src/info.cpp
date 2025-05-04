@@ -194,7 +194,7 @@ void RaceInfoWidget::redraw(int x, int y, unsigned curtick) {
 	unsigned i, j, pcount, color;
 	int xpos, ypos;
 	Font *titleFnt, *raceFnt, *itemFnt;
-	const char *str;
+	const char *str, *fmt;
 	const Player *pptr, *players[MAX_PLAYERS] = { NULL };
 	StringBuffer buf;
 
@@ -276,11 +276,22 @@ void RaceInfoWidget::redraw(int x, int y, unsigned curtick) {
 			}
 
 			str = gameLang->raceInfo(j);
+			buf.printf("^ %s", str);
 
-			if (j < TRAIT_LOW_G) {
-				buf.printf("^ %s%+d", str, pptr->traits[j]);
-			} else {
-				buf.printf("^ %s", str);
+			if (j == TRAIT_FARMING || j == TRAIT_MONEY) {
+				if (pptr->traits[j] % 2) {
+					fmt = "%+3.1f";
+				} else {
+					fmt = "%+2.0f";
+				}
+
+				buf.append_printf(fmt, pptr->traits[j] / 2.0f);
+
+				if (j == TRAIT_MONEY) {
+					buf.append(" BC");
+				}
+			} else if (j < TRAIT_LOW_G) {
+				buf.append_printf("%+d", pptr->traits[j]);
 			}
 
 			itemFnt->renderText(xpos + 3, ypos, color, buf.c_str(),
