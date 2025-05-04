@@ -1257,6 +1257,40 @@ void WidgetContainer::handleMouseUp(int x, int y, unsigned button) {
 	}
 }
 
+CompositeWidget::CompositeWidget(unsigned x, unsigned y, unsigned width,
+	unsigned height) : Widget(x, y, width, height), WidgetContainer() {
+
+}
+
+CompositeWidget::~CompositeWidget(void) {
+
+}
+
+void CompositeWidget::handleMouseOver(int x, int y, unsigned buttons) {
+	selectCurrentWidget(x - getX(), y - getY(), buttons);
+	Widget::handleMouseOver(x, y, buttons);
+}
+
+void CompositeWidget::handleMouseMove(int x, int y, unsigned buttons) {
+	WidgetContainer::handleMouseMove(x - getX(), y - getY(), buttons);
+	Widget::handleMouseMove(x, y, buttons);
+}
+
+void CompositeWidget::handleMouseOut(int x, int y, unsigned buttons) {
+	leaveCurrentWidget(x - getX(), y - getY(), buttons);
+	Widget::handleMouseOut(x, y, buttons);
+}
+
+void CompositeWidget::handleMouseDown(int x, int y, unsigned button) {
+	WidgetContainer::handleMouseDown(x - getX(), y - getY(), button);
+	Widget::handleMouseDown(x, y, button);
+}
+
+void CompositeWidget::handleMouseUp(int x, int y, unsigned button) {
+	WidgetContainer::handleMouseUp(x - getX(), y - getY(), button);
+	Widget::handleMouseUp(x, y, button);
+}
+
 GuiWindow::GuiWindow(GuiView *parent, unsigned flags) : _parent(parent), _x(0),
 	_y(0), _grabx(-1), _graby(-1), _width(0), _height(0), _flags(flags) {
 	if (_parent) {
@@ -1336,6 +1370,10 @@ void GuiWindow::handleMouseOver(int x, int y, unsigned buttons) {
 void GuiWindow::handleMouseOut(int x, int y, unsigned buttons) {
 	leaveCurrentWidget(x, y, buttons);
 	_grabx = _graby = -1;
+}
+
+void GuiWindow::redraw(int x, int y, unsigned curtick) {
+	redraw(curtick);
 }
 
 GuiView::GuiView(void) : _currentWindow(NULL) {
@@ -1517,6 +1555,10 @@ void GuiView::handleMouseUp(int x, int y, unsigned button) {
 	}
 
 	WidgetContainer::handleMouseUp(x, y, button);
+}
+
+void GuiView::redraw(int x, int y, unsigned curtick) {
+	redraw(curtick);
 }
 
 TransitionView::TransitionView(Image *background, Image *animation, int x,

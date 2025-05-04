@@ -393,11 +393,24 @@ public:
 	WidgetContainer(void);
 	~WidgetContainer(void);
 
-	virtual void redraw(unsigned curtick) = 0;
+	virtual void redraw(int x, int y, unsigned curtick) = 0;
 
 	virtual void handleMouseMove(int x, int y, unsigned buttons);
 	virtual void handleMouseDown(int x, int y, unsigned button);
 	virtual void handleMouseUp(int x, int y, unsigned button);
+};
+
+class CompositeWidget : public Widget, public WidgetContainer {
+public:
+	CompositeWidget(unsigned x, unsigned y, unsigned width,
+		unsigned height);
+	~CompositeWidget(void);
+
+	void handleMouseOver(int x, int y, unsigned buttons);
+	void handleMouseMove(int x, int y, unsigned buttons);
+	void handleMouseOut(int x, int y, unsigned buttons);
+	void handleMouseDown(int x, int y, unsigned button);
+	void handleMouseUp(int x, int y, unsigned button);
 };
 
 class GuiView;
@@ -427,6 +440,9 @@ public:
 	void handleMouseUp(int x, int y, unsigned button);
 	virtual void handleMouseOver(int x, int y, unsigned buttons);
 	virtual void handleMouseOut(int x, int y, unsigned buttons);
+
+	void redraw(int x, int y, unsigned curtick);
+	virtual void redraw(unsigned curtick) = 0;
 };
 
 class GuiView : public WidgetContainer {
@@ -466,6 +482,9 @@ public:
 	void handleMouseMove(int x, int y, unsigned buttons);
 	void handleMouseDown(int x, int y, unsigned button);
 	void handleMouseUp(int x, int y, unsigned button);
+
+	void redraw(int x, int y, unsigned curtick);
+	virtual void redraw(unsigned curtick) = 0;
 
 	friend class GuiWindow;
 };
