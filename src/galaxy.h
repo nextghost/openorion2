@@ -22,6 +22,7 @@
 
 #include "gui.h"
 #include "gamestate.h"
+#include "colony.h"
 
 #define GALAXY_ARCHIVE "buffer0.lbx"
 #define ASSET_GALAXY_GUI 0
@@ -291,6 +292,36 @@ public:
 	void changeSort(int x, int y, int arg);
 	void clickColonyToggle(int x, int y, int arg);
 	void clickOutpostToggle(int x, int y, int arg);
+	void clickReturn(int x, int y, int arg);
+};
+
+class ColoniesListView : public GuiView {
+private:
+	GameState *_game;
+	ScrollBarWidget *_scroll;
+	ColonistPickerWidget* farmer;
+	ColonistPickerWidget* worker;
+	ColonistPickerWidget* scientist;
+	int _curslot;
+	int _selectedSlot;
+	ImageAsset _bg;
+	unsigned _colonies[MAX_COLONIES];
+	int _activePlayer;
+
+	void initWidgets(void);
+	void renderPlanetDetail(const Planet *planet_ptr, const Colony *colony_ptr);
+	void drawColonistsJobs(const Colony* colony_ptr, int curtick);
+	void drawEmpireDetails();
+
+
+public:
+	ColoniesListView(GameState *game, int activePlayer);
+
+	void highlightSlot(int x, int y, int arg);
+	void clickSlot(int x, int y, int arg);
+	void redraw(unsigned curtick);
+
+	void showHelp(int x, int y, int arg);
 	void clickReturn(int x, int y, int arg);
 };
 
